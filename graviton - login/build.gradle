@@ -1,0 +1,6 @@
+apply plugin: 'application'
+mainClassName = "graviton.login.Main"
+
+dependencies {
+
+}
