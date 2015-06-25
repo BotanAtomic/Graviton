@@ -7,6 +7,9 @@ import graviton.core.injector.DefaultModule;
 import graviton.core.injector.GameModule;
 import graviton.core.injector.NetworkModule;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
 
 /**
  * Created by Botan on 16/06/2015.
@@ -15,6 +18,7 @@ public class Main {
 
     private static Injector injector;
     private static int serverId;
+    private static Calendar calendar;
 
     public static void main(String[] args) {
         injector = Guice.createInjector(
@@ -22,16 +26,16 @@ public class Main {
                 new DatabaseModule(),
                 new NetworkModule(),
                 new GameModule());
-        final ServerManager manager = injector.getInstance(ServerManager.class).configure();
+        final Server manager = injector.getInstance(Server.class).configure();
         Runtime.getRuntime().addShutdownHook(new Thread(manager::stop));
     }
 
+    public static Calendar getCalendar() {
+        return calendar = (calendar == null ? GregorianCalendar.getInstance() : calendar);
+    }
+
     public static int getServerId() {
-        try {
-            return serverId;
-        } catch (NullPointerException e) {
-            return serverId = injector.getInstance(Configuration.class).getServerId();
-        }
+        return serverId = (serverId == 0 ? injector.getInstance(Configuration.class).getServerId() : serverId);
     }
 
     public static <T> T getInstance(Class<T> instance) {

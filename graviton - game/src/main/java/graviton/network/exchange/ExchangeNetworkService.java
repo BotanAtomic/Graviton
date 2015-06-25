@@ -2,17 +2,21 @@ package graviton.network.exchange;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import graviton.api.NetworkService;
 import graviton.core.Configuration;
+import graviton.core.Main;
 import graviton.database.DatabaseManager;
 import graviton.enums.DataType;
 import graviton.game.client.Account;
-import graviton.network.common.NetworkConnector;
 import graviton.network.game.GameNetworkService;
 import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
@@ -21,19 +25,41 @@ import java.nio.charset.CharsetDecoder;
  * Created by Botan on 17/06/2015.
  */
 @Singleton
-public class ExchangeNetworkService extends NetworkConnector implements IoHandler {
+public class ExchangeNetworkService implements IoHandler,NetworkService {
+
     private final Configuration configuration;
-    @Inject
-    DatabaseManager databaseManager;
-    @Inject
-    GameNetworkService gameNetworkService;
+    private final IoConnector connector;
+
+    private final String ip;
+    private final int port;
+
+    private final DatabaseManager databaseManager;
+    private final GameNetworkService gameNetworkService;
+
     private IoSession session;
 
     @Inject
-    public ExchangeNetworkService(Configuration configuration) {
-        super(configuration.getExchangeIp(), configuration.getExchangePort());
+    public ExchangeNetworkService(Configuration configuration,DatabaseManager databaseManager,GameNetworkService gameNetworkService) {
+        this.ip = configuration.getExchangeIp();
+        this.port = configuration.getExchangePort();
+        this.connector = new NioSocketConnector();
+        this.connector.setHandler(this);
         this.configuration = configuration;
+        this.databaseManager = databaseManager;
+        this.gameNetworkService = gameNetworkService;
     }
+
+    @Override
+    public void start() {
+        connector.connect(new InetSocketAddress(ip, port));
+     }
+
+    @Override
+    public void stop() {
+        connector.getManagedSessions().values().stream().filter(session -> !session.isClosing()).forEach(session -> session.close(false));
+        connector.dispose(false);
+    }
+
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
@@ -96,7 +122,7 @@ public class ExchangeNetworkService extends NetworkConnector implements IoHandle
 
     private void parse(String packet) {
         switch (packet.charAt(0)) {
-            case 'W': //Wainting
+            case 'W': //Cache for Account
                 switch (packet.charAt(1)) {
                     case 'A':
                         Account account = (Account) databaseManager.getData().get(DataType.ACCOUNT).load(Integer.parseInt(packet.substring(2)));
@@ -105,15 +131,15 @@ public class ExchangeNetworkService extends NetworkConnector implements IoHandle
                 }
             case 'S': //Server
                 switch (packet.charAt(1)) {
-                    case '?': //Required
+                    case '?':
                         send("SK" + configuration.getServerId() + ";" + configuration.getServerKey());
                         break;
 
-                    case 'K': //Ok
+                    case 'K':
                         send("SH" + configuration.getIp() + ";" + configuration.getGamePort());
                         break;
 
-                    case 'R': //Refused
+                    case 'R':
                         System.exit(0);
                         break;
                 }
@@ -121,9 +147,5 @@ public class ExchangeNetworkService extends NetworkConnector implements IoHandle
         }
     }
 
-    @Override
-    protected void configure() {
-        connector.setHandler(this);
-    }
 }
 

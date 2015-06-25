@@ -22,7 +22,6 @@ public class PacketParser {
             '5', '6', '7', '8', '9', '-', '_'};
     private Console console;
     private Database database;
-    private String serverListPacket;
 
     public PacketParser(Configuration config, Console console) {
         this.console = console;
@@ -142,18 +141,15 @@ public class PacketParser {
     }
 
     private String serverList(Account account) {
-        if (serverListPacket != null)
-            return serverListPacket;
         StringBuilder sb = new StringBuilder("31556864852");
-
         for (Server server : this.database.getServerData().getServers().values()) {
             int i = 0;
-            for (Player player : account.getPlayers())
+            for (Player player : account.getPlayers()) {
                 if (player.getServer() == server.getId())
                     i++;
+            }
             sb.append("|").append(server.getId()).append(",").append(i != 0 ? i : 1);
         }
-        this.serverListPacket = sb.toString();
         return sb.toString();
     }
 

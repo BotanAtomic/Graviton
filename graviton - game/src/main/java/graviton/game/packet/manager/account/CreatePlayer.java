@@ -17,7 +17,7 @@ public class CreatePlayer implements PacketParser {
 
     @Override
     public void parse(GameClient client, String packet) {
-        final Console console = Main.getInstance(Console.class);
+        /**final Console console = Main.getInstance(Console.class);
         final PlayerData data = (PlayerData) Main.getInstance(DatabaseManager.class).getData().get(DataType.PLAYER);
 
         String[] forbiden = {"admin", "modo", "mj", "-"};
@@ -42,7 +42,7 @@ public class CreatePlayer implements PacketParser {
         int[] colors = {Integer.parseInt(arguments[3]), Integer.parseInt(arguments[4]), Integer.parseInt(arguments[5])};
         if (!client.getAccount().createPlayer(arguments[0], (byte) Integer.parseInt(arguments[1]), (byte) Integer.parseInt(arguments[2]), colors))
             client.send("AAEF");
-
+**/
     }
 
 }

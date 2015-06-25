@@ -4,29 +4,28 @@ import com.google.inject.Inject;
 import graviton.api.Manager;
 import graviton.console.Console;
 import graviton.database.DatabaseManager;
-import graviton.game.manager.GameManager;
+import graviton.game.GameManager;
 import graviton.game.packet.PacketManager;
 import graviton.network.NetworkManager;
 import lombok.Getter;
 
 import javax.inject.Singleton;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by Botan on 16/06/2015.
  */
 @Singleton
-public class ServerManager {
+public class Server {
     @Inject
-    private DatabaseManager databaseManager;
+    DatabaseManager databaseManager;
     @Inject
-    private NetworkManager networkManager;
+    NetworkManager networkManager;
     @Inject
-    private GameManager gameManager;
+    GameManager gameManager;
     @Inject
-    private PacketManager packetManager;
+    PacketManager packetManager;
 
     @Getter
     private List<Manager> managers;
@@ -38,13 +37,13 @@ public class ServerManager {
     private Console console;
 
     @Inject
-    public ServerManager(Configuration configuration, Console console) {
+    public Server(Configuration configuration, Console console) {
         this.running = false;
         this.configuration = configuration;
         this.console = console;
-    }
+       }
 
-    public ServerManager configure() {
+    public Server configure() {
         this.managers = getNewList(databaseManager, networkManager, gameManager, packetManager);
         this.managers.forEach(Manager::configure);
         this.running = true;
@@ -59,7 +58,8 @@ public class ServerManager {
 
     public List<Manager> getNewList(Manager... a) {
         List<Manager> managers = new ArrayList<>();
-        Collections.addAll(managers, a);
+        for(Manager manager : a)
+            managers.add(manager);
         return managers;
     }
 }

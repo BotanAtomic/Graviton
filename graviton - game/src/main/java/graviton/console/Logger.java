@@ -1,5 +1,7 @@
 package graviton.console;
 
+import graviton.core.Main;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -15,7 +17,7 @@ public class Logger {
     private final List<String> logged;
     private final List<String> errorLogged;
     private final ReentrantLock locker;
-    private Calendar calendar;
+    private final Calendar calendar;
     private BufferedWriter writer;
     private BufferedWriter errorWriter;
 
@@ -23,8 +25,7 @@ public class Logger {
         this.logged = new ArrayList<>();
         this.errorLogged = new ArrayList<>();
         this.locker = new ReentrantLock();
-        this.calendar = GregorianCalendar.getInstance();
-        calendar.setTime(new Date());
+        this.calendar = Main.getCalendar();
         createFiles();
     }
 

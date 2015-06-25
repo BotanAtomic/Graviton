@@ -3,7 +3,7 @@ package graviton.core.injector;
 import com.google.inject.AbstractModule;
 import graviton.console.Console;
 import graviton.core.Configuration;
-import graviton.core.ServerManager;
+import graviton.core.Server;
 
 
 /**
@@ -14,6 +14,6 @@ public class DefaultModule extends AbstractModule {
     protected void configure() {
         bind(Configuration.class).asEagerSingleton();
         bind(Console.class).asEagerSingleton();
-        bind(ServerManager.class).asEagerSingleton();
+        bind(Server.class).asEagerSingleton();
     }
 }

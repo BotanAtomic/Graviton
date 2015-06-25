@@ -4,6 +4,8 @@ import graviton.api.Data;
 import graviton.common.StatsID;
 import graviton.core.Main;
 import graviton.database.Database;
+import graviton.enums.DataType;
+import graviton.enums.DatabaseType;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
 
@@ -18,11 +20,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Created by Botan on 21/06/2015.
  */
-@SuppressWarnings("ALL")
+
 public class PlayerData extends Data<Player> {
 
-    public PlayerData(Database database) {
-        super(database.getConnection());
+    @Override
+    public void configure() {
+        super.type = DataType.PLAYER;
+        super.connection = super.databaseManager.getDatabases().get(DatabaseType.LOGIN).getConnection();
     }
 
     @Override
@@ -32,32 +36,36 @@ public class PlayerData extends Data<Player> {
 
     @Override
     public boolean create(Player object) {
-        String baseQuery = "INSERT INTO players ( `id` , `account`, `name` , `sexe` , `gfx` , `class`,`color1` , `color2` , `color3` , `spellpoints` , `capital` , `level` , `experience` , `map`,`cell`,`server`)"
-                + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+        String baseQuery = "INSERT INTO players ( `id` , `account`, `name` , `sexe` , `gfx` , `class`,`color1` , `color2` , `color3` , `spellpoints` , `capital` , `level` , `experience` ,`title`, `map`,`cell`,`server`)"
+                + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
         try {
-
-            PreparedStatement p = this.connection.prepareStatement(baseQuery);
-            p.setInt(1, object.getId());
-            p.setInt(2, object.getAccount().getId());
-            p.setString(3, object.getName());
-            p.setInt(4, object.getSex());
-            p.setInt(5, object.getGfx());
-            p.setInt(6, object.getClasse().getId());
-            p.setInt(7, object.getColor(1));
-            p.setInt(8, object.getColor(2));
-            p.setInt(9, object.getColor(3));
-            p.setInt(10, object.getSpellPoints());
-            p.setInt(11, object.getCapital());
-            p.setInt(12, object.getLevel());
-            p.setLong(13, object.getExperience());
-            p.setInt(14, object.getPosition().getFirst().getId());
-            p.setInt(15, object.getPosition().getSecond().getId());
-            p.setInt(16, Main.getServerId());
-            p.execute();
-            p.close();
+            locker.lock();
+            PreparedStatement preparedStatement = this.connection.prepareStatement(baseQuery);
+            preparedStatement.setInt(1, object.getId());
+            preparedStatement.setInt(2, object.getAccount().getId());
+            preparedStatement.setString(3, object.getName());
+            preparedStatement.setInt(4, object.getSex());
+            preparedStatement.setInt(5, object.getGfx());
+            preparedStatement.setInt(6, object.getClasse().getId());
+            preparedStatement.setInt(7, object.getColor(1));
+            preparedStatement.setInt(8, object.getColor(2));
+            preparedStatement.setInt(9, object.getColor(3));
+            preparedStatement.setInt(10, object.getSpellPoints());
+            preparedStatement.setInt(11, object.getCapital());
+            preparedStatement.setInt(12, object.getLevel());
+            preparedStatement.setLong(13, object.getExperience());
+            preparedStatement.setInt(14, object.getTitle());
+            preparedStatement.setInt(15, object.getPosition().getMap().getId());
+            preparedStatement.setInt(16, object.getPosition().getCell().getId());
+            preparedStatement.setInt(17, Main.getServerId());
+            preparedStatement.execute();
+            preparedStatement.close();
         } catch (SQLException e) {
             console.println(e.getMessage(), true);
+            locker.unlock();
             return false;
+        } finally {
+            locker.unlock();
         }
         return true;
     }
@@ -66,14 +74,14 @@ public class PlayerData extends Data<Player> {
     public Player getByResultSet(ResultSet result) throws SQLException {
         int[] colors = {result.getInt("color1"), result.getInt("color2"), result.getInt("color3")};
         Map<Integer, Integer> stats = new HashMap<>();
-        stats.put(StatsID.STATS_ADD_VITA, result.getInt("vitalite"));
-        stats.put(StatsID.STATS_ADD_FORC, result.getInt("force"));
-        stats.put(StatsID.STATS_ADD_SAGE, result.getInt("sagesse"));
-        stats.put(StatsID.STATS_ADD_INTE, result.getInt("intelligence"));
-        stats.put(StatsID.STATS_ADD_CHAN, result.getInt("chance"));
-        stats.put(StatsID.STATS_ADD_AGIL, result.getInt("agilite"));
+        stats.put(StatsID.ADD_VITA, result.getInt("vitalite"));
+        stats.put(StatsID.ADD_FORC, result.getInt("force"));
+        stats.put(StatsID.ADD_SAGE, result.getInt("sagesse"));
+        stats.put(StatsID.ADD_INTE, result.getInt("intelligence"));
+        stats.put(StatsID.ADD_CHAN, result.getInt("chance"));
+        stats.put(StatsID.ADD_AGIL, result.getInt("agilite"));
 
-        Player player = new Player(result.getInt("id"), result.getString("name"),
+        Player player = new Player(result.getInt("id"),result.getInt("account"), result.getString("name"),
                 result.getInt("sexe"), result.getInt("class"), result.getInt("alignement"),
                 result.getInt("honor"), result.getInt("deshonor"), result.getInt("level"),
                 result.getInt("gfx"), colors, result.getLong("experience"), result.getInt("size"),
@@ -102,7 +110,8 @@ public class PlayerData extends Data<Player> {
             String query = "SELECT * FROM players WHERE account =" + account.getId();
             ResultSet result = connection.createStatement().executeQuery(query);
             while (result.next())
-                players.add(getByResultSet(result));
+                if(result.getInt("server") == Main.getServerId())
+                    players.add(getByResultSet(result));
             players.stream().forEach(player -> player.setAccount(account));
             result.close();
         } catch (SQLException e) {

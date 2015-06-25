@@ -7,4 +7,5 @@ public enum DataType {
     ACCOUNT,
     PLAYER,
     MAPS,
+    ZONE;
 }

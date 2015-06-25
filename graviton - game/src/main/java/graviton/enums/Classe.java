@@ -1,4 +1,4 @@
-package graviton.game.client.player;
+package graviton.enums;
 
 import lombok.Getter;
 

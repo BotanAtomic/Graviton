@@ -1,6 +1,6 @@
 package graviton.console;
 
-import graviton.core.ServerManager;
+import graviton.core.Server;
 import org.fusesource.jansi.AnsiConsole;
 
 import javax.inject.Singleton;
@@ -12,41 +12,46 @@ import java.util.Scanner;
  * Created by Botan on 16/06/2015.
  */
 @Singleton
-public class Console {
+public class Console extends Thread {
+
     private final Logger logger;
-    private ServerManager manager;
+    private Server manager;
     private Scanner scanner;
 
     public Console() {
         this.logger = new Logger();
     }
 
-    public void initialize(ServerManager manager) {
+    public void initialize(Server manager) {
         this.scanner = new Scanner(System.in);
         this.manager = manager;
         this.initializeEmulatorName();
-        run();
+        super.setDaemon(true);
+        super.start();
     }
 
-    private void run() {
+    @Override
+    public void run() {
         while (manager.isRunning()) {
             try {
                 AnsiConsole.out.println("Console > \n");
                 parse(scanner.nextLine());
             } catch (NoSuchElementException ignored) {
+
             }
         }
+        super.interrupt();
     }
 
     private void initializeEmulatorName() {
-        int color = this.getRandomColor();
-        String name = ("  _______  ______           ___   ____    ____  __   ___________   ______    __   __ \n /  _____||   _  \\         /   \\  \\   \\  /   / |  | |           | /  __  \\  |  \\ |  |\n|  |  __  |  |_)  |       /  ^  \\  \\   \\/   /  |  | `---|  |----`|  |  |  | |   \\|  |\n|  | |_ | |      /       /  /_\\  \\  \\      /   |  |     |  |     |  |  |  | |  . `  |\n|  |__| | |  |\\  \\____  /  _____  \\  \\    /    |  |     |  |     |  `--'  | |  |\\   |\n \\______| | _| `______|/__/     \\__\\  \\__/     |__|     |__|      \\______/  |__| \\__|");
-        AnsiConsole.out.println("\033[" + color + "m" + name + "\033[" + 0 + "m");
+        String name = "                 _____                     _  _                \n                / ____|                   (_)| |               \n               | |  __  _ __  __ _ __   __ _ | |_  ___   _ __  \n               | | |_ || '__|/ _` |\\ \\ / /| || __|/ _ \\ | '_ \\ \n               | |__| || |  | (_| | \\ V / | || |_| (_) || | | |\n                \\_____||_|   \\__,_|  \\_/  |_| \\__|\\___/ |_| |_|";
+        AnsiConsole.out.println("\033[" + getRandomColor() + "m" + name + "\033[" + 0 + "m");
         AnsiConsole.out.println();
         this.setTitle();
     }
 
     private void parse(String line) {
+        AnsiConsole.out.println(" Execute -> "+line);
         switch (line.toLowerCase()) {
             case "stop":
                 println("Closing server..", false);
@@ -56,13 +61,20 @@ public class Console {
                 println("Restarting server..", false);
                 System.exit(0);
                 break;
+            case "ram" :
+                double currentMemory = ( ((double)(Runtime.getRuntime().totalMemory()/1024)/1024))- (((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
+                AnsiConsole.out.println("Current memory usage: " + Double.toString(currentMemory).substring(0,4) + " Mb / " + Double.toString(currentMemory/8).substring(0,4) +" Mo");
+                break;
+            case "clean" :
+                Runtime.getRuntime().gc();
+                break;
         }
     }
 
     public void println(String line, boolean error) {
-        logger.add(line, error);
         PrintStream printer = error ? AnsiConsole.err : AnsiConsole.out;
         printer.println(line);
+        logger.add(line, error);
     }
 
     public void addToLogs(String line, boolean error) {
@@ -70,8 +82,8 @@ public class Console {
     }
 
     public void println(String line) {
-        logger.add(line, false);
         AnsiConsole.out.println(line);
+        logger.add(line, false);
     }
 
     private void setTitle() {

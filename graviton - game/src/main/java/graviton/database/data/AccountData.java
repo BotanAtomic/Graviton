@@ -2,6 +2,8 @@ package graviton.database.data;
 
 import graviton.api.Data;
 import graviton.database.Database;
+import graviton.enums.DataType;
+import graviton.enums.DatabaseType;
 import graviton.game.client.Account;
 
 import java.sql.ResultSet;
@@ -13,8 +15,10 @@ import java.util.List;
  */
 public class AccountData extends Data<Account> {
 
-    public AccountData(Database database) {
-        super(database.getConnection());
+    @Override
+    public void configure() {
+        super.type = DataType.ACCOUNT;
+        super.connection = super.databaseManager.getDatabases().get(DatabaseType.LOGIN).getConnection();
     }
 
     @Override

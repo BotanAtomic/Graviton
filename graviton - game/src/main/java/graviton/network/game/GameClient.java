@@ -2,6 +2,7 @@ package graviton.network.game;
 
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.mina.core.session.IoSession;
@@ -9,18 +10,13 @@ import org.apache.mina.core.session.IoSession;
 /**
  * Created by Botan on 16/06/2015.
  */
+@Data
 public class GameClient {
 
-    @Getter
     private final long id;
-    @Getter
     private final IoSession session;
 
-    @Getter
-    @Setter
     private Account account;
-    @Getter
-    @Setter
     private Player player;
 
     public GameClient(IoSession session) {

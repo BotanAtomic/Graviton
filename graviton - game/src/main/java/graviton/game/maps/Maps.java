@@ -46,15 +46,15 @@ public class Maps {
     }
 
     public void addPlayer(Player player) {
-        send("GM|+" + player.getPacket("GM"));
         this.players.put(player.getId(), player);
-        player.getPosition().getSecond().getPlayers().add(player);
+        player.getPosition().getCell().getPlayers().add(player);
+        send("GM|+" + player.getPacket("GM"));
     }
 
     public void removePlayer(Player player) {
         if (this.players.containsKey(player.getId())) {
             this.players.remove(player);
-            player.getPosition().getSecond().getPlayers().remove(player);
+            player.getPosition().getCell().getPlayers().remove(player);
         }
     }
 
@@ -66,7 +66,7 @@ public class Maps {
             cellData = data.substring(f, f + 10);
             for (int i = 0; i < cellData.length(); i++)
                 cellInfos.add((byte) getHashValue(cellData.charAt(i)));
-            boolean walkable = (cellInfos.get(2) & 56) >> 3 == 0 ? false : true;
+            boolean walkable = (cellInfos.get(2) & 56) >> 3 != 0;
             cells.put(f / 10, new Cell(f / 10, this, walkable));
             cellInfos.clear();
         }

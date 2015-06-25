@@ -3,6 +3,7 @@ package graviton.core;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import graviton.database.Database;
+import lombok.Data;
 import lombok.Getter;
 
 import javax.inject.Singleton;
@@ -11,32 +12,22 @@ import java.io.File;
 /**
  * Created by Botan on 16/06/2015.
  */
+@Data
 @Singleton
 public class Configuration {
 
-    @Getter
     private boolean canLog;
 
-    @Getter
     private Database loginDatabase;
-    @Getter
     private Database gameDatabase;
 
-    @Getter
     private int serverId;
-    @Getter
     private String serverKey;
-    @Getter
     private String ip, exchangeIp;
-    @Getter
     private int gamePort, exchangePort;
 
-    @Getter
     private int startMap, startCell, startlevel, startKamas;
-    @Getter
-    private String defaultMessage;
-    @Getter
-    private String defaultColor;
+    private String defaultMessage,defaultColor;
 
     public Configuration() {
         Config config = ConfigFactory.parseFile(new File("config.conf"));
@@ -55,13 +46,13 @@ public class Configuration {
         this.serverKey = "pvp";
         this.ip = "127.0.0.1";
         this.exchangeIp = "127.0.0.1";
-        this.gamePort = 501;
+        this.gamePort = 100;
         this.exchangePort = 807;
         this.defaultMessage = "Bienvenue sur Horus";
         this.defaultColor = "000000";
         this.startlevel = 200;
         this.startKamas = 1000000;
-        this.startMap = 952;
+        this.startMap = 10031;
     }
 
     private void configFromFile(Config config) {

@@ -3,6 +3,8 @@ package graviton.database.data;
 import graviton.api.Data;
 import graviton.common.Action;
 import graviton.database.Database;
+import graviton.enums.DataType;
+import graviton.enums.DatabaseType;
 import graviton.game.maps.Maps;
 
 import java.sql.ResultSet;
@@ -14,8 +16,10 @@ import java.util.List;
  */
 public class MapData extends Data<Maps> {
 
-    public MapData(Database database) {
-        super(database.getConnection());
+    @Override
+    public void configure() {
+        super.type = DataType.MAPS;
+        super.connection = super.databaseManager.getDatabases().get(DatabaseType.GAME).getConnection();
     }
 
     @Override

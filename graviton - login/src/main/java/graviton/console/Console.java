@@ -3,6 +3,7 @@ package graviton.console;
 import graviton.login.LoginManager;
 import org.fusesource.jansi.AnsiConsole;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -40,27 +41,38 @@ public class Console extends Thread {
 
     public void initializeEmulatorName() {
         int color = this.getRandomColor();
-        String name = ("  _______  ______           ___   ____    ____  __   ___________   ______    __   __ \n /  _____||   _  \\         /   \\  \\   \\  /   / |  | |           | /  __  \\  |  \\ |  |\n|  |  __  |  |_)  |       /  ^  \\  \\   \\/   /  |  | `---|  |----`|  |  |  | |   \\|  |\n|  | |_ | |      /       /  /_\\  \\  \\      /   |  |     |  |     |  |  |  | |  . `  |\n|  |__| | |  |\\  \\____  /  _____  \\  \\    /    |  |     |  |     |  `--'  | |  |\\   |\n \\______| | _| `______|/__/     \\__\\  \\__/     |__|     |__|      \\______/  |__| \\__|");
+        String name = "                 _____                     _  _                \n                / ____|                   (_)| |               \n               | |  __  _ __  __ _ __   __ _ | |_  ___   _ __  \n               | | |_ || '__|/ _` |\\ \\ / /| || __|/ _ \\ | '_ \\ \n               | |__| || |  | (_| | \\ V / | || |_| (_) || | | |\n                \\_____||_|   \\__,_|  \\_/  |_| \\__|\\___/ |_| |_|";
         AnsiConsole.out.println("\033[" + color + "m" + name + "\033[" + 0 + "m");
         AnsiConsole.out.println();
         this.setTitle("Graviton - Login");
+    }
+
+    private void clear() {
+        AnsiConsole.out.print("\033[2J");
     }
 
     public void parse(String line) {
         switch (line.toLowerCase()) {
             case "stop":
                 println("Closing server..", false);
-                System.exit(1);
+                System.exit(-1);
                 break;
             case "restart":
+                clear();
                 println("Restarting server..", false);
-                System.exit(0);
+                clear();
+                System.exit(1);
                 break;
+            case "clear" :
+                clear();
+                break;
+            default:
+                println("Command ["+line +"] not found",false);
         }
     }
 
     public void println(String line, boolean error) {
-        logger.add(line, error);
+        logger.add(" "+line, error);
         PrintStream printer = error ? AnsiConsole.err : AnsiConsole.out;
         printer.println(line);
     }
@@ -70,7 +82,7 @@ public class Console extends Thread {
     }
 
     public void println(String line, int color) {
-        logger.add(line, false);
+        logger.add(" "+line, false);
         AnsiConsole.out.println("\033[" + color + "m" + line + "\033[" + 0 + "m");
     }
 

@@ -16,33 +16,27 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Created by Botan on 19/06/2015.
  */
+
 public class Account {
-    @Getter
-    private final int id;
+    @Getter private final int id;
 
-    @Getter
-    @Setter
-    private String ipAdress, lastConnection;
-    @Getter
-    @Setter
-    private GameClient client;
+    @Getter @Setter private String ipAdress, lastConnection;
+    @Getter @Setter private GameClient client;
 
-    @Getter
-    private List<Player> players;
-    @Getter
-    @Setter
-    private Player currentPlayer;
+    @Getter private List<Player> players;
+    @Getter private Player currentPlayer;
 
     public Account(int id) {
         this.id = id;
-        System.err.print(this.getLastConnection());
+    }
+
+    public void loadPlayers() {
         try {
             this.players = (CopyOnWriteArrayList<Player>) Main.getInstance(DatabaseManager.class).getData().get(DataType.PLAYER).loadAll(this);
         } catch (Exception e) {
             e.printStackTrace();
             this.players = new CopyOnWriteArrayList<>();
         }
-
     }
 
     public Player getPlayer(int id) {

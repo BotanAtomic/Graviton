@@ -14,7 +14,7 @@ public class SendTicket implements PacketParser {
 
     @Override
     public void parse(GameClient client, String packet) {
-        final GameNetworkService service = Main.getInstance(GameNetworkService.class);
+        /**final GameNetworkService service = Main.getInstance(GameNetworkService.class);
         client.setAccount(service.getAccount(Integer.parseInt(packet)));
 
         if (client.getAccount() != null) {
@@ -25,6 +25,6 @@ public class SendTicket implements PacketParser {
             client.send("ATK0");
         } else {
             client.send("ATE");
-        }
+        } **/
     }
 }

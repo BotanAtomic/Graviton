@@ -21,7 +21,7 @@ public class NetworkManager implements Manager {
 
     @Inject
     public NetworkManager(ExchangeNetworkService exchangeNetworkService, GameNetworkService gameNetworkService) {
-        services = getNewList(exchangeNetworkService, gameNetworkService);
+        this.services = getNewList(exchangeNetworkService, gameNetworkService);
     }
 
     @Override
@@ -36,7 +36,8 @@ public class NetworkManager implements Manager {
 
     private List<NetworkService> getNewList(NetworkService... a) {
         List<NetworkService> services = new ArrayList<>();
-        Collections.addAll(services, a);
+        for(NetworkService service : a)
+            services.add(service);
         return services;
     }
 }

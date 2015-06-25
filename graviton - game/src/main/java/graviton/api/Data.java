@@ -2,7 +2,10 @@ package graviton.api;
 
 import graviton.console.Console;
 import graviton.core.Main;
-import graviton.game.manager.GameManager;
+import graviton.database.DatabaseManager;
+import graviton.enums.DataType;
+import graviton.enums.DatabaseType;
+import graviton.game.GameManager;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -14,17 +17,23 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by Botan on 21/06/2015.
  */
 public abstract class Data<T> {
-    protected final Connection connection;
+
     protected final ReentrantLock locker;
     protected final Console console;
     protected final GameManager manager;
+    protected final DatabaseManager databaseManager;
 
-    public Data(final Connection connection) {
+    protected Connection connection;
+    public DataType type;
+
+    public Data() {
         this.locker = new ReentrantLock();
-        this.connection = connection;
         this.console = Main.getInstance(Console.class);
         this.manager = Main.getInstance(GameManager.class);
+        this.databaseManager = Main.getInstance(DatabaseManager.class);
     }
+
+    public abstract void configure();
 
     public abstract T load(Object object);
 

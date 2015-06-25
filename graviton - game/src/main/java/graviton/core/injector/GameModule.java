@@ -1,7 +1,7 @@
 package graviton.core.injector;
 
 import com.google.inject.AbstractModule;
-import graviton.game.manager.GameManager;
+import graviton.game.GameManager;
 
 /**
  * Created by Botan on 19/06/2015.

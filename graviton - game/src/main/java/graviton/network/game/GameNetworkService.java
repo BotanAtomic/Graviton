@@ -2,19 +2,23 @@ package graviton.network.game;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import graviton.api.NetworkService;
 import graviton.console.Console;
 import graviton.core.Configuration;
 import graviton.game.client.Account;
-import graviton.game.packet.PacketManager;
-import graviton.network.common.NetworkAcceptor;
+import graviton.game.packet.PacketParser;
 import lombok.Getter;
+import org.apache.mina.core.service.IoAcceptor;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.filter.codec.textline.LineDelimiter;
 import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
+import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,19 +27,22 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by Botan on 17/06/2015.
  */
 @Singleton
-public class GameNetworkService extends NetworkAcceptor implements IoHandler {
+public class GameNetworkService implements IoHandler,NetworkService {
     private final Console console;
-    private
-    @Inject
-    PacketManager manager;
+    // TODO :  @Inject PacketManager manager;
     @Getter
     private Map<Long, GameClient> clients;
     @Getter
     private Map<Integer, Account> waitingAccount;
 
+    private final NioSocketAcceptor acceptor;
+
     @Inject
     public GameNetworkService(Configuration configuration, Console console) {
-        super(configuration.getGamePort());
+        this.acceptor = new NioSocketAcceptor();
+        this.acceptor.setBacklog(configuration.getGamePort());
+        this.acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new TextLineCodecFactory(Charset.forName("UTF8"), LineDelimiter.NUL, new LineDelimiter("\n\0"))));
+        this.acceptor.setHandler(this);
         this.clients = new ConcurrentHashMap<>();
         this.waitingAccount = new ConcurrentHashMap<>();
         this.console = console;
@@ -87,25 +94,7 @@ public class GameNetworkService extends NetworkAcceptor implements IoHandler {
     }
 
     private void checkPacket(GameClient client, String packet) {
-        try {
-            manager.getPackets().get(packet.substring(0, 2)).parse(client, packet.substring(2));
-        } catch (NullPointerException e) {
-            switch (packet) {
-                case "AV":
-                    client.send("BN");
-                    client.send("AV0");
-                    break;
-                case "Af":
-                    client.send("Af" + (1) + ("|") + (1) + ("|") + (1) + ("|") + (1) + ("|") + (1));
-                    break;
-            }
-        }
-    }
-
-    @Override
-    protected void configure() {
-        acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new TextLineCodecFactory(Charset.forName("UTF8"), LineDelimiter.NUL, new LineDelimiter("\n\0"))));
-        acceptor.setHandler(this);
+        PacketParser.parse(client,packet);
     }
 
     public void addAccount(Account account) {
@@ -119,5 +108,20 @@ public class GameNetworkService extends NetworkAcceptor implements IoHandler {
 
     public Account getAccount(int id) {
         return waitingAccount.get(id);
+    }
+
+    @Override
+    public void start() {
+
+        try {
+            acceptor.bind(new InetSocketAddress(acceptor.getBacklog()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void stop() {
+
     }
 }
