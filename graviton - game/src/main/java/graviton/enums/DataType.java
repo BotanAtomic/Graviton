@@ -4,8 +4,11 @@ package graviton.enums;
  * Created by Botan on 21/06/2015.
  */
 public enum DataType {
+    STATIC,
     ACCOUNT,
     PLAYER,
     MAPS,
-    ZONE;
+    JOB,
+    MOUNT,
+    PVP
 }

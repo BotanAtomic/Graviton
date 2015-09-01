@@ -3,9 +3,12 @@ package graviton.game.packet;
 import com.google.common.reflect.ClassPath;
 import com.google.inject.Singleton;
 import graviton.api.Manager;
+import graviton.api.Packet;
 import graviton.api.PacketParser;
+import graviton.network.game.GameClient;
 import lombok.Getter;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +30,7 @@ public class PacketManager implements Manager {
     }
 
     @Override
-    public void configure() {/**
+    public void configure() {
         try {
             for (Class<?> packetClass : getAllClass()) {
                 for (Annotation annotation : packetClass.getAnnotations()) {
@@ -37,7 +40,7 @@ public class PacketManager implements Manager {
             }
         } catch (Exception e) {
             e.printStackTrace();
-        }**/
+        }
     }
 
     private List<Class<?>> getAllClass() {
@@ -49,6 +52,12 @@ public class PacketManager implements Manager {
             e.printStackTrace();
         }
         return allClass;
+    }
+
+    public final void parse(GameClient client,String packet) {
+        try {
+            packets.get(packet.substring(0, 2)).parse(client, packet.substring(2));
+        } catch (NullPointerException e) {}
     }
 
     @Override

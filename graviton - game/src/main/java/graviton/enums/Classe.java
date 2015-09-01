@@ -2,10 +2,12 @@ package graviton.enums;
 
 import lombok.Getter;
 
+
 /**
  * Created by Botan on 21/06/2015.
  */
 public enum Classe {
+    /** id / incarnamMap / incarnamCell / astrubMap / astrubCell **/
     FECA(1, 10300, 323, 7398, 299),
     OSAMODAS(2, 10284, 372, 7545, 340),
     ENUTROF(3, 10299, 271, 7442, 182),

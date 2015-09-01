@@ -5,8 +5,8 @@ import graviton.database.DatabaseManager;
 import graviton.enums.DataType;
 import graviton.game.client.player.Player;
 import graviton.network.game.GameClient;
+import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -16,18 +16,20 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Created by Botan on 19/06/2015.
  */
-
+@Data
 public class Account {
-    @Getter private final int id;
+    private final int id;
 
-    @Getter @Setter private String ipAdress, lastConnection;
-    @Getter @Setter private GameClient client;
+    String answer;
+    private String ipAdress, lastConnection;
+    private GameClient client;
 
-    @Getter private List<Player> players;
-    @Getter private Player currentPlayer;
+    private List<Player> players;
+    private Player currentPlayer;
 
-    public Account(int id) {
+    public Account(int id,String answer) { //TODO : get IP for last IP
         this.id = id;
+        this.answer = answer;
     }
 
     public void loadPlayers() {
@@ -50,7 +52,7 @@ public class Account {
         try {
             if (players.add(new Player(name, sexe, classeId, colors, this))) {
                 client.send("AAK");
-                client.send(getPlayersList());
+                client.send(getPlayersPacket());
                 return true;
             }
         } catch (Exception e) {
@@ -59,10 +61,10 @@ public class Account {
         return false;
     }
 
-    public String getPlayersList() {
+    public String getPlayersPacket() {
         if (players.size() == 0)
             return "ALK31536000000|0";
-        String packet = "ALK31536000000|" + (this.players.size() == 1 ? 2 : this.players.size());
+        String packet = "ALK31536000000|" + (this.players.size() == 1 ? 2 : this.players.size()); //Pour choisir quand meme son personnage si on a qu'un seul joueur !
         for (Player player : this.players)
             packet += (player.getPacket("ALK"));
         return packet;

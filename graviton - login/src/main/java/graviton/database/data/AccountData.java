@@ -1,9 +1,9 @@
 package graviton.database.data;
 
-import graviton.console.Console;
-import graviton.database.DatabaseManager;
+import graviton.api.Data;
 import graviton.game.Account;
-import lombok.Getter;
+import graviton.network.login.LoginClient;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,111 +12,101 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by Botan on 08/06/2015.
+ * Created by Botan on 08/07/2015.
  */
-public class AccountData {
-    private Console console;
-    @Getter private Map<String,Account> accounts;
-    private DatabaseManager manager;
+@Slf4j
+public class AccountData extends Data {
+    private char[] HASH = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+            'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A',
+            'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+            'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4',
+            '5', '6', '7', '8', '9', '-', '_'};
 
-    public AccountData(DatabaseManager manager) {
-        this.accounts = new HashMap<>();
-        this.manager = manager;
-        this.console = manager.getConsole();
-    }
-
-    public void addAccount(Account account) {
-        if (!accounts.containsValue(account))
-            accounts.put(account.getName(), account);
-    }
-
-    public Account load(Object id) {
-        Account account = null;
-        if (id instanceof Integer) {
-            console.println("[Account data] : load account by id : " + id, false);
-            try {
-                String query = "SELECT * FROM accounts WHERE id = " + id;
-                ResultSet resultSet = manager.getConnection().createStatement().executeQuery(query);
-                account = loadFromResultSet(resultSet);
-                resultSet.close();
-            } catch (SQLException e) {
-                console.println(e.getMessage(), true);
+    public boolean isGood(String username, String password, final LoginClient client) {
+        boolean isGood = false;
+        try {
+            locker.lock();
+            String query = "SELECT * from accounts WHERE account = '" + username + "';";
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
+            if (resultSet.next()) {
+                if (crypt(resultSet.getString("password"), client.getKey()).equals(password))
+                    isGood = true;
             }
-            return account;
-        }
-        console.println("[Account data] load account by name : " + id.toString(), false);
-        accounts.values().stream().filter(acc -> acc.getName().equals(id.toString())).forEach(acc -> {
-            acc.getClient().send("AlEc");
-            acc.getClient().kick();
-        });
-        try {
-            String query = "SELECT * FROM accounts WHERE account = '" + id.toString() + "';";
-            ResultSet resultSet = manager.getConnection().createStatement().executeQuery(query);
-            account = loadFromResultSet(resultSet);
             resultSet.close();
         } catch (SQLException e) {
-            console.println(e.getMessage(), true);
+            log.error("Exception > {}", e.getMessage());
+        } finally {
+            locker.unlock();
         }
-        return account;
+        return isGood;
     }
 
-    public boolean alreadyExist(String nickname) {
-        boolean exist = false;
-        try {
-            String query = "SELECT * FROM accounts WHERE pseudo = '" + nickname + "';";
-            ResultSet resultSet = manager.getConnection().createStatement().executeQuery(query);
-            if (resultSet.next())
-                exist = true;
-            resultSet.close();
-        } catch (SQLException e) {
-            console.println(e.getMessage(), true);
-        }
-        return exist;
-    }
-
-    public Account loadByPseudo(String nickname) {
+    public final Account load(String arguments) {
         Account account = null;
         try {
-            String query = "SELECT * FROM accounts WHERE pseudo = '" + nickname + "';";
-            ResultSet resultSet = manager.getConnection().createStatement().executeQuery(query);
-            if (resultSet.next())
-                account = new Account(resultSet.getInt("id"), resultSet.getString("account"));
+            locker.lock();
+            String query = "SELECT * from accounts WHERE account = '" + arguments + "';";
+            ResultSet resultSet = connection.createStatement().executeQuery(query);
+            if (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                if (login.getAccounts().containsKey(id)) {
+                    login.getAccounts().get(id).getClient().send("AlEa");
+                    login.getAccounts().get(id).getClient().kick();
+                }
+                account = new Account(id,
+                        resultSet.getString("account"), resultSet.getString("password"),
+                        resultSet.getString("pseudo"), resultSet.getString("question"),resultSet.getInt("rank"));
+            }
             resultSet.close();
-        } catch (Exception e) {
-            console.println(e.getMessage(), true);
+        } catch (SQLException e) {
+            log.error("Exception > {}", e.getMessage());
+        } finally {
+            locker.unlock();
         }
         return account;
     }
 
-    public boolean update(Account obj) {
+    public void updateNickname(Account account) {
         try {
-            String baseQuery = "UPDATE accounts SET" +
-                    " account = '" + obj.getName() + "'," +
-                    " password = '" + obj.getPassword() + "'," +
-                    " pseudo = '" + obj.getPseudo() + "'," +
-                    " rank = '" + obj.getRank() + "'," +
-                    " WHERE id = " + obj.getId();
-
-            PreparedStatement statement = manager.getConnection().prepareStatement(baseQuery);
-            statement.execute();
-
-            return true;
+            locker.lock();
+            String query = "UPDATE accounts SET pseudo = '" + account.getPseudo() + "' WHERE id = '" + account.getId() + "';";
+            connection.prepareStatement(query).executeUpdate();
         } catch (SQLException e) {
-            console.println(e.getMessage(), true);
+            log.error("Exception > {}", e.getMessage());
+        } finally {
+            locker.unlock();
         }
-        return false;
     }
 
-    private  Account loadFromResultSet(ResultSet resultSet) throws SQLException {
-        if (resultSet.next()) {
-            return new Account(
-                    resultSet.getInt("id"),
-                    resultSet.getString("account"),
-                    resultSet.getString("password"),
-                    resultSet.getString("pseudo"),
-                    resultSet.getString("question")
-                    );
+    public boolean isAvaiableNickname(String nickName) {
+        boolean isValid = true;
+        try {
+            locker.lock();
+            ResultSet resultSet = connection.createStatement().executeQuery("SELECT pseudo from accounts WHERE pseudo = '" + nickName + "';");
+            if (resultSet.next())
+                isValid = false;
+            resultSet.close();
+        } catch (SQLException e) {
+            log.error("Exception > {}", e.getMessage());
+        } finally {
+            locker.unlock();
         }
-        return null;
+        return isValid;
     }
+
+    private final String crypt(String pass, String key) {
+        int i = HASH.length;
+        StringBuilder crypted = new StringBuilder("#1");
+        for (int y = 0; y < pass.length(); y++) {
+            char c1 = pass.charAt(y);
+            char c2 = key.charAt(y);
+            double d = Math.floor(c1 / 16);
+            int j = c1 % 16;
+            crypted.append(HASH[(int) ((d + c2 % i) % i)]).append(HASH[(j + c2 % i) % i]);
+        }
+        return crypted.toString();
+    }
+
+
 }
+

@@ -1,5 +1,7 @@
 package graviton.enums;
 
+import lombok.Getter;
+
 /**
  * Created by Botan on 21/06/2015.
  */
@@ -22,20 +24,10 @@ public enum ObjectPosition {
     DOFUS6(14),
     BOUCLIER(15);
 
+    @Getter
     private final int value;
 
     ObjectPosition(int value) {
         this.value = value;
-    }
-
-    public static ObjectPosition getPositionById(int id) {
-        for (ObjectPosition position : ObjectPosition.values())
-            if (position.getValue() == id)
-                return position;
-        return null;
-    }
-
-    public int getValue() {
-        return value;
     }
 }

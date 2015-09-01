@@ -1,22 +1,19 @@
 package graviton.core;
 
+import com.google.inject.Singleton;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import graviton.database.Database;
 import lombok.Data;
-import lombok.Getter;
 
-import javax.inject.Singleton;
 import java.io.File;
 
 /**
  * Created by Botan on 16/06/2015.
  */
-@Data
 @Singleton
+@Data
 public class Configuration {
-
-    private boolean canLog;
 
     private Database loginDatabase;
     private Database gameDatabase;
@@ -39,7 +36,6 @@ public class Configuration {
     }
 
     private void configure() {
-        this.canLog = true;
         this.loginDatabase = new Database("127.0.0.1", "login", "root", "");
         this.gameDatabase = new Database("127.0.0.1", "game", "root", "");
         this.serverId = 1;
@@ -50,9 +46,10 @@ public class Configuration {
         this.exchangePort = 807;
         this.defaultMessage = "Bienvenue sur Horus";
         this.defaultColor = "000000";
-        this.startlevel = 200;
+        this.startlevel = 80;
         this.startKamas = 1000000;
-        this.startMap = 10031;
+        this.startMap = 10098;
+        this.startCell = 200;
     }
 
     private void configFromFile(Config config) {

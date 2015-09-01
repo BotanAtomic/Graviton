@@ -1,5 +1,6 @@
 package graviton.database;
 
+import lombok.Data;
 import lombok.Getter;
 
 import java.sql.Connection;
@@ -9,10 +10,9 @@ import java.sql.SQLException;
 /**
  * Created by Botan on 16/06/2015.
  */
+@Data
 public class Database {
-    @Getter
     private final String host, name, user, pass;
-    @Getter
     private Connection connection;
 
     public Database(String host, String name, String user, String pass) {

@@ -1,8 +1,11 @@
 package graviton.login;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import graviton.database.Database;
+import lombok.Data;
 import lombok.Getter;
 
 import java.io.File;
@@ -10,11 +13,11 @@ import java.io.File;
 /**
  * Created by Botan on 06/06/2015.
  */
+@Data
 public class Configuration {
 
-    @Getter private String loginIp, exchangeIp;
-    @Getter private int loginPort, exchangePort;
-    @Getter
+    private String loginIp, exchangeIp;
+    private int loginPort, exchangePort;
     private Database database;
 
     public Configuration() {
@@ -28,7 +31,7 @@ public class Configuration {
         this.exchangeIp = "127.0.0.1";
         this.loginPort = 699;
         this.exchangePort = 807;
-        this.database = new Database("127.0.0.1", "login", "root", "");
+        this.database = new Database("127.0.0.1", "login", "root", "").connect();
     }
 
     private void configFromFile(Config config) {
@@ -40,7 +43,7 @@ public class Configuration {
         String databaseName = config.getString("login.database.name");
         String databaseUser = config.getString("login.database.user");
         String databasePass = config.getString("login.database.pass");
-        this.database = new Database(databaseHost,databaseName,databaseUser,databasePass);
+        this.database = new Database(databaseHost,databaseName,databaseUser,databasePass).connect();
     }
 
 }

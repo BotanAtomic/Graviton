@@ -7,7 +7,7 @@ import graviton.core.Configuration;
 import graviton.core.Main;
 import graviton.database.DatabaseManager;
 import graviton.enums.DataType;
-import graviton.game.client.Account;
+import graviton.game.GameManager;
 import graviton.network.game.GameNetworkService;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoConnector;
@@ -56,7 +56,7 @@ public class ExchangeNetworkService implements IoHandler,NetworkService {
 
     @Override
     public void stop() {
-        connector.getManagedSessions().values().stream().filter(session -> !session.isClosing()).forEach(session -> session.close(false));
+        session.close(true);
         connector.dispose(false);
     }
 
@@ -88,7 +88,7 @@ public class ExchangeNetworkService implements IoHandler,NetworkService {
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        parse(decodePacket(message));
+        parse(decryptPacket(message));
     }
 
     @Override
@@ -100,19 +100,22 @@ public class ExchangeNetworkService implements IoHandler,NetworkService {
 
     }
 
-    private void send(String packet) {
+    public void send(String packet) {
+        this.session.write(cryptPacket(packet));
+    }
+
+    private IoBuffer cryptPacket(String packet) {
         IoBuffer ioBuffer = IoBuffer.allocate(2048);
         ioBuffer.put(packet.getBytes());
         ioBuffer.flip();
-        this.session.write(ioBuffer);
+        return ioBuffer;
     }
 
-    private String decodePacket(Object o) {
+    private String decryptPacket(Object o) {
         IoBuffer buffer = IoBuffer.allocate(2048);
         buffer.put((IoBuffer) o);
         buffer.flip();
         CharsetDecoder cd = Charset.forName("UTF-8").newDecoder();
-
         try {
             return buffer.getString(cd);
         } catch (CharacterCodingException e) {
@@ -125,9 +128,14 @@ public class ExchangeNetworkService implements IoHandler,NetworkService {
             case 'W': //Cache for Account
                 switch (packet.charAt(1)) {
                     case 'A':
-                        Account account = (Account) databaseManager.getData().get(DataType.ACCOUNT).load(Integer.parseInt(packet.substring(2)));
-                        gameNetworkService.addAccount(account);
+                        databaseManager.getData().get(DataType.ACCOUNT).load(Integer.parseInt(packet.substring(2)));
                         break;
+                    case 'K' :
+                        try {
+                            GameManager manager = Main.getInstance(GameManager.class);
+                            manager.getAccounts().get(packet.substring(2)).getClient().kick();
+                            manager.getAccounts().remove(packet.substring(2));
+                        } catch (Exception e) {}
                 }
             case 'S': //Server
                 switch (packet.charAt(1)) {

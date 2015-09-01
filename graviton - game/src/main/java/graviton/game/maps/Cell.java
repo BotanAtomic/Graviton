@@ -25,4 +25,8 @@ public class Cell {
         this.walkable = walkable;
         this.players = new CopyOnWriteArrayList<>();
     }
+
+    public void applyAction() {
+        action.apply();
+    }
 }

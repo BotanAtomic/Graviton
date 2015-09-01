@@ -2,13 +2,13 @@ package graviton.database;
 
 import com.google.common.reflect.ClassPath;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import graviton.api.Data;
 import graviton.api.Manager;
 import graviton.core.Configuration;
 import graviton.enums.DataType;
 import graviton.enums.DatabaseType;
 
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +36,7 @@ public class DatabaseManager implements Manager {
 
     @Override
     public void configure() {
-        this.databases.values().stream().forEach(Database::configure);
+        this.databases.values().forEach(Database::configure);
         this.data = getNewMapOfData();
     }
 
@@ -48,11 +48,16 @@ public class DatabaseManager implements Manager {
     private Map<DataType, Data<?>> getNewMapOfData() {
         Map<DataType, Data<?>> list = new ConcurrentHashMap<>();
         try {
-            for (Class<?> clazz : getAllClass()) {
-                Data<?> data = (Data)clazz.newInstance();
-                data.configure();
-                list.put(data.type,data);
-            }
+            List<Class<?>> allClass = new ArrayList<>(ClassPath.from(Thread.currentThread().getContextClassLoader()).getTopLevelClasses().stream().filter(info -> info.getName().startsWith("graviton.database.data.")).map(ClassPath.ClassInfo::load).collect(Collectors.toList()));
+            allClass.stream().forEach(clazz -> {
+                try {
+                    Data<?> data = (Data) clazz.newInstance();
+                    data.configure();
+                    list.put(data.type, data);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -61,16 +66,9 @@ public class DatabaseManager implements Manager {
 
     private Map<DatabaseType, Database> getNewMap(Configuration config) {
         Map<DatabaseType, Database> databases = new HashMap<DatabaseType, Database>() {{
-                put(DatabaseType.LOGIN, config.getLoginDatabase());
-                put(DatabaseType.GAME, config.getGameDatabase());
-            }};
+            put(DatabaseType.LOGIN, config.getLoginDatabase());
+            put(DatabaseType.GAME, config.getGameDatabase());
+        }};
         return databases;
-    }
-
-    private List<Class<?>> getAllClass() throws Exception {
-        List<Class<?>> allClass = new ArrayList<>();
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            allClass.addAll(ClassPath.from(loader).getTopLevelClasses().stream().filter(info -> info.getName().startsWith("graviton.database.data.")).map(ClassPath.ClassInfo::load).collect(Collectors.toList()));
-        return allClass;
     }
 }

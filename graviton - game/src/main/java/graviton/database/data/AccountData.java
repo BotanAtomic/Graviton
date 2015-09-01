@@ -42,15 +42,16 @@ public class AccountData extends Data<Account> {
         return account;
     }
 
-    @Override
+    @Deprecated
     public boolean create(Account object) {
         return false;
     }
 
     @Override
     public Account getByResultSet(ResultSet result) throws SQLException {
-        final Account account = new Account(result.getInt("id"));
+        final Account account = new Account(result.getInt("id"),result.getString("answer"));
         manager.getAccounts().put(account.getId(), account);
+        account.loadPlayers();
         return account;
     }
 
@@ -59,22 +60,22 @@ public class AccountData extends Data<Account> {
 
     }
 
-    @Override
+    @Deprecated
     public void delete(Account object) {
 
     }
 
-    @Override
+    @Deprecated
     public boolean exist(Object object) {
         return false;
     }
 
-    @Override
+    @Deprecated
     public int getNextId() {
         return 0;
     }
 
-    @Override
+    @Deprecated
     public List<Account> loadAll(Object object) {
         return null;
     }

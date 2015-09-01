@@ -1,9 +1,10 @@
 package graviton.game;
 
 
+import graviton.login.Login;
+import graviton.login.Main;
 import graviton.network.login.LoginClient;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,32 +12,28 @@ import java.util.List;
 /**
  * Created by Botan on 07/06/2015.
  */
+@Data
 public class Account {
-    @Getter
-    @Setter
-    private int id, rank;
-    @Getter
-    @Setter
-    private String name, password, pseudo, question;
-    @Getter
-    @Setter
+    private final int id;
+    private final String name, password, question;
+
+    private String pseudo;
+    private int rank;
     private LoginClient client;
-    @Getter
-    @Setter
     private List<Player> players;
 
-    public Account(int id,String name,String password,String pseudo,String question) {
+    public Account(int id, String name, String password, String pseudo, String question,int rank) {
         this.id = id;
         this.name = name;
         this.password = password;
         this.pseudo = pseudo;
         this.question = question;
         this.players = new ArrayList<>();
+        this.rank = rank;
+        Main.getInstance(Login.class).getAccounts().put(id,this);
     }
 
-    public Account(int id, String name) {
-        this.id = id;
-        this.name = name;
-        this.players = new ArrayList<>();
+    public final void delete() {
+
     }
 }

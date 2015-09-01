@@ -1,6 +1,7 @@
 package graviton.game.creature.mount;
 
 import graviton.game.object.Object;
+import graviton.game.statistics.Statistics;
 import lombok.Data;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class Mount {
     private int level;
 
     private MountData data;
+    private Statistics statistics;
 
     private List<Object> objects;
 
@@ -29,6 +31,7 @@ public class Mount {
         this.sex = sex;
         this.data = data;
         this.objects = objects;
+        this.statistics = new Statistics();
     }
 
 

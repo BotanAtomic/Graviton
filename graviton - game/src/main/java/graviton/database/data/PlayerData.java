@@ -1,9 +1,8 @@
 package graviton.database.data;
 
 import graviton.api.Data;
-import graviton.common.StatsID;
+import graviton.common.Stats;
 import graviton.core.Main;
-import graviton.database.Database;
 import graviton.enums.DataType;
 import graviton.enums.DatabaseType;
 import graviton.game.client.Account;
@@ -36,8 +35,8 @@ public class PlayerData extends Data<Player> {
 
     @Override
     public boolean create(Player object) {
-        String baseQuery = "INSERT INTO players ( `id` , `account`, `name` , `sexe` , `gfx` , `class`,`color1` , `color2` , `color3` , `spellpoints` , `capital` , `level` , `experience` ,`title`, `map`,`cell`,`server`)"
-                + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+        String baseQuery = "INSERT INTO players ( `id` , `account`, `name` , `sex` , `gfx` , `class`,`color1` , `color2` , `color3` , `spellpoints` , `capital` , `level` , `experience`, `map`,`cell`,`server`)"
+                + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
         try {
             locker.lock();
             PreparedStatement preparedStatement = this.connection.prepareStatement(baseQuery);
@@ -54,10 +53,9 @@ public class PlayerData extends Data<Player> {
             preparedStatement.setInt(11, object.getCapital());
             preparedStatement.setInt(12, object.getLevel());
             preparedStatement.setLong(13, object.getExperience());
-            preparedStatement.setInt(14, object.getTitle());
-            preparedStatement.setInt(15, object.getPosition().getMap().getId());
-            preparedStatement.setInt(16, object.getPosition().getCell().getId());
-            preparedStatement.setInt(17, Main.getServerId());
+            preparedStatement.setInt(14, object.getPosition().getMap().getId());
+            preparedStatement.setInt(15, object.getPosition().getCell().getId());
+            preparedStatement.setInt(16, Main.getServerId());
             preparedStatement.execute();
             preparedStatement.close();
         } catch (SQLException e) {
@@ -74,15 +72,15 @@ public class PlayerData extends Data<Player> {
     public Player getByResultSet(ResultSet result) throws SQLException {
         int[] colors = {result.getInt("color1"), result.getInt("color2"), result.getInt("color3")};
         Map<Integer, Integer> stats = new HashMap<>();
-        stats.put(StatsID.ADD_VITA, result.getInt("vitalite"));
-        stats.put(StatsID.ADD_FORC, result.getInt("force"));
-        stats.put(StatsID.ADD_SAGE, result.getInt("sagesse"));
-        stats.put(StatsID.ADD_INTE, result.getInt("intelligence"));
-        stats.put(StatsID.ADD_CHAN, result.getInt("chance"));
-        stats.put(StatsID.ADD_AGIL, result.getInt("agilite"));
+        stats.put(Stats.ADD_VITA, result.getInt("vitalite"));
+        stats.put(Stats.ADD_FORC, result.getInt("force"));
+        stats.put(Stats.ADD_SAGE, result.getInt("sagesse"));
+        stats.put(Stats.ADD_INTE, result.getInt("intelligence"));
+        stats.put(Stats.ADD_CHAN, result.getInt("chance"));
+        stats.put(Stats.ADD_AGIL, result.getInt("agilite"));
 
         Player player = new Player(result.getInt("id"),result.getInt("account"), result.getString("name"),
-                result.getInt("sexe"), result.getInt("class"), result.getInt("alignement"),
+                result.getInt("sex"), result.getInt("class"), result.getInt("alignement"),
                 result.getInt("honor"), result.getInt("deshonor"), result.getInt("level"),
                 result.getInt("gfx"), colors, result.getLong("experience"), result.getInt("size"),
                 stats, result.getLong("kamas"), result.getInt("capital"), result.getInt("spellpoints"),
@@ -98,7 +96,16 @@ public class PlayerData extends Data<Player> {
 
     @Override
     public void delete(Player object) {
-
+        try {
+            locker.lock();
+            String query = "DELETE FROM players WHERE id = "+ object.getId();
+            connection.createStatement().execute(query);
+            manager.getPlayers().remove(this);
+        } catch (SQLException e) {
+            console.println(e.getMessage(), true);
+        } finally {
+            locker.unlock();
+        }
     }
 
     @Override

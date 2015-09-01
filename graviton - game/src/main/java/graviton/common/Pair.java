@@ -2,6 +2,8 @@ package graviton.common;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * Created by Botan on 22/06/2015.
  */

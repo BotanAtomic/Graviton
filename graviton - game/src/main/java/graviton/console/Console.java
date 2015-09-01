@@ -1,9 +1,11 @@
 package graviton.console;
 
+import com.google.inject.Singleton;
+import graviton.core.Main;
 import graviton.core.Server;
+import graviton.game.GameManager;
 import org.fusesource.jansi.AnsiConsole;
 
-import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -20,13 +22,13 @@ public class Console extends Thread {
 
     public Console() {
         this.logger = new Logger();
+        super.setDaemon(true);
     }
 
     public void initialize(Server manager) {
         this.scanner = new Scanner(System.in);
         this.manager = manager;
         this.initializeEmulatorName();
-        super.setDaemon(true);
         super.start();
     }
 
@@ -44,16 +46,18 @@ public class Console extends Thread {
     }
 
     private void initializeEmulatorName() {
-        String name = "                 _____                     _  _                \n                / ____|                   (_)| |               \n               | |  __  _ __  __ _ __   __ _ | |_  ___   _ __  \n               | | |_ || '__|/ _` |\\ \\ / /| || __|/ _ \\ | '_ \\ \n               | |__| || |  | (_| | \\ V / | || |_| (_) || | | |\n                \\_____||_|   \\__,_|  \\_/  |_| \\__|\\___/ |_| |_|";
-        AnsiConsole.out.println("\033[" + getRandomColor() + "m" + name + "\033[" + 0 + "m");
+        AnsiConsole.out.println("\033[" + getRandomColor() + "m" + "                 _____                     _  _                \n                / ____|                   (_)| |               \n               | |  __  _ __  __ _ __   __ _ | |_  ___   _ __  \n               | | |_ || '__|/ _` |\\ \\ / /| || __|/ _ \\ | '_ \\ \n               | |__| || |  | (_| | \\ V / | || |_| (_) || | | |\n                \\_____||_|   \\__,_|  \\_/  |_| \\__|\\___/ |_| |_|" + "\033[" + 0 + "m");
         AnsiConsole.out.println();
         this.setTitle();
     }
 
     private void parse(String line) {
-        AnsiConsole.out.println(" Execute -> "+line);
         switch (line.toLowerCase()) {
             case "stop":
+                println("Closing server..", false);
+                System.exit(1);
+                break;
+            case "close":
                 println("Closing server..", false);
                 System.exit(1);
                 break;
@@ -63,10 +67,22 @@ public class Console extends Thread {
                 break;
             case "ram" :
                 double currentMemory = ( ((double)(Runtime.getRuntime().totalMemory()/1024)/1024))- (((double)(Runtime.getRuntime().freeMemory()/1024)/1024));
-                AnsiConsole.out.println("Current memory usage: " + Double.toString(currentMemory).substring(0,4) + " Mb / " + Double.toString(currentMemory/8).substring(0,4) +" Mo");
+                AnsiConsole.out.println("Current memory usage: " + Double.toString(currentMemory).substring(0, 4) + " Mb / " + Double.toString(currentMemory / 8).substring(0, 4) + " Mo");
                 break;
+            case "save" :
+                Main.getInstance(GameManager.class).save();
             case "clean" :
                 Runtime.getRuntime().gc();
+                break;
+            case "help" :
+                AnsiConsole.err.println("List controls..\n");
+                AnsiConsole.err.println("stop / close > turn off the server");
+                AnsiConsole.err.println("restart > restart the server");
+                AnsiConsole.err.println("ram > view current memory usage");
+                AnsiConsole.err.println("clean > clean memory,thread and empty class");
+                break;
+            default :
+                AnsiConsole.out.println("Command ["+line+"] not found - > help ?");
                 break;
         }
     }

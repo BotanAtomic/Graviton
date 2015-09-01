@@ -1,6 +1,0 @@
- /**
-     * - Check if port is important for Database
-     * - lock and unlock Database Communication and secure this
-     * - New system of parser (more speed)
-     * - New Database System with interface
-     */

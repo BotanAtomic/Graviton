@@ -1,14 +1,13 @@
 package graviton.network;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import graviton.api.Manager;
 import graviton.api.NetworkService;
 import graviton.network.exchange.ExchangeNetworkService;
 import graviton.network.game.GameNetworkService;
 
-import javax.inject.Singleton;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -21,7 +20,7 @@ public class NetworkManager implements Manager {
 
     @Inject
     public NetworkManager(ExchangeNetworkService exchangeNetworkService, GameNetworkService gameNetworkService) {
-        this.services = getNewList(exchangeNetworkService, gameNetworkService);
+        this.services = asList(exchangeNetworkService, gameNetworkService);
     }
 
     @Override
@@ -34,7 +33,7 @@ public class NetworkManager implements Manager {
         services.stream().forEach(NetworkService::stop);
     }
 
-    private List<NetworkService> getNewList(NetworkService... a) {
+    private List<NetworkService> asList(NetworkService... a) {
         List<NetworkService> services = new ArrayList<>();
         for(NetworkService service : a)
             services.add(service);

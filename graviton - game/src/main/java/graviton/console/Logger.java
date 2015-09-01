@@ -1,6 +1,6 @@
 package graviton.console;
 
-import graviton.core.Main;
+import graviton.common.Pair;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -14,30 +14,30 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Logger {
 
-    private final List<String> logged;
-    private final List<String> errorLogged;
+    /**
+     * second = error
+     **/
+    private final Pair<List<String>, List<String>> logged;
     private final ReentrantLock locker;
     private final Calendar calendar;
-    private BufferedWriter writer;
-    private BufferedWriter errorWriter;
+
+    private Pair<BufferedWriter, BufferedWriter> writers;
 
     public Logger() {
-        this.logged = new ArrayList<>();
-        this.errorLogged = new ArrayList<>();
+        this.logged = new Pair<>(new ArrayList<>(), new ArrayList<>());
         this.locker = new ReentrantLock();
-        this.calendar = Main.getCalendar();
+        this.calendar = Calendar.getInstance();
         createFiles();
     }
 
     private void createFiles() {
         try {
-            writer = new BufferedWriter(new FileWriter("logs/" + getDate() + ".txt", true));
-            errorWriter = new BufferedWriter(new FileWriter("logs/error/" + getDate() + ".txt", true));
+            writers = new Pair<>((new BufferedWriter(new FileWriter("logs/" + getDate() + ".txt", true))),new BufferedWriter(new FileWriter("logs/error/" + getDate() + ".txt", true)));
         } catch (IOException e) {
             if (new File("logs").mkdirs() || new File("logs/error").mkdirs())
                 createFiles();
             else {
-                System.err.println("Impossible te create logs files..");
+                System.err.println("Unable to create logs files..");
                 System.exit(0);
             }
         }
@@ -46,14 +46,14 @@ public class Logger {
     public void add(String line, boolean error) {
         String finalLine = getTime() + line + "\n";
         if (!error)
-            this.logged.add(finalLine);
+            this.logged.getFirst().add(finalLine);
         else
-            this.errorLogged.add(finalLine);
+            this.logged.getSecond().add(finalLine);
         check();
     }
 
     private void check() {
-        if (logged.size() + errorLogged.size() >= 300) {
+        if (logged.getFirst().size() + logged.getSecond().size() >= 300) {
             printAll();
             reset();
         }
@@ -62,23 +62,33 @@ public class Logger {
     private void printAll() {
         try {
             this.locker.lock();
-            for (String line : this.logged)
-                this.writer.write(line);
-            writer.flush();
-            for (String line : this.errorLogged)
-                this.errorWriter.write(line);
-            errorWriter.flush();
+            logged.getFirst().forEach(line -> {
+                try {
+                    writers.getFirst().write(line);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            logged.getSecond().forEach(line -> {
+                try {
+                    writers.getSecond().write(line);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            writers.getFirst().flush();
+            writers.getSecond().flush();
         } catch (IOException e) {
             e.printStackTrace();
-            this.errorLogged.add(e.getMessage());
+            logged.getSecond().add(e.getMessage());
         } finally {
             this.locker.unlock();
         }
     }
 
     private void reset() {
-        this.logged.clear();
-        this.errorLogged.clear();
+        this.logged.getFirst().clear();
+        this.logged.getSecond().clear();
     }
 
     private String getDate() {

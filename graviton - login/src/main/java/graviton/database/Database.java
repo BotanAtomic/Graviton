@@ -1,33 +1,48 @@
 package graviton.database;
 
-import graviton.database.data.AccountData;
-import graviton.database.data.PlayerData;
-import graviton.database.data.ServerData;
-import lombok.Getter;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 /**
- * Created by Botan on 06/06/2015.
+ * Created by Botan on 06/07/2015.
  */
-public final class Database {
-    @Getter private final String host, name, user, pass;
-    /**
-     * All data
-     **/
-    @Getter private AccountData accountData;
-    @Getter private PlayerData playerData;
-    @Getter private ServerData serverData;
+@Data
+@Slf4j
+public class Database {
+    private String ip,name,user,pass;
+    private Connection connection;
 
-    public Database(String host, String name, String user,String pass) {
-        this.host = host;
+    public Database(String ip, String name, String user, String pass) {
+        this.ip = ip;
         this.name = name;
         this.user = user;
         this.pass = pass;
     }
 
-    public void configure(DatabaseManager manager) {
-        this.accountData = new AccountData(manager);
-        this.playerData = new PlayerData(manager);
-        this.serverData = new ServerData(manager);
+    public Database connect() {
+        try {
+            this.connection = DriverManager.getConnection("jdbc:mysql://" + ip + "/" + name, user, pass);
+            if (!connection.isValid(1000)) {
+                System.err.println("Unable to connect to database : " + name);
+                System.exit(0);
+            }
+            this.connection.setAutoCommit(true);
+            //TODO ; add to log -> successfully connect to database
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return this;
     }
 
+    public void stop() {
+        try {
+            this.connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package graviton.game.maps;
 
+import graviton.common.Hash;
 import graviton.game.client.player.Player;
 import lombok.Data;
 
@@ -16,10 +17,6 @@ import java.util.concurrent.locks.ReentrantLock;
 @Data
 
 public class Maps {
-    private final char[] HASH =
-            {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
-                    't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
-                    'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_'};
     private int id;
     private long date;
     private int width, heigth;
@@ -27,6 +24,9 @@ public class Maps {
     private Map<Integer, Cell> cells;
     private Map<Integer, Player> players;
     private ReentrantLock locker;
+
+    private String descriptionMapMessage;
+    private String loadingMapMessage;
 
     public Maps(int id, long date, int width, int heigth, String places, String key, String data) {
         this.id = id;
@@ -39,6 +39,8 @@ public class Maps {
         this.players = new ConcurrentHashMap<>();
         this.cells = decompileCells(data);
         this.locker = new ReentrantLock();
+        this.loadingMapMessage =  "GA;2;" + this.getId() + ";";
+        this.descriptionMapMessage = "GDM|"+id+"|0"+date+"|"+(!key.isEmpty() ? key : data);
     }
 
     public Cell getCell(int id) {
@@ -46,9 +48,7 @@ public class Maps {
     }
 
     public void addPlayer(Player player) {
-        this.players.put(player.getId(), player);
-        player.getPosition().getCell().getPlayers().add(player);
-        send("GM|+" + player.getPacket("GM"));
+        players.put(player.getId(),player);
     }
 
     public void removePlayer(Player player) {
@@ -74,15 +74,16 @@ public class Maps {
     }
 
     private int getHashValue(char value) {
-        for (int a = 0; a <= HASH.length; a++)
-            if (HASH[a] == value)
+        char[] hash = Hash.HASH;
+        for (int a = 0; a <= hash.length; a++)
+            if (hash[a] == value)
                 return a;
         return -1;
     }
 
     public void send(String packet) {
         locker.lock();
-        players.values().stream().forEach(player -> player.send(packet));
+        players.values().forEach(player -> player.send(packet));
         locker.unlock();
     }
 

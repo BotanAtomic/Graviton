@@ -1,43 +1,41 @@
 package graviton.game;
 
-import graviton.network.NetworkManager;
+import graviton.login.Login;
+import graviton.login.Main;
 import graviton.network.exchange.ExchangeClient;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 /**
  * Created by Botan on 07/06/2015.
  */
+@Data
 public class Server {
-    private NetworkManager manager;
 
-    @Getter
-    @Setter
     private int id, port;
-    @Getter private int state;
-    @Getter
-    @Setter
+    private State state;
     private String ip, key;
-    @Getter
-    @Setter
     private ExchangeClient client;
 
-    public Server(int id, String key, NetworkManager networkManager) {
-        this.manager = networkManager;
+    public Server(int id, String key) {
         this.id = id;
         this.key = key;
-        this.state = 0;
+        this.state = State.OFFLINE;
+        Main.getInstance(Login.class).getServers().put(id,this);
     }
 
-    public void setState(int state) {
+    public void setState(State state) {
         this.state = state;
-        manager.sendToAll(manager.getConfig().getDatabase().getServerData().getHostList());
     }
-    public void send(Object arg0) {
-        if(arg0 instanceof String) {
-            this.getClient().send((String) arg0);
-        } else {
-            this.getClient().getSession().write(arg0);
+
+    public enum State {
+        OFFLINE(0),
+        ONLINE(1),
+        SAVING(2);
+
+        public int id;
+
+        State(int id) {
+            this.id = id;
         }
     }
 }

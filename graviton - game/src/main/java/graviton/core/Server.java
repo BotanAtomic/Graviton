@@ -1,15 +1,16 @@
 package graviton.core;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import graviton.api.Manager;
 import graviton.console.Console;
 import graviton.database.DatabaseManager;
 import graviton.game.GameManager;
 import graviton.game.packet.PacketManager;
 import graviton.network.NetworkManager;
+import lombok.Data;
 import lombok.Getter;
 
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,13 +28,9 @@ public class Server {
     @Inject
     PacketManager packetManager;
 
-    @Getter
     private List<Manager> managers;
-    @Getter
     private Configuration configuration;
-    @Getter
-    private boolean running;
-    @Getter
+    @Getter private boolean running;
     private Console console;
 
     @Inject
@@ -41,10 +38,10 @@ public class Server {
         this.running = false;
         this.configuration = configuration;
         this.console = console;
-       }
+    }
 
     public Server configure() {
-        this.managers = getNewList(databaseManager, networkManager, gameManager, packetManager);
+        this.managers = asList(databaseManager, networkManager, gameManager, packetManager);
         this.managers.forEach(Manager::configure);
         this.running = true;
         console.initialize(this);
@@ -56,7 +53,7 @@ public class Server {
         this.managers.forEach(Manager::stop);
     }
 
-    public List<Manager> getNewList(Manager... a) {
+    public List<Manager> asList(Manager... a) {
         List<Manager> managers = new ArrayList<>();
         for(Manager manager : a)
             managers.add(manager);
