@@ -19,6 +19,10 @@ Mina by Apache: for the network
 
 MySQL-Connector by Apache: for JDBC mysql
 
+HikariCP by Zaxxer group : for JBCD mysql pool connection 
+
 Slf4j & Logback for loggers
+
+Lombok : for use @Annotation 
 
 <p align="center">Thank's to Return for his help > <a href="https://github.com/Romain-P/">Romain-P</a></p>
