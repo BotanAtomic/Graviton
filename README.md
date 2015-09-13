@@ -1,5 +1,8 @@
-
 <p align="center"><IMG SRC="http://i.gyazo.com/cf951ef31bae8edf9f2bcfceab2aebe7.png"></p>
+
+#![Build Status](https://img.shields.io/badge/Login-100%20%-green.svg?style=flat)
+#![Build Status](https://img.shields.io/badge/Game-13%20%-red.svg?style=flat)
+#![Build Status](https://img.shields.io/badge/Total-56%20%-orange.svg?style=flat)
 
 #What is it ?
 
