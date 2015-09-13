@@ -45,18 +45,33 @@ public class Exemple {
 ```
 _All the information of the database are encrypted (*security mode*):_
 ```xml
-    public Database(String ip, String name, String user, String pass) {
-        dataConfig = new HikariConfig() {
-            {
-                setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
-                addDataSourceProperty("serverName", CryptManager.decrypt(ip));
-                addDataSourceProperty("port", 3306);
-                addDataSourceProperty("databaseName", CryptManager.decrypt(name));
-                addDataSourceProperty("user", CryptManager.decrypt(user));
-                addDataSourceProperty("password", CryptManager.decrypt(pass));
-            }
-        };
-    }
+public Database(String ip, String name, String user, String pass) {
+   dataConfig = new HikariConfig() {
+      {
+         setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
+         addDataSourceProperty("serverName", CryptManager.decrypt(ip));
+         addDataSourceProperty("port", 3306);
+         addDataSourceProperty("databaseName", CryptManager.decrypt(name));
+         addDataSourceProperty("user", CryptManager.decrypt(user));
+         addDataSourceProperty("password", CryptManager.decrypt(pass));
+      }
+   };
+}
 ```
+
+#Last update 
+
+New version of login :
+
+-> cleaner
+
+-> faster
+
+-> using Hikari framwork for database connection
+
+-> More secure :
+- encrypt/decrypt all information about database
+- encrypt packet before send
+- decryption of the packets received
 
 <p align="center">Thank's to Return for his help > <a href="https://github.com/Romain-P/">Romain-P</a></p>
