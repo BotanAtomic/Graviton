@@ -16,27 +16,27 @@ import java.util.List;
 public class ServerData extends Data {
 
     public ServerData() {
-        loadAllServers();
+        loadAll();
     }
 
-    private void loadAllServers() {
+    private void loadAll() {
         locker.lock();
         List<Server> servers = new ArrayList<>();
         try {
             String query = "SELECT * from servers";
             ResultSet resultSet = connection.createStatement().executeQuery(query);
 
-            while(resultSet.next())
+            while (resultSet.next())
                 servers.add(new Server(resultSet.getInt("id"), resultSet.getString("key")));
-            servers.forEach((server) -> login.getServers().put(server.getId(),server));
-        }catch (SQLException e) {
+            servers.forEach((server) -> login.getServers().put(server.getId(), server));
+        } catch (SQLException e) {
             log.error("Exception > {}", e.getMessage());
         } finally {
             locker.unlock();
         }
     }
 
-    public String getHostList() {
+    public final String getHostList() {
         StringBuilder sb = new StringBuilder("AH");
         List<Server> list = new ArrayList<>();
         list.addAll(login.getServers().values());

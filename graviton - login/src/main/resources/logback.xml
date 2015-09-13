@@ -9,7 +9,7 @@
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- rollover daily -->
-            <fileNamePattern>logs/realm-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <fileNamePattern>logs/login-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy
                     class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>100 MB</maxFileSize>
@@ -37,12 +37,12 @@
     <!-- Enable FILE and STDOUT appenders for all log messages.
   By default, only log at level INFO and above. -->
     <root level="INFO">
-        <appender-ref ref="FILE" />
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="STDOUT"/>
     </root>
 
     <!-- For loggers in the these namespaces, log at all levels. -->
-    <logger name="user" level="ALL" />
+    <logger name="user" level="ALL"/>
     <!-- To log pedestal internals, enable this and change ThresholdFilter to DEBUG
   <logger name="pedestal" level="ALL" />
   -->

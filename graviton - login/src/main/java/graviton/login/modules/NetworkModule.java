@@ -2,7 +2,6 @@ package graviton.login.modules;
 
 import com.google.inject.AbstractModule;
 import graviton.network.NetworkManager;
-import graviton.network.application.ApplicationNetwork;
 import graviton.network.exchange.ExchangeNetwork;
 
 /**
@@ -12,7 +11,6 @@ public class NetworkModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(NetworkManager.class).asEagerSingleton();
-        bind(ApplicationNetwork.class).asEagerSingleton();
         bind(ExchangeNetwork.class).asEagerSingleton();
     }
 }

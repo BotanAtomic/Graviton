@@ -5,11 +5,8 @@ import graviton.game.Account;
 import graviton.network.login.LoginClient;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by Botan on 08/07/2015.
@@ -49,13 +46,17 @@ public class AccountData extends Data {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             if (resultSet.next()) {
                 int id = resultSet.getInt("id");
-                if (login.getAccounts().containsKey(id)) {
+                if (login.getAccounts().get(id) != null) {
                     login.getAccounts().get(id).getClient().send("AlEa");
-                    login.getAccounts().get(id).getClient().kick();
+                    login.getAccounts().get(id).getClient().getSession().close(true);
+                }
+                if (login.getConnected().get(id) != null) {
+                    login.getServers().get(login.getConnected().get(id)).send("-" + id);
+                    login.getConnected().remove(id);
                 }
                 account = new Account(id,
                         resultSet.getString("account"), resultSet.getString("password"),
-                        resultSet.getString("pseudo"), resultSet.getString("question"),resultSet.getInt("rank"));
+                        resultSet.getString("pseudo"), resultSet.getString("question"), resultSet.getInt("rank"));
             }
             resultSet.close();
         } catch (SQLException e) {

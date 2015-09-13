@@ -3,8 +3,6 @@ package graviton.login;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.MembersInjector;
-import graviton.database.Database;
 import graviton.login.modules.DefaultModule;
 import graviton.login.modules.NetworkModule;
 
@@ -16,9 +14,10 @@ public class Main {
 
     public static Injector injector;
 
-    public static void main (String[] args){
+    public static void main(String[] args) {
         injector = Guice.createInjector(new DefaultModule(),new NetworkModule());
-        injector.getInstance(Login.class).start();
+        final Login login = injector.getInstance(Login.class).start();
+        Runtime.getRuntime().addShutdownHook(new Thread(login::stop));
     }
 
     public static final <T> T getInstance(Class<T> clazz) {

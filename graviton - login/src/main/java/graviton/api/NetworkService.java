@@ -5,5 +5,6 @@ package graviton.api;
  */
 public interface NetworkService {
     void start();
+
     void stop();
 }

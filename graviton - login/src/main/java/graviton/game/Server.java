@@ -10,6 +10,7 @@ import lombok.Data;
  */
 @Data
 public class Server {
+    private final Login login = Main.getInstance(Login.class);
 
     private int id, port;
     private State state;
@@ -20,11 +21,17 @@ public class Server {
         this.id = id;
         this.key = key;
         this.state = State.OFFLINE;
-        Main.getInstance(Login.class).getServers().put(id,this);
+        login.getServers().put(id, this);
     }
 
     public void setState(State state) {
         this.state = state;
+        String hostList = login.getHostList();
+        login.getClients().get("login").values().forEach(client -> client.send(hostList));
+    }
+
+    public final void send(String packet) {
+        client.send(packet);
     }
 
     public enum State {

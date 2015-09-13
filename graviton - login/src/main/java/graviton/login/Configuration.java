@@ -1,12 +1,10 @@
 package graviton.login;
 
-import com.google.inject.Inject;
-import com.google.inject.Injector;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import graviton.database.Database;
 import lombok.Data;
-import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 
@@ -14,16 +12,22 @@ import java.io.File;
  * Created by Botan on 06/06/2015.
  */
 @Data
-public class Configuration {
+@Slf4j
+public final class Configuration {
+    /**
+     * Method 1 = by file
+     * Method 2 = by existing information
+     */
 
     private String loginIp, exchangeIp;
     private int loginPort, exchangePort;
     private Database database;
 
     public Configuration() {
-        Config config = ConfigFactory.parseFile(new File("config.conf"));
+        final Config config = ConfigFactory.parseFile(new File("config.conf"));
         if (!config.isEmpty()) {
             configFromFile(config);
+            log.debug("The login is configured with method 2");
             return;
         }
 
@@ -31,19 +35,12 @@ public class Configuration {
         this.exchangeIp = "127.0.0.1";
         this.loginPort = 699;
         this.exchangePort = 807;
-        this.database = new Database("127.0.0.1", "login", "root", "").connect();
+        this.database = new Database("PRFPOUz8cPFkhmkZatwE6A==", "XtxV1iNc82puQyu1UdWQKg==", "psUkfKpV6xHmdvuIMk05CQ==", "").connect();
+        log.debug("The login is configured with method 1");
     }
 
     private void configFromFile(Config config) {
-        this.loginIp = config.getString("login.network.login.ip");
-        this.exchangeIp = config.getString("login.network.exchange.ip");
-        this.loginPort = config.getInt("login.network.login.port");
-        this.exchangePort = config.getInt("login.network.exchange.port");
-        String databaseHost = config.getString("login.database.host");
-        String databaseName = config.getString("login.database.name");
-        String databaseUser = config.getString("login.database.user");
-        String databasePass = config.getString("login.database.pass");
-        this.database = new Database(databaseHost,databaseName,databaseUser,databasePass).connect();
+        //TODO : configuration by file
     }
 
 }

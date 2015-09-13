@@ -1,10 +1,12 @@
 package graviton.database;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import graviton.utils.Encryption;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
@@ -13,27 +15,30 @@ import java.sql.SQLException;
 @Data
 @Slf4j
 public class Database {
-    private String ip,name,user,pass;
     private Connection connection;
 
+    private HikariDataSource dataSource;
+    private HikariConfig dataConfig;
+
     public Database(String ip, String name, String user, String pass) {
-        this.ip = ip;
-        this.name = name;
-        this.user = user;
-        this.pass = pass;
+        dataConfig = new HikariConfig() {
+            {
+                setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
+                addDataSourceProperty("serverName", Encryption.decrypt(ip));
+                addDataSourceProperty("port", 3306);
+                addDataSourceProperty("databaseName", Encryption.decrypt(name));
+                addDataSourceProperty("user", Encryption.decrypt(user));
+                addDataSourceProperty("password", Encryption.decrypt(pass));
+            }
+        };
     }
 
     public Database connect() {
-        try {
-            this.connection = DriverManager.getConnection("jdbc:mysql://" + ip + "/" + name, user, pass);
-            if (!connection.isValid(1000)) {
-                System.err.println("Unable to connect to database : " + name);
-                System.exit(0);
-            }
-            this.connection.setAutoCommit(true);
-            //TODO ; add to log -> successfully connect to database
-        } catch (SQLException e) {
-            e.printStackTrace();
+        dataSource = new HikariDataSource(dataConfig);
+        if (!testConnection()) {
+            log.error("Can't connect to database");
+            System.exit(1);
+            return null;
         }
         return this;
     }
@@ -43,6 +48,15 @@ public class Database {
             this.connection.close();
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    private boolean testConnection() {
+        try {
+            connection = dataSource.getConnection();
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 }

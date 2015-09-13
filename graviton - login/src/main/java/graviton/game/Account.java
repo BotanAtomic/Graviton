@@ -22,7 +22,7 @@ public class Account {
     private LoginClient client;
     private List<Player> players;
 
-    public Account(int id, String name, String password, String pseudo, String question,int rank) {
+    public Account(int id, String name, String password, String pseudo, String question, int rank) {
         this.id = id;
         this.name = name;
         this.password = password;
@@ -30,10 +30,11 @@ public class Account {
         this.question = question;
         this.players = new ArrayList<>();
         this.rank = rank;
-        Main.getInstance(Login.class).getAccounts().put(id,this);
+        Main.getInstance(Login.class).getAccounts().put(id, this);
     }
 
     public final void delete() {
-
+        if (Main.getInstance(Login.class).getAccounts().get(id) != null)
+            Main.getInstance(Login.class).getAccounts().remove(id);
     }
 }

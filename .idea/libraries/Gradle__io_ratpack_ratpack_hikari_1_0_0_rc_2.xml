@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: io.ratpack:ratpack-hikari:1.0.0-rc-2">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.ratpack/ratpack-hikari/1.0.0-rc-2/53e3dc66976172a9b582fe37667418182e53e17e/ratpack-hikari-1.0.0-rc-2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.ratpack/ratpack-hikari/1.0.0-rc-2/f042e313a4357cf99d32d9eaa82e38dccfc13547/ratpack-hikari-1.0.0-rc-2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

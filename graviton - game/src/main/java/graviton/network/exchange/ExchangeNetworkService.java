@@ -7,7 +7,7 @@ import graviton.core.Configuration;
 import graviton.core.Main;
 import graviton.database.DatabaseManager;
 import graviton.enums.DataType;
-import graviton.game.GameManager;
+import graviton.network.game.GameClient;
 import graviton.network.game.GameNetworkService;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoConnector;
@@ -125,33 +125,30 @@ public class ExchangeNetworkService implements IoHandler,NetworkService {
 
     private void parse(String packet) {
         switch (packet.charAt(0)) {
-            case 'W': //Cache for Account
-                switch (packet.charAt(1)) {
-                    case 'A':
-                        databaseManager.getData().get(DataType.ACCOUNT).load(Integer.parseInt(packet.substring(2)));
-                        break;
-                    case 'K' :
-                        try {
-                            GameManager manager = Main.getInstance(GameManager.class);
-                            manager.getAccounts().get(packet.substring(2)).getClient().kick();
-                            manager.getAccounts().remove(packet.substring(2));
-                        } catch (Exception e) {}
-                }
-            case 'S': //Server
-                switch (packet.charAt(1)) {
-                    case '?':
-                        send("SK" + configuration.getServerId() + ";" + configuration.getServerKey());
-                        break;
-
-                    case 'K':
-                        send("SH" + configuration.getIp() + ";" + configuration.getGamePort());
-                        break;
-
-                    case 'R':
-                        System.exit(0);
-                        break;
+            case '?':
+                send("S" + configuration.getServerId() + "@" + configuration.getServerKey());
+                break;
+            case 'E':
+                System.exit(1);
+                break;
+            case 'I':
+                send("I" + configuration.getIp() + "@" + configuration.getGamePort());
+                break;
+            case '+':
+                databaseManager.getData().get(DataType.ACCOUNT).load(Integer.parseInt(packet.substring(1)));
+                break;
+            case '-':
+                int id = Integer.parseInt(packet.substring(1));
+                for (GameClient client : Main.getInstance(GameNetworkService.class).getClients().values()) { //TODO : lambda
+                    if (client.getAccount() != null)
+                        if (client.getAccount().getId() == id) {
+                            client.kick();
+                            break;
+                        }
                 }
                 break;
+            default:
+                System.err.println("Undefined packet : " + packet);
         }
     }
 

@@ -7,13 +7,11 @@ import graviton.database.data.ServerData;
 import graviton.game.Account;
 import graviton.game.Player;
 import graviton.game.Server;
-import graviton.login.Login;
-import graviton.login.Main;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.session.IoSession;
 
-import java.sql.ResultSet;
+import java.util.List;
 
 /**
  * Created by Botan on 07/07/2015.
@@ -21,7 +19,6 @@ import java.sql.ResultSet;
 @Data
 @Slf4j
 public class LoginClient implements Client {
-    private final Login login = Main.getInstance(Login.class);
     private final AccountData accountData = (AccountData) login.getData("account");
     private final PlayerData playerData = (PlayerData) login.getData("player");
     private final ServerData serverData = (ServerData) login.getData("server");
@@ -29,8 +26,8 @@ public class LoginClient implements Client {
     private final long id;
     private final String key;
     private final IoSession session;
-    private Statut statut;
 
+    private Statut statut;
     private Account account;
 
     public LoginClient(IoSession session, String key) {
@@ -38,16 +35,17 @@ public class LoginClient implements Client {
         this.session = session;
         this.key = key;
         this.statut = Statut.CONNECTION;
+        login.addClient(this);
     }
 
     @Override
     public void parsePacket(String packet) throws Exception {
-        if (packet.equals("1.29.1")) {
-            log.info("[Session {}] checking version > {}", id, "1.29.1");
-            return;
-        }
         switch (statut) {
             case CONNECTION:
+                if (!packet.contains("@")) {
+                    session.close(true);
+                    return;
+                }
                 String[] args = packet.split("@");
                 log.info("[Session {}] checking username [{}] & password [{}]", id, args[0], args[1]);
                 if (!accountData.isGood(args[0], args[1], this)) {
@@ -87,19 +85,39 @@ public class LoginClient implements Client {
                         sendInformations();
                         break;
                     case "AX":
+                        selectServer(Integer.parseInt(packet.substring(2)));
                         break;
                     case "Ax":
                         send("AxK" + serverList());
                         break;
                     default:
-                        log.info("Packet server not found -> {}", packet);
+                        log.info("[Login] Packet server not found -> {}", packet);
                 }
                 break;
         }
     }
 
-    private void sendFriendListPacket(String packet) {
-        //TODO : send Friend List Packet
+    private void sendFriendListPacket(String name) {
+        List<Player> players = playerData.getPlayers(name);
+        send((players.isEmpty() ? "AF" : getList(players)));
+    }
+
+    private String getList(List<Player> players) {
+        String sb = "AF";
+        for (Server server : login.getServers().values()) {
+            int i = getNumber(players, server.getId());
+            if (i != 0)
+                sb += (server.getId()) + (",") + (i) + (";");
+        }
+        return sb;
+    }
+
+    private int getNumber(List<Player> players, int id) {
+        int i = 0;
+        for (Player character : players)
+            if (character.getServer() == id)
+                i++;
+        return i;
     }
 
     private void sendInformations() {
@@ -130,14 +148,37 @@ public class LoginClient implements Client {
         return sb.toString();
     }
 
+    private void selectServer(int serverID) {
+        Server server = login.getServers().get(serverID);
+        if (server == null) {
+            send("AXEr");
+            kick();
+            return;
+        }
+        if (server.getState() != Server.State.ONLINE) {
+            send("AXEd");
+            kick();
+            return;
+        }
+        server.send("+" + account.getId());
+        StringBuilder sb = new StringBuilder();
+        String ip = session.getLocalAddress().toString().replace("/", "").split(":")[0];
+        sb.append("AYK").append((ip.equals("127.0.0.1") ? "127.0.0.1" : server.getIp()));
+        sb.append(":").append(server.getPort()).append(";");
+        sb.append(account.getId());
+        send(sb.toString());
+        login.getConnected().put(account.getId(), serverID);
+    }
+
+    @Override
     public void kick() {
-        if (login.getAccounts().containsKey(account.getId()))
-            login.getAccounts().remove(account.getId());
-        if (login.getClients().get("login").containsKey(id))
-            login.getClients().remove(id);
+        if (account != null)
+            account.delete();
+        login.removeClient(this);
         session.close(true);
     }
 
+    @Override
     public void send(String packet) {
         session.write(packet);
     }
