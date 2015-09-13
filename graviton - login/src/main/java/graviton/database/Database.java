@@ -2,7 +2,7 @@ package graviton.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import graviton.utils.Encryption;
+import graviton.utils.CryptManager;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,11 +24,11 @@ public class Database {
         dataConfig = new HikariConfig() {
             {
                 setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
-                addDataSourceProperty("serverName", Encryption.decrypt(ip));
+                addDataSourceProperty("serverName", CryptManager.decrypt(ip));
                 addDataSourceProperty("port", 3306);
-                addDataSourceProperty("databaseName", Encryption.decrypt(name));
-                addDataSourceProperty("user", Encryption.decrypt(user));
-                addDataSourceProperty("password", Encryption.decrypt(pass));
+                addDataSourceProperty("databaseName", CryptManager.decrypt(name));
+                addDataSourceProperty("user", CryptManager.decrypt(user));
+                addDataSourceProperty("password", CryptManager.decrypt(pass));
             }
         };
     }
