@@ -72,6 +72,6 @@ New version of login :
 -> More secure :
 - encrypt/decrypt all information about database
 - encrypt packet before send
-- decryption of the packets received
+- decryption of the received packets
 
 <p align="center">Thank's to Return for his help > <a href="https://github.com/Romain-P/">Romain-P</a></p>
