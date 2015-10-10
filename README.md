@@ -1,8 +1,8 @@
 <p align="center"><IMG SRC="http://i.gyazo.com/cf951ef31bae8edf9f2bcfceab2aebe7.png"></p>
 
 ![Build Status](https://img.shields.io/badge/Login-100%20%-green.svg?style=flat)
-![Build Status](https://img.shields.io/badge/Game-13%20%-red.svg?style=flat)
-![Build Status](https://img.shields.io/badge/Total-56%20%-orange.svg?style=flat)
+![Build Status](https://img.shields.io/badge/Game-30%20%-red.svg?style=flat)
+![Build Status](https://img.shields.io/badge/Total-65%20%-orange.svg?style=flat)
 
 #What is it ?
 
@@ -30,13 +30,13 @@ Lombok : for use @Annotation
 
 #Exemple 
 
-_Get a logger whith annotation in class : @Data_
+_Get a logger whith annotation in class : @Slf4j_
 ```xml
 package graviton;
 
-import lombok.Data;
+import lombok.Slf4j;
 
-@Data
+@Slf4j
 public class Exemple {
    public Exemple() {
       log.info("Class exemple created");
@@ -61,7 +61,7 @@ public Database(String ip, String name, String user, String pass) {
 
 #Last update 
 
-New version of login :
+[Login]
 
 -> cleaner
 
@@ -73,5 +73,31 @@ New version of login :
 - encrypt/decrypt all information about database
 - encrypt packet before send
 - decryption of the received packets
+
+[Game]
+
+-> Add deplacement for player
+
+-> Add chat with flood checker for mute
+
+-> Add items
+
+-> Add emote
+
+-> Add map action
+
+-> Add group (30%)
+
+-> Add spells (place and level)
+
+-> Add boost of statisctics
+
+[Application]
+
+<u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
+
+[![](https://i.gyazo.com/280bd5ad0834320e416af3865eb4ef17.png)]<br/>
+[![](https://gyazo.com/361eb7676d21e9c360a78381b49955e6)]<br/>
+
 
 <p align="center">Thank's to Return for his help > <a href="https://github.com/Romain-P/">Romain-P</a></p>
