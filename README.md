@@ -95,9 +95,9 @@ public Database(String ip, String name, String user, String pass) {
 [Application]
 
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
-
-[![](https://i.gyazo.com/280bd5ad0834320e416af3865eb4ef17.png)]<br/>
-[![](https://gyazo.com/361eb7676d21e9c360a78381b49955e6)]<br/>
-
+</p>
+<IMG ALIGN = LEFT SRC = 'https://i.gyazo.com/280bd5ad0834320e416af3865eb4ef17.png']</IMG>
+<IMG ALIGN = RIGHT SRC = 'https://i.gyazo.com/361eb7676d21e9c360a78381b49955e6.gif']</IMG>
+</p>
 
 <p align="center">Thank's to Return for his help > <a href="https://github.com/Romain-P/">Romain-P</a></p>
