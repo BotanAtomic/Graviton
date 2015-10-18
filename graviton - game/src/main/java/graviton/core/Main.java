@@ -6,7 +6,6 @@ import graviton.core.injector.DatabaseModule;
 import graviton.core.injector.DefaultModule;
 import graviton.core.injector.GameModule;
 import graviton.core.injector.NetworkModule;
-import java.util.*;
 
 
 /**
@@ -15,7 +14,6 @@ import java.util.*;
 public class Main {
 
     private static Injector injector;
-    private static int serverId;
 
     public static void main(String[] args) {
         injector = Guice.createInjector(
@@ -23,15 +21,15 @@ public class Main {
                 new DatabaseModule(),
                 new NetworkModule(),
                 new GameModule());
-         final Server manager = injector.getInstance(Server.class).configure();
-         Runtime.getRuntime().addShutdownHook(new Thread(manager::stop));
+        final Manager manager = injector.getInstance(Manager.class).start();
+        Runtime.getRuntime().addShutdownHook(new Thread(manager::stop));
     }
 
-    public final static int getServerId() {
-        return serverId = (serverId == 0 ? injector.getInstance(Configuration.class).getServerId() : serverId);
+    public static void close() {
+
     }
 
-    public final static <T> T getInstance(Class<T> instance) {
+    public static <T> T getInstance(Class<T> instance) {
         return injector.getInstance(instance);
     }
 }

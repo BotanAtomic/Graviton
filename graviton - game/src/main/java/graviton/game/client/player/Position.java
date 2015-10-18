@@ -16,8 +16,7 @@ public class Position {
     public Position(Maps map,Cell cell, int orientation) {
         this.map = map;
         this.cell = cell;
-        /** L'orientation au hasard car pas besoins de la stocker dans la BDD **/
-        this.orientation = (orientation == -1 ? (int) (Math.random() * 6) : orientation);
+        this.orientation = (orientation == -1 ? 1 : orientation);
     }
 
 }

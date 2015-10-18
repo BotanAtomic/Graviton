@@ -2,7 +2,7 @@ package graviton.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import graviton.utils.CryptManager;
+import graviton.common.CryptManager;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,12 +15,11 @@ import java.sql.SQLException;
 @Data
 @Slf4j
 public class Database {
+    private final HikariConfig dataConfig;
     private Connection connection;
-
     private HikariDataSource dataSource;
-    private HikariConfig dataConfig;
 
-    public Database(String ip, String name, String user, String pass) {
+    public Database(String ip, String user, String name, String pass) {
         dataConfig = new HikariConfig() {
             {
                 setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");

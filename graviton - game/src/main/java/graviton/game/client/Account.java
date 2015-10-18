@@ -1,70 +1,75 @@
 package graviton.game.client;
 
+import graviton.common.Pair;
 import graviton.core.Main;
 import graviton.database.DatabaseManager;
-import graviton.enums.DataType;
+import graviton.game.GameManager;
+import graviton.game.admin.Admin;
 import graviton.game.client.player.Player;
+import graviton.game.enums.Rank;
 import graviton.network.game.GameClient;
 import lombok.Data;
-import lombok.Getter;
+import org.joda.time.Interval;
+import org.joda.time.Period;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.*;
 
 /**
  * Created by Botan on 19/06/2015.
  */
 @Data
 public class Account {
-    private final int id;
+    private final GameManager manager = Main.getInstance(GameManager.class);
 
-    String answer;
+    private final int id;
+    private final String answer;
+    private final Rank rank;
+    private final String pseudo;
+
     private String ipAdress, lastConnection;
+
     private GameClient client;
+
+    private List<Integer> friends;
+    private List<Integer> enemmy;
 
     private List<Player> players;
     private Player currentPlayer;
 
-    public Account(int id,String answer) { //TODO : get IP for last IP
+    private Pair<Integer, Date> mute;
+
+    public Account(int id, String answer, String pseudo, int rank) { //TODO : get IP for last IP
         this.id = id;
         this.answer = answer;
-    }
-
-    public void loadPlayers() {
-        try {
-            this.players = (CopyOnWriteArrayList<Player>) Main.getInstance(DatabaseManager.class).getData().get(DataType.PLAYER).loadAll(this);
-        } catch (Exception e) {
-            e.printStackTrace();
-            this.players = new CopyOnWriteArrayList<>();
-        }
+        this.pseudo = pseudo;
+        this.manager.getAccounts().put(id, this);
+        this.players = Main.getInstance(DatabaseManager.class).loadPlayers(this);
+        this.friends = new ArrayList<>();
+        this.enemmy = new ArrayList<>();
+        this.rank = Rank.values()[rank - 1];
+        if (rank != 0)
+            new Admin(this.rank, this);
     }
 
     public Player getPlayer(int id) {
-        for (Player player : players)
-            if (player.getId() == id)
-                return player;
-        return null;
+        final Player[] player = {null};
+        this.players.stream().filter(player1 -> player1.getId() == id).forEach(playerSelected -> player[0] = playerSelected);
+        return player[0];
     }
 
-    public boolean createPlayer(String name, byte classeId, byte sexe, int[] colors) {
-        try {
-            if (players.add(new Player(name, sexe, classeId, colors, this))) {
+    public void createPlayer(String name, byte classeId, byte sexe, int[] colors) {
+        if (players.add(new Player(name, sexe, classeId, colors, this))) {
                 client.send("AAK");
                 client.send(getPlayersPacket());
-                return true;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            return;
         }
-        return false;
+        client.send("AAEF");
     }
 
     public String getPlayersPacket() {
-        if (players.size() == 0)
+        if (players.isEmpty())
             return "ALK31536000000|0";
-        String packet = "ALK31536000000|" + (this.players.size() == 1 ? 2 : this.players.size()); //Pour choisir quand meme son personnage si on a qu'un seul joueur !
+        String packet = "ALK31536000000|" + (this.players.size() == 1 ? 2 : this.players.size());
         for (Player player : this.players)
             packet += (player.getPacket("ALK"));
         return packet;
@@ -77,6 +82,52 @@ public class Account {
 
     public void setCurrentPlayer(Player currentPlayer) {
         this.currentPlayer = currentPlayer;
-        this.client.setPlayer(currentPlayer);
+        this.client.setCurrentPlayer(currentPlayer);
+    }
+
+    public void close() {
+        if (currentPlayer != null) {
+            currentPlayer.save();
+            currentPlayer.getPosition().getMap().removeCreature(currentPlayer);
+            manager.getPlayers().remove(currentPlayer.getId());
+        }
+        manager.getAccounts().remove(this.id);
+    }
+
+    public void setOnline() {
+        //TODO : Set online for prevent friends
+    }
+
+    public void mute(int time, Player player, String reason) {
+        this.mute = new Pair<>(time, new Date());
+        manager.mute(currentPlayer, player, time, reason);
+    }
+
+    public boolean canSpeak() {
+        if (this.mute != null) {
+            Period period = new Interval(this.mute.getSecond().getTime(), new Date().getTime()).toPeriod();
+            int remainingTime = (this.mute.getFirst() - period.getMinutes());
+            if (period.getMinutes() < this.mute.getFirst()) {
+                currentPlayer.sendText("A force de trop parler, vous en avez perdu la voix... Vous devriez vous taire pendant les " + remainingTime + " prochaine " + (remainingTime > 1 ? "minutes" : "minute"), "FF0000");
+                return false;
+            }
+            this.mute = null;
+        }
+        return true;
+    }
+
+    public void addFriend(Player friend) {
+        if (friend != null)
+            friends.add(friend.getAccount().getId());
+        send("FAef");
+    }
+
+    public void removeFriend(Player friend) {
+        if (friend != null)
+            friends.remove(friend.getAccount().getId());
+    }
+
+    public void send(String packet) {
+        this.client.getSession().write(packet);
     }
 }

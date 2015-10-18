@@ -27,7 +27,8 @@ public class SpellStats {
     private Pair<List<SpellEffect>,List<SpellEffect>> effects; // normal & coup critique
     private String scopeType;
 
-    public SpellStats() {
+    public SpellStats(int spell) {
+        this.spell = spell;
         this.scopes = new Pair<>(0,0);
         this.rates = new Pair<>(0,0);
         this.maxLaunch = new Pair<>(0,0);

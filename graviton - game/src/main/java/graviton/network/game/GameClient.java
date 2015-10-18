@@ -1,10 +1,9 @@
 package graviton.network.game;
 
+import graviton.core.Main;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.mina.core.session.IoSession;
 
 /**
@@ -12,19 +11,24 @@ import org.apache.mina.core.session.IoSession;
  */
 @Data
 public class GameClient {
+    private final GameNetwork gameNetwork = Main.getInstance(GameNetwork.class);
 
     private final long id;
     private final IoSession session;
 
     private Account account;
-    private Player player;
+    private Player currentPlayer;
 
     public GameClient(IoSession session) {
+        session.write("HG");
         this.id = session.getId();
         this.session = session;
+        gameNetwork.addClient(this);
     }
 
     public void kick() {
+        account.close();
+        gameNetwork.removeClient(this);
         session.close(true);
     }
 

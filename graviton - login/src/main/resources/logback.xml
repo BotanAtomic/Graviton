@@ -1,45 +1,52 @@
-<configuration scan="true" scanPeriod="10 seconds">
+<configuration>
 
-    <!-- Simple file output -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <!-- encoder defaults to ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- rollover daily -->
-            <fileNamePattern>logs/login-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy
-                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100 MB</maxFileSize>
+            <!-- daily rollover with gz compression for old log-files -->
+            <fileNamePattern>logs/login/%d/log.%i.zip</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>50 MB</maxFileSize>
             </timeBasedFileNamingAndTriggeringPolicy>
         </rollingPolicy>
-
-        <!-- Safely log to the same file from multiple JVMs. Degrades performance! -->
-        <prudent>true</prudent>
+        <encoder>
+            <pattern>%d{HH:mm:ss:SSS} [%thread] %logger{35} - %msg%n</pattern>
+        </encoder>
     </appender>
 
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover with gz compression for old log-files -->
+            <fileNamePattern>logs/login/error/%d/log.%i.zip</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>50 MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss:SSS} [%thread] %logger{35} - %msg%n</pattern>
+        </encoder>
+    </appender>
 
     <!-- Console output -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <!-- encoder defaults to ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
-        <encoder>
-            <pattern>%d{HH:mm:ss} [%thread] - %msg%n</pattern>
-        </encoder>
-        <!-- Only log level INFO and above -->
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
+        <encoder>
+            <pattern>%d{HH:mm:ss} [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+        <!-- Only log level INFO and above -->
     </appender>
-
 
     <!-- Enable FILE and STDOUT appenders for all log messages.
   By default, only log at level INFO and above. -->
-    <root level="INFO">
-        <appender-ref ref="FILE"/>
+    <logger name="graviton" level="ALL">
         <appender-ref ref="STDOUT"/>
-    </root>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </logger>
 
     <!-- For loggers in the these namespaces, log at all levels. -->
     <logger name="user" level="ALL"/>

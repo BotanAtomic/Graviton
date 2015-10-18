@@ -1,22 +1,30 @@
 package graviton.api;
 
-import graviton.login.Login;
 import graviton.login.Main;
+import graviton.login.Manager;
+import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.session.IoSession;
 
 /**
  * Created by Botan on 13/07/2015.
  */
 public interface Client {
-    Login login = Main.getInstance(Login.class);
+    Manager manager = Main.getInstance(Manager.class);
 
     long getId();
 
-    void parsePacket(String packet) throws Exception;
+    void parsePacket(String packet);
 
     void kick();
 
     IoSession getSession();
 
     void send(String packet);
+
+    default IoBuffer cryptPacket(String packet) {
+        IoBuffer ioBuffer = IoBuffer.allocate(2048);
+        ioBuffer.put(packet.getBytes());
+        ioBuffer.flip();
+        return ioBuffer;
+    }
 }

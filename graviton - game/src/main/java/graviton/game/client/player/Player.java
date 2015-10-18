@@ -1,44 +1,60 @@
 package graviton.game.client.player;
 
 import graviton.common.Pair;
-import graviton.common.Stats;
 import graviton.core.Configuration;
 import graviton.core.Main;
 import graviton.database.DatabaseManager;
-import graviton.database.data.PlayerData;
-import graviton.enums.*;
+import graviton.game.GameManager;
 import graviton.game.alignement.Alignement;
 import graviton.game.client.Account;
+import graviton.game.client.player.component.ActionManager;
+import graviton.game.client.player.component.CommandManager;
+import graviton.game.client.player.component.FloodCheck;
+import graviton.game.common.Stats;
+import graviton.game.creature.Creature;
 import graviton.game.creature.mount.Mount;
-import graviton.game.fight.Fight;
-import graviton.game.GameManager;
+import graviton.game.enums.Classe;
+import graviton.game.enums.ObjectPosition;
+import graviton.game.enums.StatsType;
+import graviton.game.fight.Fighter;
+import graviton.game.guild.Guild;
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
 import graviton.game.maps.Zaap;
 import graviton.game.object.Object;
+import graviton.game.spells.Spell;
 import graviton.game.spells.SpellStats;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Botan on 19/06/2015.
  */
 @Data
-public class Player {
-    private final PlayerData data = (PlayerData) Main.getInstance(DatabaseManager.class).getData().get(DataType.PLAYER);
+public class Player implements Creature, Fighter {
+    private final DatabaseManager data = Main.getInstance(DatabaseManager.class);
     private final Configuration configuration = Main.getInstance(Configuration.class);
     private final GameManager gameManager = Main.getInstance(GameManager.class);
+    private final CommandManager commandManager = Main.getInstance(CommandManager.class);
 
     private final int id;
+    private final Account account;
     private final Classe classe;
-
-    private Account account;
-    private boolean online;
 
     private String name;
     private int sex;
+
+    private boolean online;
+
+    private Guild guild;
+    private Group group;
+    private FloodCheck floodCheck;
+    private ActionManager actionManager;
 
     private Alignement alignement;
     private int level;
@@ -57,27 +73,24 @@ public class Player {
     private Map<Integer, Object> objects;
     private List<Zaap> zaaps;
     private Map<Integer, SpellStats> spells;
-    private Map<Integer, Character> spellsPlace;
+    private Map<Integer, Character> spellPlace;
+    private int inviting;
 
-    private Fight fight;
     private Mount mount;
 
-    private boolean merchant;
-
-    public Player(int id, int account, String name, int sex, int classe, int alignement, int honor, int deshonnor,
-                  int level, int gfx, int[] colors, long experience, int size, Map<Integer, Integer> stats,
-                  long kamas, int capital, int spellPoints, int map, int cell) {
-        this.account = gameManager.getAccounts().get(account);
+    public Player(int id, Account account, String name, int sex, int classe, int alignement, int honor, int deshonnor, boolean showWings, int level, int gfx, int[] colors,
+                  long experience, int size, Map<Integer, Integer> stats, String objects, long kamas, int capital, String spells, int spellPoints, int map, int cell) {
         this.id = id;
+        this.account = account;
         this.name = name;
         this.sex = sex;
         this.classe = Classe.values()[classe - 1];
-        this.alignement = new Alignement(alignement, honor, deshonnor);
+        this.alignement = new Alignement(this, alignement, honor, deshonnor, showWings);
         this.level = level;
         this.gfx = gfx;
         this.colors = colors;
         this.experience = experience;
-        this.initializeStatisctics(stats);
+        this.configureStatisctics(stats);
         this.size = size;
         this.kamas = kamas;
         this.capital = capital;
@@ -86,32 +99,30 @@ public class Player {
         this.position = new Position(playerMap, playerMap.getCell(cell), -1);
         this.objects = new HashMap<>();
         this.zaaps = new ArrayList<>();
-        this.merchant = false;
         this.online = false;
         this.title = 0;
         int life = ((this.level - 1) * 5 + 50) + getTotalStatistics().getEffect(Stats.ADD_VITA);
         this.life = new Pair<>(life, life);
-        this.spells = new HashMap<>();
-        this.spellsPlace = new HashMap<>();
+        this.configureSpells(spells);
+        this.zaaps.addAll(gameManager.getZaaps());
+        if (objects != null && !objects.isEmpty())
+            this.setStuff(objects);
         gameManager.getPlayers().put(id, this);
     }
 
-    /**
-     * Constructor for create player
-     **/
     public Player(String name, byte sex, byte classeId, int[] colors, Account account) {
         this.account = account;
-        this.id = data.getNextId();
+        this.id = data.getNextPlayerId();
         this.name = name;
         this.sex = sex;
         this.classe = Classe.values()[classeId - 1];
-        this.alignement = new Alignement();
+        this.alignement = new Alignement(this);
         this.level = configuration.getStartlevel();
         this.gfx = classeId * 10 + sex;
         this.colors = colors;
-        this.experience = gameManager.getExperience(level);
+        this.experience = gameManager.getPlayerExperience(level);
         this.size = 100;
-        this.initializeStatisctics(null);
+        this.configureStatisctics(null);
         this.kamas = configuration.getStartKamas();
         this.capital = (level - 1) * 5;
         this.spellPoints = level - 1;
@@ -120,19 +131,18 @@ public class Player {
         this.position = new Position(maps, cell, -1);
         this.objects = new HashMap<>();
         this.zaaps = new ArrayList<>();
-        this.merchant = false;
         this.online = false;
         this.title = 0;
         int life = ((this.level - 1) * 5 + 50) + getTotalStatistics().getEffect(Stats.ADD_VITA);
         this.life = new Pair<>(life, life);
-        this.spells = new HashMap<>();
-        this.spellsPlace = new HashMap();
-        this.learnDefaultSpell();
-        if (data.create(this))
+        this.spells = classe.getStartSpells(gameManager, level);
+        this.spellPlace = classe.getStartPlace(gameManager);
+        this.zaaps.addAll(gameManager.getZaaps());
+        if (data.createPlayer(this))
             gameManager.getPlayers().put(id, this);
     }
 
-    private void initializeStatisctics(Map<Integer, Integer> stats) {
+    private void configureStatisctics(Map<Integer, Integer> stats) {
         this.statistics = new HashMap<>();
         this.statistics.put(StatsType.BASE, new Statistics(this, stats));
         this.statistics.put(StatsType.BUFF, new Statistics());
@@ -142,11 +152,36 @@ public class Player {
     }
 
     public void joinGame() {
-
+        if (account.getClient() == null)
+            return;
+        account.setCurrentPlayer(this);
+        this.online = true;
+        this.account.setLastConnection();
+        if (this.mount != null) {
+            send("Re+" + this.mount.getPacket());
+        }
+        send("Rx" + (this.mount == null ? 0 : this.mount.getExperience()));
+        send(getPacket("ASK"));
+        //TODO : Bonus pano & job
+        send("ZS" + this.alignement.getType().getId());
+        send("cC+*%!p$?^#i^@^:");
+        //TODO : Gs guild packet
+        send("al|"); //TODO : Sub zone
+        send(getPacket("SL")); //TODO: spells
+        send("eL7667711|0");
+        send("AR6bk");
+        send("Ow0|1000"); //TODO : System for pods
+        send("FO+"); //TODO : seeFriends
+        send("ILS2000");
+        sendText(configuration.getDefaultMessage(), configuration.getDefaultColor());
+        this.account.setOnline();
+        //TODO : Show last IP etc.. (for account)
     }
 
     public void createGame() {
-
+        send("GCK|1|" + this.name);
+        send(getPacket("As"));
+        this.position.getMap().addCreature(this);
     }
 
     public String getPacket(String packet) {
@@ -162,26 +197,22 @@ public class Player {
                 builder.append((this.colors[1] != -1 ? Integer.toHexString(this.colors[1]) : "-1")).append(";");
                 builder.append((this.colors[2] != -1 ? Integer.toHexString(this.colors[2]) : "-1")).append(";");
                 builder.append(getPacket("GMS")).append(";");
-                builder.append((this.merchant ? 1 : 0)).append(";");
+                builder.append(0).append(";");
                 builder.append("1;");
                 builder.append(";");
                 builder.append(";");
                 return builder.toString();
             case "GMS": //Stuff
-                if (getObjectByPosition(ObjectPosition.ARME) != null)
-                    builder.append(Integer.toHexString(getObjectByPosition(ObjectPosition.ARME).getTemplate().getId()));
-                builder.append(",");
-                if (getObjectByPosition(ObjectPosition.COIFFE) != null)
-                    builder.append(Integer.toHexString(getObjectByPosition(ObjectPosition.COIFFE).getTemplate().getId()));
-                builder.append(",");
-                if (getObjectByPosition(ObjectPosition.CAPE) != null)
-                    builder.append(Integer.toHexString(getObjectByPosition(ObjectPosition.CAPE).getTemplate().getId()));
-                builder.append(",");
-                if (getObjectByPosition(ObjectPosition.FAMILIER) != null)
-                    builder.append(Integer.toHexString(getObjectByPosition(ObjectPosition.FAMILIER).getTemplate().getId()));
-                builder.append(",");
-                if (getObjectByPosition(ObjectPosition.BOUCLIER) != null)
-                    builder.append(Integer.toHexString(getObjectByPosition(ObjectPosition.BOUCLIER).getTemplate().getId()));
+                ObjectPosition[] positions = {ObjectPosition.ARME, ObjectPosition.COIFFE, ObjectPosition.CAPE, ObjectPosition.FAMILIER, ObjectPosition.BOUCLIER};
+                for (ObjectPosition position : positions) {
+                    if (getObjectByPosition(position) != null)
+                        builder.append(Integer.toHexString(getObjectByPosition(position).getTemplate().getId()));
+                    builder.append(",");
+                }
+                return builder.toString().substring(0, builder.length() - 1);
+            case "WC":
+                builder.append("WC").append(getMap().getId());
+                this.zaaps.forEach(zaap -> builder.append("|").append(gameManager.getMap(zaap.getMap().getId()).getId()).append(";").append(zaap.getCost(getMap())));
                 return builder.toString();
             case "ASK":
                 builder.append("ASK|");
@@ -196,41 +227,15 @@ public class Player {
                 builder.append(getPacket("ASKI"));
                 return builder.toString();
             case "ASKI": //Ask to item
-                //TODO : parse item
-                return "";
-            case "GM":
-                builder.append(position.getCell().getId());//Id de la cellule
-                builder.append(";").append(2).append(";");//TODO : Orientation effective
-                builder.append("0").append(";");//FIXME:?
-                builder.append(id).append(";");//id de la personne
-                builder.append(name).append(";");//nom de la personne
-                builder.append(classe.getId());//Classe
-                builder.append((title > 0 ? ("," + title) : ""));
-                builder.append(";").append(gfx).append("^").append(size);//gfxID^size
-                builder.append(";");
-                builder.append(sex).append(";");
-                builder.append(alignement.getType().getId()).append(",");
-                builder.append("0").append(",");
-                builder.append((alignement.isWings() ? 0 : "0")).append(","); //TODO : get Grade
-                builder.append(level + id);
-                builder.append(";");
-                builder.append((colors[0]) == -1 ? "-1" : Integer.toHexString(colors[0])).append(";");
-                builder.append((colors[1]) == -1 ? "-1" : Integer.toHexString(colors[1])).append(";");
-                builder.append((colors[2]) == -1 ? "-1" : Integer.toHexString(colors[2])).append(";");
-                builder.append(getPacket("GMS")).append(";");
-                builder.append("0;");
-                builder.append(";");//Emote
-                builder.append(";");//Emote timer
-                builder.append(";;");
-                builder.append(40).append(";"); //Speed
-                builder.append(";;");
+                if (this.objects.isEmpty()) return "";
+                this.objects.values().forEach(object -> builder.append(object.parseItem()));
                 return builder.toString();
             case "As":
                 builder.append("As");
-                builder.append(experience + "," + gameManager.getExperience(level) + "," + gameManager.getExperience(level + 1)).append("|");
+                builder.append(experience).append(",").append(gameManager.getPlayerExperience(level)).append(",").append(gameManager.getPlayerExperience(level + 1)).append("|");
                 builder.append(kamas).append("|").append(capital).append("|").append(spellPoints).append("|");
                 builder.append(alignement.getType().getId()).append("~");
-                builder.append(alignement.getType().getId()).append(",").append(alignement.getGrade()).append(",").append(alignement.getGrade()).append(",").append(alignement.getHonor()).append(",").append(alignement.getDeshonnor() + ",").append(alignement.isWings() ? "1" : "0").append("|");
+                builder.append(alignement.getType().getId()).append(",").append(alignement.getGrade()).append(",").append(alignement.getGrade()).append(",").append(alignement.getHonor()).append(",").append(alignement.getDeshonnor()).append(",").append(alignement.isShowWings() ? "1" : "0").append("|");
                 builder.append(life.getFirst()).append(",").append(life.getSecond()).append("|");
                 builder.append(10000).append(",10000|");
                 builder.append(getInitiative()).append("|");
@@ -248,7 +253,7 @@ public class Player {
                 builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_DOMA)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_DOMA)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_DOMA)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_DOMA)).append("|");
                 builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_PDOM)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_PDOM)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_PDOM)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_PDOM)).append("|");
                 builder.append("0,0,0,0|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_PERDOM)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_PERDOM)).append("," + statistics.get(StatsType.GIFT).getEffect(Stats.ADD_PERDOM)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_PERDOM)).append("|");
+                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_PERDOM)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_PERDOM)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_PERDOM)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_PERDOM)).append("|");
                 builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_SOIN)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_SOIN)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_SOIN)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_SOIN)).append("|");
                 builder.append(statistics.get(StatsType.BASE).getEffect(Stats.TRAPDOM)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.TRAPDOM)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.TRAPDOM)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.TRAPDOM)).append("|");
                 builder.append(statistics.get(StatsType.BASE).getEffect(Stats.TRAPPER)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.TRAPPER)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.TRAPPER)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.TRAPPER)).append("|");
@@ -279,21 +284,187 @@ public class Player {
                 builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_PVP_FEU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_PVP_FEU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_FEU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_FEU)).append("|");
                 return builder.toString();
             case "SL":
+                builder.append("SL");
+                for (SpellStats spellStats : this.spells.values())
+                    builder.append(spellStats.getSpell()).append("~").append(spellStats.getLevel()).append("~").append(this.spellPlace.get(spellStats.getSpell())).append(";");
 
-                return "";
+                return builder.toString();
         }
         return null;
     }
 
-    private void learnDefaultSpell() {
+    @Override
+    public String getGm() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(this.getCell().getId());//Id de la cellule
+        builder.append(";").append(this.getOrientation()).append(";");
+        builder.append("0").append(";");
+        builder.append(this.id).append(";");//id de la personne
+        builder.append(this.name).append(";");//nom de la personne
+        builder.append(this.getClasse().getId());//Classe
+        builder.append((this.getTitle() > 0 ? ("," + this.getTitle()) : ""));
+        builder.append(";").append(this.gfx).append("^");
+        builder.append(this.getSize());//gfxID^size
+        builder.append(";");
+        builder.append(this.getSex()).append(";");
+        builder.append(this.getAlignement().getType().getId()).append(",");//1,0,0,4055064
+        builder.append("0").append(",");
+        builder.append((this.alignement.isShowWings() ? this.alignement.getGrade() : "0")).append(",");
+        builder.append(this.level + this.id);
+        if (this.alignement.isShowWings() && this.alignement.getDeshonnor() > 0)
+            builder.append(",").append(1).append(';');
+        else
+            builder.append(";");
+        builder.append(this.getColor(1) == -1 ? "-1" : Integer.toHexString(this.getColor(1))).append(";");
+        builder.append(this.getColor(2) == -1 ? "-1" : Integer.toHexString(this.getColor(2))).append(";");
+        builder.append(this.getColor(3) == -1 ? "-1" : Integer.toHexString(this.getColor(3))).append(";");
+        builder.append(this.getPacket("GMS")).append(";");
+        builder.append(this.level > 99 ? (this.level > 199 ? (2) : (1)) : (0)).append(";");
+        builder.append(";");
+        builder.append(";");
+        builder.append(";;");
+        builder.append(0).append(";");//Rebuilderiction
+        builder.append(";");
+        builder.append(";");
+        return builder.toString();
+    }
+
+    private void configureSpells(String data) {
+        this.spells = new HashMap<>();
+        this.spellPlace = new HashMap<>();
+        String[] spells = data.split(",");
+        for (String element : spells) {
+            try {
+                int id = Integer.parseInt(element.split(";")[0]);
+                int level = Integer.parseInt(element.split(";")[1]);
+                char place = element.split(";")[2].charAt(0);
+                this.spells.put(id, gameManager.getSpells().get(id).getStats(level));
+                this.spellPlace.put(id, place);
+            } catch (NumberFormatException e1) {
+            }
+        }
+    }
+
+    public String parseSpells() {
+        StringBuilder builder = new StringBuilder();
+        for (int key : this.spells.keySet()) {
+            SpellStats spellStats = this.spells.get(key);
+            builder.append(spellStats.getSpell()).append(";").append(spellStats.getLevel()).append(";");
+            if (this.spellPlace.get(key) != null)
+                builder.append(this.spellPlace.get(key));
+            else
+                builder.append("_");
+            builder.append(",");
+        }
+        return builder.toString();
+    }
+
+
+    public void learnSpell(int spell, int level) {
 
     }
 
-    public void learnSpell(int spell, int level, boolean send) {
-
+    private void setStuff(String objects) {
+        if (objects.charAt(objects.length() - 1) == ',')
+            objects = objects.substring(0, objects.length() - 1);
+        for (String data : objects.split(",")) {
+            Object object = gameManager.getObject(Integer.parseInt(data));
+            if (object == null) continue;
+            this.objects.put(object.getId(), object);
+        }
     }
 
-    public final Statistics getTotalStatistics() {
+    public void addObject(Object newObject) {
+        for (Object object : this.objects.values())
+            if (object.getTemplate().getId() == newObject.getTemplate().getId())
+                if (object.getStatistics().isSameStatistics(newObject.getStatistics())) {
+                    object.setQuantity(object.getQuantity() + newObject.getQuantity());
+                    data.updateObject(object);
+                    send("OQ" + object.getId() + "|" + object.getQuantity());
+                    return;
+                }
+        this.objects.put(newObject.getId(), newObject);
+        gameManager.getObjects().put(newObject.getId(), newObject);
+        send("OAKO" + newObject.parseItem());
+        data.createObject(newObject);
+        save();
+    }
+
+    public String parseItem() {
+        StringBuilder builder = new StringBuilder();
+        objects.values().forEach(object -> builder.append(object.getId()).append(","));
+        return builder.toString();
+    }
+
+    public boolean boostSpell(int id) {
+        if (!spells.containsKey(id))
+            return false;
+        Spell spell = gameManager.getSpells().get(id);
+        int oldLevel = spells.get(id).getLevel();
+        if (spellPoints < oldLevel || oldLevel == 6 || spell.getStats(oldLevel + 1).getRequiredLevel() > this.level)
+            return false;
+
+        spellPoints -= oldLevel;
+        spells.put(id, gameManager.getSpells().get(id).getStats(oldLevel + 1));
+        send("SUK" + id + "~" + (oldLevel + 1));
+        send(getPacket("As"));
+        save();
+        return true;
+    }
+
+    public void moveSpell(int spell, char place) {
+        for (int key : this.spells.keySet())
+            if (this.spellPlace.get(key) != null)
+                if (this.spellPlace.get(key).equals(place))
+                    this.spellPlace.remove(key);
+        spellPlace.put(spell, place);
+        save();
+    }
+
+    public void boostStatistics(int id) {
+        int cost = 0, value;
+        switch (id) {
+            case 10: //Force
+                value = this.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_FORC);
+                cost = classe == Classe.SACRIEUR ? 3 : classe.getCost(id, value, this.classe);
+                if (cost <= capital)
+                    this.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_FORC, 1);
+                break;
+            case 11: //Vitalite
+                cost = 1;
+                if (cost <= capital)
+                    this.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_VITA, classe == Classe.SACRIEUR ? 2 : 1);
+                break;
+            case 12: //Sagesse
+                cost = 3;
+                if (cost <= capital)
+                    this.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_SAGE, 1);
+                break;
+            case 13: //Chance
+                value = this.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_CHAN);
+                cost = classe == Classe.SACRIEUR ? 3 : classe.getCost(id, value, this.classe);
+                if (cost <= capital)
+                    this.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_CHAN, 1);
+                break;
+            case 14: // Agilite
+                value = this.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_AGIL);
+                cost = classe == Classe.SACRIEUR ? 3 : classe.getCost(id, value, this.classe);
+                if (cost <= capital)
+                    this.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_AGIL, 1);
+                break;
+            case 15: //Intelligence
+                value = this.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_INTE);
+                cost = classe == Classe.SACRIEUR ? 3 : classe.getCost(id, value, this.classe);
+                if (cost <= capital)
+                    this.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_INTE, 1);
+                break;
+        }
+        capital -= cost;
+        send(getPacket("As"));
+        save();
+    }
+
+    public Statistics getTotalStatistics() {
         Statistics finalStats = new Statistics();
         List<Statistics> stats = new ArrayList<Statistics>() {{
             add(statistics.get(StatsType.BASE));
@@ -301,35 +472,26 @@ public class Player {
             add(statistics.get(StatsType.GIFT));
             if (mount != null)
                 add(statistics.get(StatsType.MOUNT));
-            if (fight != null)
-                add(statistics.get(StatsType.BUFF));
         }};
-        finalStats.cumulStatistics(stats);
-        return finalStats;
+        return finalStats.cumulStatistics(stats);
     }
 
     public int getInitiative() {
         int maxLife = this.life.getSecond() - 50;
         int life = this.life.getFirst() - 50;
-        int factor = classe == Classe.SACRIEUR ? 8 : 4;
+        int factor = (classe == Classe.SACRIEUR ? 8 : 4);
         double coef = maxLife / factor;
-
         coef += statistics.get(StatsType.STUFF).getEffect(Stats.ADD_INIT);
         coef += getTotalStatistics().getEffect(Stats.ADD_AGIL);
         coef += getTotalStatistics().getEffect(Stats.ADD_CHAN);
         coef += getTotalStatistics().getEffect(Stats.ADD_INTE);
         coef += getTotalStatistics().getEffect(Stats.ADD_FORC);
-
         int init = 1;
         if (maxLife != 0)
             init = (int) (coef * ((double) life / (double) maxLife));
         if (init < 0)
             init = 0;
         return init;
-    }
-
-    public void sendText(String... message) {
-        send("cs<font color='#" + (message[1] == null ? configuration.getDefaultColor() : message[1]) + "'>" + message[0] + "</font>");
     }
 
     public int getColor(int id) {
@@ -345,13 +507,151 @@ public class Player {
         return null;
     }
 
-    public final void send(String packet) {
-        this.account.getClient().getSession().write(packet);
+    public void speak(String message, String canal) {
+        if (!account.canSpeak()) return;
+        if (this.floodCheck == null) this.floodCheck = new FloodCheck(this);
+        if (message.charAt(1) == '.') {
+            commandManager.launchCommand(this, message.substring(2).split(" "));
+            return;
+        }
+        switch (canal) {
+            case "*": /** Canal general **/
+                if (floodCheck.autorize(canal))
+                    getMap().send("cMK|" + id + "|" + name + message);
+                break;
+            case "#": /** Canal equipe **/
+                break;
+            case "$": /** Canal groupe **/
+                if (group != null)
+                    group.send("cMK$|" + id + "|" + name + message);
+                break;
+            case "%": /** Canal guilde **/
+                if (guild != null)
+                    guild.send("cMK%|" + id + "|" + name + message);
+                break;
+            case "!": /** Canal alignement **/
+                break;
+            case "?": /** Canal recrutement **/
+                if (floodCheck.autorize(canal))
+                    gameManager.send("cMK?|" + id + "|" + name + message);
+                break;
+            case ":": /** Canal commerce **/
+                if (floodCheck.autorize(canal))
+                    gameManager.send("cMK:|" + id + "|" + name + message);
+                break;
+            case "@": /** Canal admin **/
+                if (account.getRank().id != 0)
+                    gameManager.sendToAdmins("cMK@|" + id + "|" + name + message);
+                break;
+        }
     }
 
-    public final void delete() {
+    public void openZaap() {
+        send(getPacket("WC"));
+    }
+
+    public void useZaap(int id) {
+        Maps maps = gameManager.getMap(id);
+        int cell = -1;
+        int cost = 0;
+        for (Zaap zaap : gameManager.getZaaps())
+            if (zaap.getMap() == maps) {
+                cell = zaap.getCell();
+                cost = zaap.getCost(getMap());
+            }
+
+        send("WV");
+        if (this.kamas < cost) {
+            send("Im01;" + "Il te faut " + (cost - kamas) + " kamas en plus pour pouvoir utiliser ce zaap.");
+            return;
+        }
+        this.kamas -= cost;
+        send("Im046;" + cost);
+        send(getPacket("As"));
+        if (cell != -1)
+            changePosition(maps.getCell(cell));
+    }
+
+    public void togglePvp(char c) {
+        int cost = this.alignement.getHonor() * 5 / 100;
+        switch (c) {
+            case '*':
+                send("GIP" + cost);
+                return;
+            case '+':
+                alignement.setShowWings(true);
+                break;
+            case '-':
+                this.getAlignement().removeHonor(cost);
+                alignement.setShowWings(false);
+                break;
+        }
+        send(getPacket("As"));
+        save();
+        refresh();
+    }
+
+    public void refresh() {
+        getMap().refreshCreature(this);
+    }
+
+    public void createAction(int id, String arguments) {
+        if (this.actionManager == null)
+            this.actionManager = new ActionManager(this);
+        this.actionManager.createAction(id, arguments);
+    }
+
+    public void sendText(String... arguments) {
+        String message = arguments[0];
+        String color;
+        try {
+            color = arguments[1];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            color = configuration.getDefaultColor();
+        }
+        send("cs<font color='#" + color + "'>" + message + "</font>");
+    }
+
+    public final void send(String packet) {
+        if (packet.isEmpty()) return;
+        this.account.getClient().send(packet);
+    }
+
+    public void changeOrientation(int orientation, boolean send) {
+        if (send)
+            getMap().send("eD" + id + "|" + orientation);
+        this.position.setOrientation(orientation);
+    }
+
+    public void changePosition(Cell cell) {
+        if (this.getMap() != cell.getMap()) {
+            this.getMap().removeCreature(this);
+            cell.getMap().addCreature(this);
+            return;
+        }
+        getMap().changeCell(this, cell);
+    }
+
+    public Maps getMap() {
+        return this.position.getMap();
+    }
+
+    public Cell getCell() {
+        return this.position.getCell();
+    }
+
+    public int getOrientation() {
+        return this.position.getOrientation();
+    }
+
+    public void delete() {
         account.getPlayers().remove(this);
-        data.delete(this);
+        gameManager.getPlayers().remove(this.getId());
+        data.deletePlayer(this);
         send(account.getPlayersPacket());
+    }
+
+    public void save() {
+        data.updatePlayer(this);
     }
 }

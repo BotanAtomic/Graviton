@@ -1,12 +1,11 @@
 package graviton.api;
 
 import graviton.login.Configuration;
-import graviton.login.Login;
 import graviton.login.Main;
+import graviton.login.Manager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -16,5 +15,5 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class Data {
     protected final ReentrantLock locker = new ReentrantLock();
     protected final Connection connection = Main.getInstance(Configuration.class).getDatabase().getConnection();
-    protected final Login login = Main.getInstance(Login.class);
+    protected final Manager manager = Main.getInstance(Manager.class);
 }

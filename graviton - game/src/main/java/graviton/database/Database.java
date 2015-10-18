@@ -1,10 +1,10 @@
 package graviton.database;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
-import lombok.Getter;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
@@ -12,32 +12,47 @@ import java.sql.SQLException;
  */
 @Data
 public class Database {
-    private final String host, name, user, pass;
+
+    private final HikariConfig dataConfig;
     private Connection connection;
+    private HikariDataSource dataSource;
+
 
     public Database(String host, String name, String user, String pass) {
-        this.host = host;
-        this.name = name;
-        this.user = user;
-        this.pass = pass;
+        dataConfig = new HikariConfig() {
+            {
+                setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
+                addDataSourceProperty("serverName", host);
+                addDataSourceProperty("port", 3306);
+                addDataSourceProperty("databaseName", name);
+                addDataSourceProperty("user", user);
+                addDataSourceProperty("password", pass);
+            }
+        };
     }
 
     public void configure() {
+        dataSource = new HikariDataSource(dataConfig);
+        if (!testConnection()) {
+            System.err.println("Can't connect to database");
+            System.exit(1);
+            return;
+        }
+    }
+
+    private boolean testConnection() {
         try {
-            this.connection = DriverManager.getConnection("jdbc:mysql://" + host + "/" + name, user, pass);
-            if (!connection.isValid(1000)) {
-                System.err.println("Unable to connect to database : " + name);
-                System.exit(0);
-            }
-            this.connection.setAutoCommit(true);
-        } catch (SQLException e) {
-            e.printStackTrace();
+            connection = dataSource.getConnection();
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 
     public void stop() {
         try {
             this.connection.close();
+            dataSource.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }

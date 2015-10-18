@@ -3,7 +3,7 @@ package graviton.network.login;
 import com.google.inject.Inject;
 import graviton.api.NetworkService;
 import graviton.login.Configuration;
-import graviton.login.Login;
+import graviton.login.Manager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
@@ -26,13 +26,13 @@ public class LoginNetwork implements NetworkService, IoHandler {
     private final NioSocketAcceptor acceptor;
     private final int port;
 
-    private final Login login;
+    private final Manager manager;
 
     @Inject
-    public LoginNetwork(Configuration configuration, Login login) {
+    public LoginNetwork(Configuration configuration, Manager manager) {
         this.acceptor = new NioSocketAcceptor();
         this.port = configuration.getLoginPort();
-        this.login = login;
+        this.manager = manager;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
     @Override
     public void sessionClosed(IoSession session) throws Exception {
         log.info("[Session {}] closed", session.getId());
-        login.getClient(session).kick();
+        manager.getClient(session).kick();
     }
 
     @Override
@@ -59,15 +59,15 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-        log.info("[Session {}] exception > {}", session.getId(), cause.getMessage());
+        log.error("[Session {}] has encountered an error : {}", session.getId(), cause.getMessage());
         cause.printStackTrace();
     }
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        LoginClient client = (LoginClient) login.getClient(session);
+        LoginClient client = (LoginClient) manager.getClient(session);
         String packet = (message.toString().contains("\n") ? message.toString().replace("\n", "@") : message.toString());
-        if (packet.isEmpty() || packet.equals("1.29.1"))
+        if (packet.isEmpty() || packet.equals("1.29.2") || packet.equals("1.29.1"))
             return;
         client.parsePacket(packet);
         log.info("[Session {}] recev < {} [{}]", session.getId(), packet, client.getStatut());
@@ -94,7 +94,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
         try {
             acceptor.bind(new InetSocketAddress(port));
         } catch (IOException e) {
-            log.error("Fail to bind Login acceptor : {}", e);
+            log.error("Fail to bind Manager acceptor : {}", e);
         }
     }
 
@@ -104,7 +104,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
         acceptor.unbind();
     }
 
-    private final String generateKey() {
+    private String generateKey() {
         String alphabet = "abcdefghijklmnopqrstuvwxyz";
         StringBuilder hashKey = new StringBuilder();
         Random rand = new Random();

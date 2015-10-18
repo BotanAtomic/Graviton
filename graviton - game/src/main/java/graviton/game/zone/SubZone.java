@@ -21,7 +21,7 @@ public class SubZone {
     public SubZone(int id, String name,Zone zone,int alignId) {
         this.id = id;
         this.name = name;
-        this.alignement = new Alignement(alignId,0,0);
+        this.alignement = new Alignement(null, alignId, 0, 0, false);
         this.zone = zone;
     }
 

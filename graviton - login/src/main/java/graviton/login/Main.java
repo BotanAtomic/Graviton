@@ -12,15 +12,15 @@ import graviton.login.modules.NetworkModule;
  */
 public class Main {
 
-    public static Injector injector;
+    private static Injector injector;
 
     public static void main(String[] args) {
         injector = Guice.createInjector(new DefaultModule(),new NetworkModule());
-        final Login login = injector.getInstance(Login.class).start();
-        Runtime.getRuntime().addShutdownHook(new Thread(login::stop));
+        final Manager manager = injector.getInstance(Manager.class).start();
+        Runtime.getRuntime().addShutdownHook(new Thread(manager::stop));
     }
 
-    public static final <T> T getInstance(Class<T> clazz) {
+    public static <T> T getInstance(Class<T> clazz) {
         return injector.getInstance(clazz);
     }
 }

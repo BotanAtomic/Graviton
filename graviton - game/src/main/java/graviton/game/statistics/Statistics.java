@@ -1,9 +1,9 @@
 package graviton.game.statistics;
 
 
-import graviton.common.Stats;
-import graviton.enums.Classe;
 import graviton.game.client.player.Player;
+import graviton.game.common.Stats;
+import graviton.game.enums.Classe;
 import lombok.Data;
 
 import java.util.HashMap;
@@ -38,16 +38,33 @@ public class Statistics {
             effects.put(value, effects.get(value) + quantity);
     }
 
+    public boolean isSameStatistics(Statistics statistics) {
+        for (Map.Entry<Integer, Integer> entry : this.effects.entrySet()) {
+            if (statistics.getEffects().get(entry.getKey()) == null)
+                return false;
+            if (statistics.getEffects().get(entry.getKey()).compareTo(entry.getValue()) != 0)
+                return false;
+        }
+        for (Map.Entry<Integer, Integer> entry : statistics.getEffects().entrySet()) {
+            if (this.effects.get(entry.getKey()) == null)
+                return false;
+            if (this.effects.get(entry.getKey()).compareTo(entry.getValue()) != 0)
+                return false;
+        }
+        return true;
+    }
+
     public int getEffect(int value) {
         return (effects.containsKey(value) ? effects.get(value) : 0);
     }
 
-    public Map<Integer, Integer> cumulStatistics(List<Statistics> stats) {
+    public Statistics cumulStatistics(List<Statistics> stats) {
         Map<Integer, Integer> builder = new HashMap<>();
         stats.stream().filter(statistics -> statistics.getEffects() != null).forEach(statistics -> {
             for (Integer i : statistics.getEffects().keySet())
                 builder.put(i, (builder.get(i) == null ? 0 : builder.get(i)) + statistics.getEffects().get(i));
         });
-        return builder;
+        this.effects = builder;
+        return this;
     }
 }

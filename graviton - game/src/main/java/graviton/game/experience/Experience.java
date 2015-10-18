@@ -1,7 +1,7 @@
 package graviton.game.experience;
 
 import graviton.enums.DataType;
-import lombok.Data;
+import lombok.Getter;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -9,9 +9,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by Botan on 01/07/2015.
  */
-@Data
+
 public class Experience {
     /** Type -> level -> experience **/
+    @Getter
     private Map<DataType,Map<Integer,Long>> data;
 
     public Experience(Map<Integer,Long> players,Map<Integer,Long> job,Map<Integer,Long> mount,Map<Integer,Long> pvp) {

@@ -1,5 +1,8 @@
 package graviton.game.alignement;
 
+import graviton.enums.DataType;
+import graviton.game.GameManager;
+import graviton.game.client.player.Player;
 import lombok.Data;
 
 /**
@@ -7,31 +10,60 @@ import lombok.Data;
  */
 @Data
 public class Alignement {
+    private final Player player;
+    private final GameManager gameManager;
+
     private Type type;
     private int honor, deshonnor;
     private int grade;
-    private boolean wings; //show or not wings
+    private boolean showWings;
 
 
-    public Alignement() {
+    public Alignement(Player player) {
+        this.player = player;
+        this.gameManager = player.getGameManager();
         this.type = Type.NEUTRE;
         this.honor = 0;
         this.deshonnor = 0;
-        this.wings = false;
-        this.grade = 0;
+        this.showWings = false;
+        this.grade = getGradeByHonor();
     }
 
-    public Alignement(int alignement, int honor, int deshonnor) {
-        this.type = alignement <= 0 ? Type.NEUTRE : Type.values()[alignement - 1];
+    public Alignement(Player player, int alignement, int honor, int deshonnor, boolean showWings) {
+        this.player = player;
+        this.gameManager = player == null ? null : player.getGameManager();
+        this.type = alignement <= 0 ? Type.NEUTRE : Type.values()[alignement];
         this.honor = honor;
         this.deshonnor = deshonnor;
-        this.wings = false;
+        this.showWings = showWings;
         this.grade = getGradeByHonor();
     }
 
     private int getGradeByHonor() {
-        //TODO : calcul grade by honor //
+        if (type == Type.NEUTRE)
+            return 0;
+        if (this.getHonor() >= 17500)
+            return 10;
+        for (int n = 1; n <= 10; n++)
+            if (this.getHonor() < gameManager.getExperience().getData().get(DataType.PVP).get(n))
+                return n - 1;
         return 0;
+    }
+
+    public void addHonor(int honor) {
+        this.honor += honor;
+        if (grade != getGradeByHonor()) {
+            grade = getGradeByHonor();
+            player.send("Im080;" + grade);
+        }
+    }
+
+    public void removeHonor(int honor) {
+        this.honor -= honor;
+        if (grade != getGradeByHonor()) {
+            grade = getGradeByHonor();
+            player.send("Im00;" + "Tu viens de descendre grade " + grade + ".");
+        }
     }
 
     public enum Type {

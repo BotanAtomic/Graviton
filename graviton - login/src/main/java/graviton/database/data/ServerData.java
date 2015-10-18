@@ -28,7 +28,7 @@ public class ServerData extends Data {
 
             while (resultSet.next())
                 servers.add(new Server(resultSet.getInt("id"), resultSet.getString("key")));
-            servers.forEach((server) -> login.getServers().put(server.getId(), server));
+            servers.forEach((server) -> manager.getServers().put(server.getId(), server));
         } catch (SQLException e) {
             log.error("Exception > {}", e.getMessage());
         } finally {
@@ -39,7 +39,7 @@ public class ServerData extends Data {
     public final String getHostList() {
         StringBuilder sb = new StringBuilder("AH");
         List<Server> list = new ArrayList<>();
-        list.addAll(login.getServers().values());
+        list.addAll(manager.getServers().values());
         list.forEach((server) -> sb.append(server.getId()).append(";").append(server.getState().id).append(";110;1|"));
         return sb.toString();
     }

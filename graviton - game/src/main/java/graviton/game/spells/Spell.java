@@ -33,7 +33,7 @@ public class Spell {
         SpellStats spellStats = null;
         String[] stats = arguments.split(",");
         try {
-            spellStats = new SpellStats() {{
+            spellStats = new SpellStats(this.id) {{
                 setLevel(level);
                 getEffects().setFirst(parseEffect(stats[0].trim()));
                 getEffects().setSecond(parseEffect(stats[1].trim()));

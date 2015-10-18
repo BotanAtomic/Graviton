@@ -1,6 +1,5 @@
 package graviton.core;
 
-import com.google.inject.Singleton;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import graviton.database.Database;
@@ -11,7 +10,6 @@ import java.io.File;
 /**
  * Created by Botan on 16/06/2015.
  */
-@Singleton
 @Data
 public class Configuration {
 
@@ -32,24 +30,22 @@ public class Configuration {
             configFromFile(config);
             return;
         }
-        configure();
-    }
+        //TODO : Encrypt informations
 
-    private void configure() {
         this.loginDatabase = new Database("127.0.0.1", "login", "root", "");
         this.gameDatabase = new Database("127.0.0.1", "game", "root", "");
         this.serverId = 1;
         this.serverKey = "pvp";
         this.ip = "127.0.0.1";
-        this.exchangeIp = "127.0.0.1";
         this.gamePort = 100;
+        this.exchangeIp = "127.0.0.1";
         this.exchangePort = 807;
         this.defaultMessage = "Bienvenue sur Horus";
         this.defaultColor = "000000";
         this.startlevel = 80;
         this.startKamas = 1000000;
-        this.startMap = 10098;
-        this.startCell = 200;
+        this.startMap = 952;
+        this.startCell = 400;
     }
 
     private void configFromFile(Config config) {

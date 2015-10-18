@@ -19,9 +19,9 @@ import java.util.List;
 @Data
 @Slf4j
 public class LoginClient implements Client {
-    private final AccountData accountData = (AccountData) login.getData("account");
-    private final PlayerData playerData = (PlayerData) login.getData("player");
-    private final ServerData serverData = (ServerData) login.getData("server");
+    private final AccountData accountData = (AccountData) manager.getData("account");
+    private final PlayerData playerData = (PlayerData) manager.getData("player");
+    private final ServerData serverData = (ServerData) manager.getData("server");
 
     private final long id;
     private final String key;
@@ -35,11 +35,11 @@ public class LoginClient implements Client {
         this.session = session;
         this.key = key;
         this.statut = Statut.CONNECTION;
-        login.addClient(this);
+        manager.addClient(this);
     }
 
     @Override
-    public void parsePacket(String packet) throws Exception {
+    public void parsePacket(String packet) {
         switch (statut) {
             case CONNECTION:
                 if (!packet.contains("@")) {
@@ -58,7 +58,7 @@ public class LoginClient implements Client {
                 statut = Statut.SERVER;
                 break;
             case NICKNAME:
-                String forbiden[] = {"admin", "modo", "moderateur", " ", "&", "é", "\"", "'",
+                String[] forbiden = {"admin", "modo", "moderateur", " ", "&", "é", "\"", "'",
                         "(", "-", "è", "_", "ç", "à", ")", "=", "~", "#",
                         "{", "[", "|", "`", "^", "@", "]", "}", "°", "+",
                         "^", "$", "ù", "*", ",", ";", ":", "!", "<", ">",
@@ -103,13 +103,10 @@ public class LoginClient implements Client {
     }
 
     private String getList(List<Player> players) {
-        String sb = "AF";
-        for (Server server : login.getServers().values()) {
-            int i = getNumber(players, server.getId());
-            if (i != 0)
-                sb += (server.getId()) + (",") + (i) + (";");
-        }
-        return sb;
+        String list = null;
+        for (Server server : manager.getServers().values())
+            list += (server.getId()) + (",") + (getNumber(players, server.getId())) + (";");
+        return "AF" + list;
     }
 
     private int getNumber(List<Player> players, int id) {
@@ -137,7 +134,7 @@ public class LoginClient implements Client {
 
     private String serverList() {
         StringBuilder sb = new StringBuilder("31556864852");
-        for (Server server : login.getServers().values()) {
+        for (Server server : manager.getServers().values()) {
             int i = 0;
             for (Player player : account.getPlayers()) {
                 if (player.getServer() == server.getId())
@@ -149,15 +146,15 @@ public class LoginClient implements Client {
     }
 
     private void selectServer(int serverID) {
-        Server server = login.getServers().get(serverID);
+        Server server = manager.getServers().get(serverID);
         if (server == null) {
             send("AXEr");
-            kick();
+            session.close(true);
             return;
         }
         if (server.getState() != Server.State.ONLINE) {
             send("AXEd");
-            kick();
+            session.close(true);
             return;
         }
         server.send("+" + account.getId());
@@ -167,14 +164,14 @@ public class LoginClient implements Client {
         sb.append(":").append(server.getPort()).append(";");
         sb.append(account.getId());
         send(sb.toString());
-        login.getConnected().put(account.getId(), serverID);
+        manager.getConnected().put(account.getId(), serverID);
     }
 
     @Override
     public void kick() {
         if (account != null)
             account.delete();
-        login.removeClient(this);
+        manager.removeClient(this);
         session.close(true);
     }
 

@@ -1,9 +1,9 @@
 package graviton.database.data;
 
 import graviton.api.Data;
+import graviton.common.CryptManager;
 import graviton.game.Account;
 import graviton.network.login.LoginClient;
-import graviton.utils.CryptManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.ResultSet;
@@ -42,14 +42,7 @@ public class AccountData extends Data {
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             if (resultSet.next()) {
                 int id = resultSet.getInt("id");
-                if (login.getAccounts().get(id) != null) {
-                    login.getAccounts().get(id).getClient().send("AlEa");
-                    login.getAccounts().get(id).getClient().getSession().close(true);
-                }
-                if (login.getConnected().get(id) != null) {
-                    login.getServers().get(login.getConnected().get(id)).send("-" + id);
-                    login.getConnected().remove(id);
-                }
+                manager.checkAccount(id);
                 account = new Account(id,
                         resultSet.getString("account"), resultSet.getString("password"),
                         resultSet.getString("pseudo"), resultSet.getString("question"), resultSet.getInt("rank"));

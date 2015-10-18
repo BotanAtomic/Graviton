@@ -1,7 +1,7 @@
 package graviton.game;
 
-import graviton.login.Login;
 import graviton.login.Main;
+import graviton.login.Manager;
 import lombok.Data;
 
 /**
@@ -16,7 +16,7 @@ public class Player {
         this.id = id;
         this.name = name;
         this.server = server;
-        Main.getInstance(Login.class).getPlayers().put(id, this);
+        Main.getInstance(Manager.class).getPlayers().put(id, this);
     }
 
     public Player(int server) {

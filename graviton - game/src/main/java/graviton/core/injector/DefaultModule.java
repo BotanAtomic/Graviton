@@ -1,9 +1,9 @@
 package graviton.core.injector;
 
 import com.google.inject.AbstractModule;
-import graviton.console.Console;
+import graviton.common.Scanner;
 import graviton.core.Configuration;
-import graviton.core.Server;
+import graviton.core.Manager;
 
 
 /**
@@ -13,7 +13,7 @@ public class DefaultModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(Configuration.class).asEagerSingleton();
-        bind(Console.class).asEagerSingleton();
-        bind(Server.class).asEagerSingleton();
+        bind(Manager.class).asEagerSingleton();
+        bind(Scanner.class).asEagerSingleton();
     }
 }
