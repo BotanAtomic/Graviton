@@ -1,4 +1,5 @@
-<a align="center"><IMG SRC="http://i.gyazo.com/cf951ef31bae8edf9f2bcfceab2aebe7.png"></p>
+<p align="center"><IMG SRC="http://i.gyazo.com/cf951ef31bae8edf9f2bcfceab2aebe7.png"></p>
+
 ![Build Status](https://img.shields.io/badge/Login-100%20%-green.svg?style=flat)
 ![Build Status](https://img.shields.io/badge/Game-30%20%-red.svg?style=flat)
 ![Build Status](https://img.shields.io/badge/Total-65%20%-orange.svg?style=flat)
