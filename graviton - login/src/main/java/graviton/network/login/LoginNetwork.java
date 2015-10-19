@@ -1,6 +1,7 @@
 package graviton.network.login;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.NetworkService;
 import graviton.login.Configuration;
 import graviton.login.Manager;
@@ -23,9 +24,11 @@ import java.util.Random;
  */
 @Slf4j
 public class LoginNetwork implements NetworkService, IoHandler {
-    private final NioSocketAcceptor acceptor;
-    private final int port;
+    @Inject
+    Injector injector;
 
+    private final int port;
+    private final NioSocketAcceptor acceptor;
     private final Manager manager;
 
     @Inject
@@ -37,7 +40,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        session.write("HC" + new LoginClient(session, generateKey()).getKey());
+        session.write("HC" + new LoginClient(session, generateKey(),injector).getKey());
         log.info("[Session {}] created", session.getId());
     }
 

@@ -1,6 +1,7 @@
 package graviton.network.application;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.NetworkService;
 import graviton.login.Manager;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,9 @@ import java.net.InetSocketAddress;
  */
 @Slf4j
 public class ApplicationNetwork implements NetworkService, IoHandler {
+    @Inject
+    Injector injector;
+
     private final NioSocketAcceptor acceptor;
     private final Manager manager;
 
@@ -29,7 +33,7 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        new ApplicationClient(session);
+        injector.injectMembers(new ApplicationClient(session));
     }
 
     @Override

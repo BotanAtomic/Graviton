@@ -1,5 +1,7 @@
 package graviton.game.object;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.common.Utils;
 import graviton.core.Main;
 import graviton.game.GameManager;
@@ -16,7 +18,11 @@ import java.util.ArrayList;
  */
 @Data
 public class ObjectTemplate {
-    final private GameManager manager = Main.getInstance(GameManager.class);
+    @Inject
+    GameManager manager;
+
+    final private Injector injector;
+
     final private int[] swordEffectId = {91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101};
 
     final private int id;
@@ -30,7 +36,10 @@ public class ObjectTemplate {
     final private String condition;
     final private String information;
 
-    public ObjectTemplate(int id, int type, String name, int level, String statistics, int usedPod, int panoply, int price, String condition, String information) {
+
+    public ObjectTemplate(int id, int type, String name, int level, String statistics, int usedPod, int panoply, int price, String condition, String information,Injector injector) {
+        this.injector = injector;
+        injector.injectMembers(this);
         this.id = id;
         this.type = ObjectType.getTypeById(type);
         this.name = name;
@@ -44,7 +53,7 @@ public class ObjectTemplate {
     }
 
     public Object createObject(int qua, boolean useMax) {
-        Object object = new Object(manager.getDatabaseManager().getNextObjectId(), this.getId(), qua, ObjectPosition.NO_EQUIPED, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)), (statistics.equals("") ? new ArrayList<>() : this.getEffectTemplate(statistics)));
+        Object object = new Object(manager.getDatabaseManager().getNextObjectId(), this.getId(), qua, ObjectPosition.NO_EQUIPED, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)), (statistics.equals("") ? new ArrayList<>() : this.getEffectTemplate(statistics)),injector);
         return object;
     }
 

@@ -1,6 +1,7 @@
 package graviton.game.maps.object;
 
-import graviton.core.Main;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.game.GameManager;
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
@@ -14,7 +15,9 @@ import java.util.concurrent.TimeUnit;
  */
 @Data
 public class InteractiveObject {
-    private final GameManager gameManager = Main.getInstance(GameManager.class);
+    @Inject
+    GameManager gameManager;
+
     private final int id;
     private final Maps map;
     private final Cell cell;
@@ -25,7 +28,8 @@ public class InteractiveObject {
     @Getter
     private boolean walkable;
 
-    public InteractiveObject(int id, final Maps map, final Cell cell) {
+    public InteractiveObject(int id, final Maps map, final Cell cell,Injector injector) {
+        injector.injectMembers(this);
         this.id = id;
         this.map = map;
         this.cell = cell;

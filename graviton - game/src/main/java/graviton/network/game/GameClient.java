@@ -1,5 +1,7 @@
 package graviton.network.game;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.core.Main;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
@@ -11,7 +13,8 @@ import org.apache.mina.core.session.IoSession;
  */
 @Data
 public class GameClient {
-    private final GameNetwork gameNetwork = Main.getInstance(GameNetwork.class);
+    @Inject
+    GameNetwork gameNetwork;
 
     private final long id;
     private final IoSession session;
@@ -19,7 +22,8 @@ public class GameClient {
     private Account account;
     private Player currentPlayer;
 
-    public GameClient(IoSession session) {
+    public GameClient(IoSession session,Injector injector) {
+        injector.injectMembers(this);
         session.write("HG");
         this.id = session.getId();
         this.session = session;

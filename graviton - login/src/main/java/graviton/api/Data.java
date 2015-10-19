@@ -14,6 +14,6 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public abstract class Data {
     protected final ReentrantLock locker = new ReentrantLock();
-    protected final Connection connection = Main.getInstance(Configuration.class).getDatabase().getConnection();
-    protected final Manager manager = Main.getInstance(Manager.class);
+
+    public abstract void initialize();
 }

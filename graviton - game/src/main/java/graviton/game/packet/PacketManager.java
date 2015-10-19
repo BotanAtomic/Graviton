@@ -1,5 +1,6 @@
 package graviton.game.packet;
 
+import com.google.inject.Inject;
 import graviton.api.Manager;
 import graviton.api.PacketParser;
 import graviton.common.Utils;
@@ -19,6 +20,11 @@ import java.util.*;
  */
 @Slf4j
 public class PacketManager implements Manager {
+    @Inject
+    GameManager gameManager;
+    @Inject
+    DatabaseManager databaseManager;
+
     private final String[] dictionary = {"ae", "au", "ao", "ap", "ka", "ha", "ah",
             "na", "hi", "he", "eh", "an", "ma", "wa", "we", "wh", "sk", "sa",
             "se", "ne", "ra", "re", "ru", "ri", "ro", "za", "zu", "ta", "te",
@@ -125,7 +131,7 @@ public class PacketManager implements Manager {
         packets.put("BM", (client, packet) -> client.getCurrentPlayer().speak(packet.substring(1, packet.length() - 1), packet.substring(0, 1)));
 
         packets.put("AT", (client, packet) -> {
-            client.setAccount(Main.getInstance(GameManager.class).getAccounts().get(Integer.parseInt(packet)));
+            client.setAccount(gameManager.getAccounts().get(Integer.parseInt(packet)));
             if (client.getAccount() != null) {
                 client.getAccount().setClient(client);
                 client.getAccount().setIpAdress(client.getSession().getLocalAddress().toString().replace("/", "").split(":")[0]);
@@ -152,9 +158,8 @@ public class PacketManager implements Manager {
         });
 
         packets.put("AA", (client, packet) -> {
-            DatabaseManager data = Main.getInstance(DatabaseManager.class);
             String[] arguments = packet.split("\\|");
-            if (data.ifPlayerExist(arguments[0]) || arguments[0].length() < 4 || arguments[0].length() > 12) {
+            if (databaseManager.ifPlayerExist(arguments[0]) || arguments[0].length() < 4 || arguments[0].length() > 12) {
                 client.send("AAEa");
                 return;
             }
@@ -168,7 +173,7 @@ public class PacketManager implements Manager {
         });
     }
 
-    public final void parse(GameClient client, String packet) {
+    public void parse(GameClient client, String packet) {
         if (packet.length() == 2) {
             switch (packet) {
                 case "AL":

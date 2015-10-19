@@ -1,5 +1,7 @@
 package graviton.game.client;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.common.Pair;
 import graviton.core.Main;
 import graviton.database.DatabaseManager;
@@ -19,7 +21,12 @@ import java.util.*;
  */
 @Data
 public class Account {
-    private final GameManager manager = Main.getInstance(GameManager.class);
+    @Inject
+    GameManager manager;
+    @Inject
+    DatabaseManager databaseManager;
+
+    private final Injector injector;
 
     private final int id;
     private final String answer;
@@ -38,17 +45,19 @@ public class Account {
 
     private Pair<Integer, Date> mute;
 
-    public Account(int id, String answer, String pseudo, int rank) { //TODO : get IP for last IP
+    public Account(int id, String answer, String pseudo, int rank,Injector injector) { //TODO : get IP for last IP
+        injector.injectMembers(this);
+        this.injector = injector;
         this.id = id;
         this.answer = answer;
         this.pseudo = pseudo;
         this.manager.getAccounts().put(id, this);
-        this.players = Main.getInstance(DatabaseManager.class).loadPlayers(this);
+        this.players = databaseManager.loadPlayers(this);
         this.friends = new ArrayList<>();
         this.enemmy = new ArrayList<>();
         this.rank = Rank.values()[rank - 1];
         if (rank != 0)
-            new Admin(this.rank, this);
+            new Admin(this.rank, this,injector);
     }
 
     public Player getPlayer(int id) {
@@ -58,7 +67,7 @@ public class Account {
     }
 
     public void createPlayer(String name, byte classeId, byte sexe, int[] colors) {
-        if (players.add(new Player(name, sexe, classeId, colors, this))) {
+        if (players.add(new Player(name, sexe, classeId, colors, this,injector))) {
                 client.send("AAK");
                 client.send(getPlayersPacket());
             return;

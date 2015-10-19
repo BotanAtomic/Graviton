@@ -1,5 +1,7 @@
 package graviton.game.client.player;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.common.Pair;
 import graviton.core.Configuration;
 import graviton.core.Main;
@@ -37,10 +39,14 @@ import java.util.Map;
  */
 @Data
 public class Player implements Creature, Fighter {
-    private final DatabaseManager data = Main.getInstance(DatabaseManager.class);
-    private final Configuration configuration = Main.getInstance(Configuration.class);
-    private final GameManager gameManager = Main.getInstance(GameManager.class);
-    private final CommandManager commandManager = Main.getInstance(CommandManager.class);
+    @Inject
+    DatabaseManager data;
+    @Inject
+    Configuration configuration;
+    @Inject
+    GameManager gameManager;
+    @Inject
+    CommandManager commandManager;
 
     private final int id;
     private final Account account;
@@ -79,7 +85,8 @@ public class Player implements Creature, Fighter {
     private Mount mount;
 
     public Player(int id, Account account, String name, int sex, int classe, int alignement, int honor, int deshonnor, boolean showWings, int level, int gfx, int[] colors,
-                  long experience, int size, Map<Integer, Integer> stats, String objects, long kamas, int capital, String spells, int spellPoints, int map, int cell) {
+                  long experience, int size, Map<Integer, Integer> stats, String objects, long kamas, int capital, String spells, int spellPoints, int map, int cell, Injector injector) {
+        injector.injectMembers(this);
         this.id = id;
         this.account = account;
         this.name = name;
@@ -110,7 +117,8 @@ public class Player implements Creature, Fighter {
         gameManager.getPlayers().put(id, this);
     }
 
-    public Player(String name, byte sex, byte classeId, int[] colors, Account account) {
+    public Player(String name, byte sex, byte classeId, int[] colors, Account account,Injector injector) {
+        injector.injectMembers(this);
         this.account = account;
         this.id = data.getNextPlayerId();
         this.name = name;
@@ -626,6 +634,7 @@ public class Player implements Creature, Fighter {
     public void changePosition(Cell cell) {
         if (this.getMap() != cell.getMap()) {
             this.getMap().removeCreature(this);
+            this.position.setCell(cell);
             cell.getMap().addCreature(this);
             return;
         }

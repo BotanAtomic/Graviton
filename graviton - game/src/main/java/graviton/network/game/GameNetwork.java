@@ -1,6 +1,7 @@
 package graviton.network.game;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.NetworkService;
 import graviton.core.Configuration;
 import graviton.game.packet.PacketManager;
@@ -25,12 +26,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class GameNetwork implements IoHandler, NetworkService {
-    private final NioSocketAcceptor acceptor;
-    private final int PORT;
+    @Inject
+    Injector injector;
     @Inject
     private PacketManager packetManager;
+
+    private final NioSocketAcceptor acceptor;
+    private final int PORT;
     @Getter
-    private Map<Long, GameClient> clients;
+    private final Map<Long, GameClient> clients;
 
     @Inject
     public GameNetwork(Configuration configuration) {
@@ -43,7 +47,7 @@ public class GameNetwork implements IoHandler, NetworkService {
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        new GameClient(session);
+        new GameClient(session,injector);
         log.info("[Session {}] created", session.getId());
     }
 

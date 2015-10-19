@@ -1,10 +1,14 @@
 package graviton.database.data;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.Data;
 import graviton.game.Account;
 import graviton.game.Player;
+import graviton.login.Configuration;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +18,17 @@ import java.util.List;
  */
 @Slf4j
 public class PlayerData extends Data {
+    @Inject
+    Injector injector;
+    @Inject
+    Configuration configuration;
 
+    private Connection connection;
+
+    @Override
+    public void initialize() {
+        this.connection =  configuration.getDatabase().getConnection();
+    }
     /**
      * load all players from account
      *
@@ -24,8 +38,12 @@ public class PlayerData extends Data {
         locker.lock();
         try {
             ResultSet result = connection.createStatement().executeQuery("SELECT * FROM players WHERE account = " + account.getId());
-            while (result.next())
-                account.getPlayers().add(new Player(result.getInt("id"), result.getString("name"), result.getInt("server")));
+            Player player;
+            while (result.next()) {
+                player = new Player(result.getInt("id"), result.getString("name"), result.getInt("server"));
+                injector.injectMembers(player);
+                account.getPlayers().add(player);
+            }
             result.close();
         } catch (Exception e) {
             log.error("Exception > {}", e.getMessage());

@@ -1,11 +1,16 @@
 package graviton.database.data;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.Data;
 import graviton.common.CryptManager;
 import graviton.game.Account;
+import graviton.login.Configuration;
+import graviton.login.Manager;
 import graviton.network.login.LoginClient;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -14,6 +19,19 @@ import java.sql.SQLException;
  */
 @Slf4j
 public class AccountData extends Data {
+    @Inject
+    Injector injector;
+    @Inject
+    Configuration configuration;
+    @Inject
+    Manager manager;
+
+    private Connection connection;
+
+    @Override
+    public void initialize() {
+        this.connection =  configuration.getDatabase().getConnection();
+    }
 
     public boolean isGood(String username, String password, final LoginClient client) {
         boolean isGood = false;
@@ -45,7 +63,7 @@ public class AccountData extends Data {
                 manager.checkAccount(id);
                 account = new Account(id,
                         resultSet.getString("account"), resultSet.getString("password"),
-                        resultSet.getString("pseudo"), resultSet.getString("question"), resultSet.getInt("rank"));
+                        resultSet.getString("pseudo"), resultSet.getString("question"), resultSet.getInt("rank"),injector);
             }
             resultSet.close();
         } catch (SQLException e) {

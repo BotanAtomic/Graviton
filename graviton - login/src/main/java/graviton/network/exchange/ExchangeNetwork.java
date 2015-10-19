@@ -1,6 +1,7 @@
 package graviton.network.exchange;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.NetworkService;
 import graviton.login.Configuration;
 import graviton.login.Manager;
@@ -18,6 +19,9 @@ import java.net.InetSocketAddress;
  */
 @Slf4j
 public class ExchangeNetwork implements NetworkService, IoHandler {
+    @Inject
+    Injector injector;
+
     private final NioSocketAcceptor acceptor;
     private final int port;
 
@@ -33,7 +37,7 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
     @Override
     public void sessionCreated(IoSession session) throws Exception {
         log.info("[(E)Session {}] created", session.getId());
-        new ExchangeClient(session);
+        new ExchangeClient(session,injector);
     }
 
     @Override
@@ -64,8 +68,11 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
             manager.getClient(session).send("PONG");
             return;
         }
+        System.err.println("STAPE 1");
         manager.getClient(session).parsePacket(packet);
+        System.err.println("STAPE 2");
         log.info("[(E)Session {}] recev < {}", session.getId(), packet);
+        System.err.println("STAPE 3");
     }
 
     @Override

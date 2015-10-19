@@ -1,7 +1,5 @@
 package graviton.api;
 
-import graviton.login.Main;
-import graviton.login.Manager;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.session.IoSession;
 
@@ -9,8 +7,6 @@ import org.apache.mina.core.session.IoSession;
  * Created by Botan on 13/07/2015.
  */
 public interface Client {
-    Manager manager = Main.getInstance(Manager.class);
-
     long getId();
 
     void parsePacket(String packet);

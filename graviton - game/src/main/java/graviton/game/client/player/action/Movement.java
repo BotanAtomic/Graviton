@@ -55,9 +55,10 @@ public class Movement extends Pathfinding implements Action {
     @Override
     public void onFail(String args) {
         int newCellID = Integer.parseInt(args);
-        player.changePosition(player.getMap().getCell(newCellID));
+        player.getMap().getCell(newCellID).addCreature(player);
         player.changeOrientation(getFinalOrientation(initialPathfinding), false);
         player.send("BN");
+        player.getActionManager().setStatus(ActionManager.Status.WAITING);
     }
 
     @Override

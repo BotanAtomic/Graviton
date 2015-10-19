@@ -1,5 +1,7 @@
 package graviton.game.object;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.core.Main;
 import graviton.game.GameManager;
 import graviton.game.enums.ObjectPosition;
@@ -17,7 +19,8 @@ import java.util.TreeMap;
  */
 @Data
 public class Object {
-    private final GameManager manager = Main.getInstance(GameManager.class);
+    @Inject
+    GameManager manager;
 
     private final int id;
     private final ObjectTemplate template;
@@ -31,7 +34,8 @@ public class Object {
     private List<SpellEffect> spellEffects;
 
 
-    public Object(int id, int template, int quantity, int position, String statistics) {
+    public Object(int id, int template, int quantity, int position, String statistics,Injector injector) {
+        injector.injectMembers(this);
         this.id = id;
         this.template = manager.getObjectTemplate(template);
         this.position = ObjectPosition.get(position);
@@ -42,7 +46,8 @@ public class Object {
         this.spellEffects = new ArrayList<>();
     }
 
-    public Object(int id, int template, int quantity, ObjectPosition position, Statistics statistics, List<SpellEffect> spellEffects) {
+    public Object(int id, int template, int quantity, ObjectPosition position, Statistics statistics, List<SpellEffect> spellEffects,Injector injector) {
+        injector.injectMembers(this);
         this.id = id;
         this.template = manager.getObjectTemplate(template);
         this.quantity = quantity;

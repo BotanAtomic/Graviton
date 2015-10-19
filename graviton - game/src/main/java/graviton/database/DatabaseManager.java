@@ -1,6 +1,7 @@
 package graviton.database;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.Manager;
 import graviton.core.Configuration;
 import graviton.game.GameManager;
@@ -41,6 +42,9 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 public class DatabaseManager implements Manager {
+    @Inject
+    Injector injector;
+
     final private ReentrantLock locker = new ReentrantLock();
     @Getter
     private final Database loginDatabase, gameDatabase;
@@ -64,7 +68,7 @@ public class DatabaseManager implements Manager {
             String query = "SELECT * from accounts WHERE id = " + id + ";";
             ResultSet result = getLogin().createStatement().executeQuery(query);
             if (result.next())
-                account = new Account(result.getInt("id"), result.getString("answer"), result.getString("pseudo"), result.getInt("rank"));
+                account = new Account(result.getInt("id"), result.getString("answer"), result.getString("pseudo"), result.getInt("rank"),injector);
             result.close();
         } catch (SQLException e) {
             log.error("load account {}", e);
@@ -235,13 +239,18 @@ public class DatabaseManager implements Manager {
 
         String[] position = result.getString("position").split(";");
         String[] alignement = result.getString("alignement").split(";");
-
-        return new Player(result.getInt("id"), account, result.getString("name"),
-                result.getInt("sex"), result.getInt("class"), Integer.parseInt(alignement[0]),
-                Integer.parseInt(alignement[1]), Integer.parseInt(alignement[2]), Integer.parseInt(alignement[3]) == 1, result.getInt("level"),
-                result.getInt("gfx"), finalColor, result.getLong("experience"), result.getInt("size"),
-                stats, result.getString("items"), result.getLong("kamas"), result.getInt("capital"), result.getString("spells"), result.getInt("spellpoints"),
-                Integer.parseInt(position[0]), Integer.parseInt(position[1]));
+        Player player = null;
+        try {
+            player = new Player(result.getInt("id"), account, result.getString("name"),
+                    result.getInt("sex"), result.getInt("class"), Integer.parseInt(alignement[0]),
+                    Integer.parseInt(alignement[1]), Integer.parseInt(alignement[2]), Integer.parseInt(alignement[3]) == 1, result.getInt("level"),
+                    result.getInt("gfx"), finalColor, result.getLong("experience"), result.getInt("size"),
+                    stats, result.getString("items"), result.getLong("kamas"), result.getInt("capital"), result.getString("spells"), result.getInt("spellpoints"),
+                    Integer.parseInt(position[0]), Integer.parseInt(position[1]), injector);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return player;
     }
 
     /**
@@ -303,10 +312,10 @@ public class DatabaseManager implements Manager {
     }
 
     public Maps getMap(ResultSet result) throws SQLException {
-        final Maps map = new Maps(result.getInt("id"), result.getLong("date"),
+        Maps map = new Maps(result.getInt("id"), result.getLong("date"),
                 result.getInt("width"), result.getInt("heigth"),
                 result.getString("places"), result.getString("key"),
-                result.getString("mapData"), result.getString("mappos"));
+                result.getString("mapData"), result.getString("mappos"),injector);
         manager.getMaps().put(map.getId(), map);
         return map;
     }
@@ -314,6 +323,7 @@ public class DatabaseManager implements Manager {
     /**
      * #Object
      **/
+
     public ObjectTemplate loadObjectTemplate(int id) {
         ObjectTemplate template = null;
         try {
@@ -343,7 +353,7 @@ public class DatabaseManager implements Manager {
                 int quantity = resultSet.getInt("quantity");
                 int position = resultSet.getInt("position");
                 String stats = resultSet.getString("stats");
-                object = new Object(id, template, quantity, position, stats);
+                object = new Object(id, template, quantity, position, stats,injector);
                 manager.getObjects().put(id, object);
             }
             resultSet.close();
@@ -418,7 +428,7 @@ public class DatabaseManager implements Manager {
         return new ObjectTemplate(result.getInt("id"), result.getInt("type"), result.getString("name"),
                 result.getInt("level"), result.getString("statsTemplate"), result.getInt("pod"),
                 result.getInt("panoplie"), result.getInt("price"), result.getString("condition"),
-                result.getString("armeInfos"));
+                result.getString("armeInfos"),injector);
     }
 
     /**

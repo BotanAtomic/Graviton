@@ -13,23 +13,13 @@ import graviton.core.injector.NetworkModule;
  */
 public class Main {
 
-    private static Injector injector;
-
     public static void main(String[] args) {
-        injector = Guice.createInjector(
+        Injector injector = Guice.createInjector(
                 new DefaultModule(),
                 new DatabaseModule(),
                 new NetworkModule(),
                 new GameModule());
         final Manager manager = injector.getInstance(Manager.class).start();
         Runtime.getRuntime().addShutdownHook(new Thread(manager::stop));
-    }
-
-    public static void close() {
-
-    }
-
-    public static <T> T getInstance(Class<T> instance) {
-        return injector.getInstance(instance);
     }
 }

@@ -1,6 +1,7 @@
 package graviton.login;
 
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.Client;
 import graviton.common.Scanner;
 import graviton.database.data.AccountData;
@@ -28,11 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 public class Manager {
     @Inject
-    private Configuration configuration;
+    Injector injector;
     @Inject
-    private NetworkManager manager;
+    Configuration configuration;
     @Inject
-    private Scanner scanner;
+    NetworkManager manager;
+    @Inject
+    Scanner scanner;
 
     private Map<Long, Client> clients;
     private Map<String, graviton.api.Data> datas;
@@ -71,9 +74,17 @@ public class Manager {
     }
 
     private void initialize() {
-        datas.put("account", new AccountData());
-        datas.put("player", new PlayerData());
-        datas.put("server", new ServerData());
+        AccountData accountData = new AccountData();
+        injector.injectMembers(accountData);
+        PlayerData playerData = new PlayerData();
+        injector.injectMembers(playerData);
+        ServerData serverData = new ServerData();
+        injector.injectMembers(serverData);
+
+        datas.put("account", accountData);
+        datas.put("player", playerData);
+        datas.put("server", serverData);
+        datas.values().forEach(data -> data.initialize());
     }
 
     public void addClient(Client client) {

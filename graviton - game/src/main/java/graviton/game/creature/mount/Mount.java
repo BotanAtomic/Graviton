@@ -1,5 +1,7 @@
 package graviton.game.creature.mount;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.core.Main;
 import graviton.game.GameManager;
 import graviton.game.object.Object;
@@ -14,7 +16,8 @@ import java.util.Map;
  */
 @Data
 public class Mount {
-    private final GameManager manager = Main.getInstance(GameManager.class);
+    @Inject
+    GameManager manager;
 
     private final int id;
     private final int color;
@@ -39,7 +42,8 @@ public class Mount {
     private int serenity;
 
 
-    public Mount(int id, int color, int sex, List<Object> objects) {
+    public Mount(int id, int color, int sex, List<Object> objects,Injector injector) {
+        injector.injectMembers(this);
         this.id = id;
         this.color = color;
         this.sex = sex;

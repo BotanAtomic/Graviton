@@ -1,5 +1,6 @@
 package graviton.network.application;
 
+import com.google.inject.Inject;
 import graviton.api.Client;
 import graviton.common.CryptManager;
 import graviton.login.Main;
@@ -12,6 +13,9 @@ import org.apache.mina.core.session.IoSession;
  */
 @Data
 public class ApplicationClient implements Client {
+    @Inject
+    Manager manager;
+
     private final long id;
     private final IoSession session;
 
@@ -36,7 +40,7 @@ public class ApplicationClient implements Client {
             case 'C':
                 String[] args = finalPacket.split(";");
                 if (args[0].equals(CryptManager.decrypt(username)) && args[1].equals(CryptManager.decrypt(password))) {
-                    send("L" + Main.getInstance(Manager.class).getServerForApplication());
+                    send("L" + manager.getServerForApplication());
                     return;
                 }
                 send("E");
@@ -45,10 +49,10 @@ public class ApplicationClient implements Client {
                 manager.getServers().values().stream().filter(server -> server.getClient() != null).forEach(server -> server.send("S"));
                 break;
             case 'R':
-                Main.getInstance(Manager.class).getServerByKey(finalPacket).send("R");
+                manager.getServerByKey(finalPacket).send("R");
                 break;
             case 'E':
-                Main.getInstance(Manager.class).getServerByKey(finalPacket).send("E");
+                manager.getServerByKey(finalPacket).send("E");
                 break;
 
         }

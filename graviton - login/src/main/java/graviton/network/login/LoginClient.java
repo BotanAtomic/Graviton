@@ -1,5 +1,7 @@
 package graviton.network.login;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.Client;
 import graviton.database.data.AccountData;
 import graviton.database.data.PlayerData;
@@ -7,6 +9,7 @@ import graviton.database.data.ServerData;
 import graviton.game.Account;
 import graviton.game.Player;
 import graviton.game.Server;
+import graviton.login.Manager;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.session.IoSession;
@@ -19,9 +22,12 @@ import java.util.List;
 @Data
 @Slf4j
 public class LoginClient implements Client {
-    private final AccountData accountData = (AccountData) manager.getData("account");
-    private final PlayerData playerData = (PlayerData) manager.getData("player");
-    private final ServerData serverData = (ServerData) manager.getData("server");
+    @Inject
+    Manager manager;
+
+    private final AccountData accountData;
+    private final PlayerData playerData;
+    private final ServerData serverData;
 
     private final long id;
     private final String key;
@@ -30,12 +36,16 @@ public class LoginClient implements Client {
     private Statut statut;
     private Account account;
 
-    public LoginClient(IoSession session, String key) {
+    public LoginClient(IoSession session, String key,Injector injector) {
+        injector.injectMembers(this);
         this.id = session.getId();
         this.session = session;
         this.key = key;
         this.statut = Statut.CONNECTION;
-        manager.addClient(this);
+        this.accountData = (AccountData) manager.getData("account");
+        this.playerData = (PlayerData) manager.getData("player");
+        this.serverData = (ServerData) manager.getData("server");
+        this.manager.addClient(this);
     }
 
     @Override

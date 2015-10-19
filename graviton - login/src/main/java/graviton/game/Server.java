@@ -1,34 +1,29 @@
 package graviton.game;
 
-import graviton.login.Main;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.login.Manager;
 import graviton.network.exchange.ExchangeClient;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 /**
  * Created by Botan on 07/06/2015.
  */
+@Data
 public class Server {
-    private final Manager manager = Main.getInstance(Manager.class);
-    @Getter
-    @Setter
+    @Inject
+    Manager manager;
+
     private int id, port;
-    @Getter
-    @Setter
     private State state;
-    @Getter
-    @Setter
     private String ip, key;
-    @Getter
-    @Setter
     private ExchangeClient client;
 
-    public Server(int id, String key) {
+    public Server(int id, String key,Injector injector) {
+        injector.injectMembers(this);
         this.id = id;
         this.key = key;
         this.state = State.OFFLINE;
-        manager.getServers().put(id, this);
     }
 
     public static State getState(int id) {

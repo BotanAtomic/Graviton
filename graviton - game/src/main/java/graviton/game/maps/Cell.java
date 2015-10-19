@@ -1,5 +1,6 @@
 package graviton.game.maps;
 
+import com.google.inject.Injector;
 import graviton.common.Utils;
 import graviton.game.client.player.Player;
 import graviton.game.common.Action;
@@ -15,6 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Created by Botan on 22/06/2015.
  */
 public class Cell {
+
     @Getter
     private final int id;
     @Getter
@@ -27,13 +29,16 @@ public class Cell {
     @Getter
     private InteractiveObject interactiveObject;
 
-    public Cell(int id, Maps map, boolean walkable, int interactiveObject) {
+    public Cell(int id, Maps map, boolean walkable, int interactiveObject,Injector injector) {
+        injector.injectMembers(this);
         this.id = id;
         this.map = map;
         this.walkable = walkable;
         this.creatures = new CopyOnWriteArrayList<>();
-        if (interactiveObject != -1)
-            this.interactiveObject = new InteractiveObject(interactiveObject, map, this);
+        if (interactiveObject != -1) {
+            this.interactiveObject = new InteractiveObject(interactiveObject, map, this,injector);
+            injector.injectMembers(interactiveObject);
+        }
     }
 
     public void applyAction(Player player) {

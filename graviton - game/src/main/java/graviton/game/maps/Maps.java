@@ -1,5 +1,7 @@
 package graviton.game.maps;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.common.Utils;
 import graviton.game.client.player.Player;
 import graviton.game.creature.Creature;
@@ -33,7 +35,8 @@ public class Maps {
     private final String loadingPacket;
     private Map<Integer, Creature> creatures;
 
-    public Maps(int id, long date, int width, int heigth, String places, String key, String data, String position) {
+    public Maps(int id, long date, int width, int heigth, String places, String key, String data, String position,Injector injector) {
+        injector.injectMembers(this);
         this.id = id;
         this.date = date;
         this.width = width;
@@ -44,7 +47,7 @@ public class Maps {
         String[] mapInfos = position.split(",");
         this.X = Integer.parseInt(mapInfos[0]);
         this.Y = Integer.parseInt(mapInfos[1]);
-        this.cells = decompileCells(data);
+        this.cells = decompileCells(data,injector);
         this.loadingPacket = "GA;2;" + this.getId() + ";";
         this.descriptionPacket = "GDM|" + id + "|0" + date + "|" + (!key.isEmpty() ? key : data);
     }
@@ -112,7 +115,7 @@ public class Maps {
     /**
      * Tools
      **/
-    private Map<Integer, Cell> decompileCells(String data) {
+    private Map<Integer, Cell> decompileCells(String data,Injector injector) {
         Map<Integer, Cell> cells = new ConcurrentHashMap<>();
         String cellData;
         List<Byte> cellInfos = new ArrayList<>();
@@ -124,7 +127,8 @@ public class Maps {
             int layerObject2 = ((cellInfos.get(0) & 2) << 12) + ((cellInfos.get(7) & 1) << 12) + (cellInfos.get(8) << 6) + cellInfos.get(9);
             boolean layerObject2Interactive = ((cellInfos.get(7) & 2) >> 1) != 0;
             int obj = (layerObject2Interactive ? layerObject2 : -1);
-            cells.put(f / 10, new Cell(f / 10, this, walkable, obj));
+            Cell cell = new Cell(f / 10, this, walkable, obj,injector);
+            cells.put(f / 10, cell);
             cellInfos.clear();
         }
         return cells;

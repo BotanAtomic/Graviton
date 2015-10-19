@@ -1,7 +1,10 @@
 package graviton.network.exchange;
 
+import com.google.inject.Inject;
+import com.google.inject.Injector;
 import graviton.api.Client;
 import graviton.game.Server;
+import graviton.login.Manager;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.session.IoSession;
@@ -12,24 +15,34 @@ import org.apache.mina.core.session.IoSession;
 @Data
 @Slf4j
 public class ExchangeClient implements Client {
+    @Inject
+    Manager manager;
+
     private final long id;
     private final IoSession session;
 
     private Server server;
 
-    public ExchangeClient(IoSession session) {
+    public ExchangeClient(IoSession session,Injector injector) {
+        injector.injectMembers(this);
         this.id = session.getId();
         this.session = session;
-        send("?");
         manager.addClient(this);
+        send("?");
     }
 
     public void addServer(int server, String key) {
+        System.err.println("Addind");
         if (manager.getServers().get(server).getKey().equals(key)) {
+            System.err.println("Addind2");
             this.server = manager.getServers().get(server);
+            System.err.println("Addind3");
             this.server.setState(Server.State.ONLINE);
+            System.err.println("Addind4");
             this.server.setClient(this);
+            System.err.println("Addind5");
             send("I");
+            System.err.println("Addind6");
             return;
         }
         send("E");

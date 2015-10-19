@@ -27,7 +27,7 @@ import java.nio.charset.CharsetDecoder;
  */
 @Slf4j
 public class ExchangeNetwork implements IoHandler, NetworkService {
-
+    private final GameManager gameManager;
     private final Configuration configuration;
     private final IoConnector connector;
     private final GameNetwork gameNetwork;
@@ -44,12 +44,13 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
     private long responseTime;
 
     @Inject
-    public ExchangeNetwork(Configuration configuration, DatabaseManager databaseManager, GameNetwork gameNetwork) {
+    public ExchangeNetwork(Configuration configuration, DatabaseManager databaseManager, GameNetwork gameNetwork,GameManager gameManager) {
         this.IP = configuration.getExchangeIp();
         this.PORT = configuration.getExchangePort();
         this.connector = new NioSocketConnector();
         this.connector.setHandler(this);
         this.configuration = configuration;
+        this.gameManager = gameManager;
         this.databaseManager = databaseManager;
         this.gameNetwork = gameNetwork;
     }
@@ -78,7 +79,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
-        Main.close();
+        //TODO : Close
     }
 
     @Override
@@ -107,7 +108,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
 
     @Override
     public void inputClosed(IoSession session) throws Exception {
-        Main.close();
+        //TODO : Close
     }
 
     public void send(String packet) {
@@ -134,7 +135,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
                 send("S" + configuration.getServerId() + "@" + configuration.getServerKey());
                 break;
             case 'E':
-                Main.close();
+                System.exit(0);
                 break;
             case 'R':
                 System.exit(0);
@@ -143,17 +144,16 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
                 send("I" + configuration.getIp() + "@" + configuration.getGamePort());
                 break;
             case 'S':
-                Main.getInstance(GameManager.class).save();
+                gameManager.save();
                 break;
             case '+':
                 databaseManager.loadAccount(Integer.parseInt(packet.substring(1)));
                 break;
             case '-':
-                for (GameClient client : gameNetwork.getClients().values())
-                    if (client.getAccount().getId() == Integer.parseInt(packet.substring(1))) {
-                        client.send("AlEa");
-                        client.getSession().close(true);
-                    }
+                gameNetwork.getClients().values().stream().filter(client -> client.getAccount().getId() == Integer.parseInt(packet.substring(1))).forEach(client -> {
+                    client.send("AlEa");
+                    client.getSession().close(true);
+                });
                 break;
             default:
                 log.info("Undefined packet : {}", packet);
