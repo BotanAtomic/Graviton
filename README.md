@@ -43,6 +43,21 @@ public class Exemple {
    }
 }
 ```
+_Get and set all object whith annotation in class : @Data_
+```xml
+package graviton;
+
+import lombok.Data;
+
+@Data
+public class Exemple {
+   private Object first;
+   private Object second;
+   public Exemple() {
+      this.setSecond(getFirst());
+   }
+}
+```
 _All the information of the database are encrypted (*security mode*):_
 ```xml
 public Database(String ip, String name, String user, String pass) {
@@ -76,21 +91,23 @@ public Database(String ip, String name, String user, String pass) {
 
 [Game]
 
--> Add deplacement for player
+&#9989; Deplacement for player
 
--> Add chat with flood checker for mute
+&#9989; Chat with flood checker for mute
 
--> Add items
+&#9989; Command by chat
 
--> Add emote
+&#9989; Items 
 
--> Add map action
+&#9989; Emotes
 
--> Add group (30%)
+&#9989; Map actions
 
--> Add spells (place and level)
+&#9989; Player group (30%)
 
--> Add boost of statisctics
+&#9989; Spells (place and level only)
+
+&#9989; Boost of statisctics
 
 [Application]
 
@@ -98,6 +115,3 @@ public Database(String ip, String name, String user, String pass) {
 </p>
 <IMG ALIGN = LEFT SRC = 'https://i.gyazo.com/280bd5ad0834320e416af3865eb4ef17.png']</IMG>
 <IMG ALIGN = RIGHT SRC = 'https://i.gyazo.com/361eb7676d21e9c360a78381b49955e6.gif']</IMG>
-</p>
-
-<p align="center">Thank's to Return for his help > <a href="https://github.com/Romain-P/">Romain-P</a></p>
