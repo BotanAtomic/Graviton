@@ -101,6 +101,8 @@ public Database(String ip, String name, String user, String pass) {
 
 &#9989; Emotes
 
+&#9989; Alignement
+
 &#9989; Map actions
 
 &#9989; Player group (30%)
