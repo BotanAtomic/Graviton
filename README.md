@@ -1,4 +1,4 @@
-<p align="center"><IMG SRC="http://i.gyazo.com/cf951ef31bae8edf9f2bcfceab2aebe7.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/760ac25569c32430a3d1817a77e0fd6e.png"></p>
 
 ![Build Status](https://img.shields.io/badge/Login-100%20%-green.svg?style=flat)
 ![Build Status](https://img.shields.io/badge/Game-30%20%-red.svg?style=flat)
@@ -115,5 +115,4 @@ public Database(String ip, String name, String user, String pass) {
 
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
 </p>
-<IMG ALIGN = LEFT SRC = 'https://i.gyazo.com/280bd5ad0834320e416af3865eb4ef17.png']</IMG>
-<IMG ALIGN = RIGHT SRC = 'https://i.gyazo.com/361eb7676d21e9c360a78381b49955e6.gif']</IMG>
+
