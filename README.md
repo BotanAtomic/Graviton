@@ -6,11 +6,15 @@
 
 #What is it ?
 
-Graviton is a 1.29 dofus emulator, developed in Java. He's supported by gradle and is separated in 2 projects
+Graviton is a 1.29 dofus emulator, developed in Java. He's supported by gradle and is separated in 4 projects
 
 Graviton - Login : is the login server, manages connections
 
 Graviton - Game : is the game server, manages the in-game
+
+Graviton - Defender : [NOT NOW]
+
+Graviton - Manager : for manage Manager and servers with an application
 
 #Dependencies
 
