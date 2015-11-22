@@ -7,11 +7,13 @@ import graviton.game.client.player.Player;
  */
 public class Guild {
     private final int id;
-    private String name;
-    private String emblem;
+   // private final String name;
+    //private final int background,backgroundColor;
+    //private final int motif,motifColor;
 
-    public Guild(int id) {
+    public Guild(int id,String parameters) {
         this.id = id;
+        String[] arguements = parameters.split("\\|");
     }
 
     public void addMember(Player player) {

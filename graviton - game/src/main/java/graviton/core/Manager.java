@@ -5,47 +5,35 @@ import graviton.common.Scanner;
 import graviton.database.DatabaseManager;
 import graviton.game.GameManager;
 import graviton.game.client.player.component.CommandManager;
-import graviton.game.packet.PacketManager;
+import graviton.game.PacketManager;
 import graviton.network.NetworkManager;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Botan on 16/06/2015.
  */
 public class Manager {
-    @Inject
-    private DatabaseManager databaseManager;
-    @Inject
-    private NetworkManager networkManager;
-    @Inject
-    private GameManager gameManager;
-    @Inject
-    private PacketManager packetManager;
-    @Inject
-    private CommandManager commandManager;
-    @Inject
-    private Scanner scanner;
     @Getter
-    private List<graviton.api.Manager> managers;
+    private final List<graviton.api.Manager> managers;
 
+    @Getter
+    final private Date dateOfStart;
 
-    public Manager start() {
-        this.managers = asList(databaseManager, networkManager, gameManager, packetManager, scanner, commandManager);
+    @Inject
+    public Manager(DatabaseManager databaseManager,NetworkManager networkManager,GameManager gameManager,PacketManager packetManager,CommandManager commandManager, Scanner scanner) {
+        this.dateOfStart = new Date();
+        managers = Arrays.asList( databaseManager, networkManager, gameManager, packetManager, commandManager, scanner);
+    }
+
+    public void start() {
         this.managers.forEach(graviton.api.Manager::start);
-        return this;
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
     public void stop() {
         this.managers.forEach(graviton.api.Manager::stop);
     }
 
-    public final List<graviton.api.Manager> asList(graviton.api.Manager... a) {
-        List<graviton.api.Manager> managers = new ArrayList<>();
-        Collections.addAll(managers, a);
-        return managers;
-    }
 }

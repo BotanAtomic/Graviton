@@ -13,10 +13,6 @@ import java.io.File;
  */
 @Slf4j
 public final class Configuration {
-    /**
-     * Method 1 = by file
-     * Method 2 = by existing information
-     */
     @Getter
     private String loginIp, exchangeIp;
     @Getter

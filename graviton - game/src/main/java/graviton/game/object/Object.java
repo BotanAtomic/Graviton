@@ -2,10 +2,8 @@ package graviton.game.object;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.core.Main;
 import graviton.game.GameManager;
 import graviton.game.enums.ObjectPosition;
-import graviton.game.spells.SpellEffect;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 
@@ -31,8 +29,6 @@ public class Object {
 
     private Statistics statistics;
     private Map<Integer, String> stringStats;
-    private List<SpellEffect> spellEffects;
-
 
     public Object(int id, int template, int quantity, int position, String statistics,Injector injector) {
         injector.injectMembers(this);
@@ -43,10 +39,9 @@ public class Object {
         this.statistics = new Statistics();
         this.stringStats = new TreeMap<>();
         this.parseStringToStats(statistics);
-        this.spellEffects = new ArrayList<>();
     }
 
-    public Object(int id, int template, int quantity, ObjectPosition position, Statistics statistics, List<SpellEffect> spellEffects,Injector injector) {
+    public Object(int id, int template, int quantity, ObjectPosition position, Statistics statistics,Injector injector) {
         injector.injectMembers(this);
         this.id = id;
         this.template = manager.getObjectTemplate(template);
@@ -54,7 +49,6 @@ public class Object {
         this.position = position;
         this.statistics = statistics;
         this.stringStats = new TreeMap<>();
-        this.spellEffects = spellEffects;
     }
 
     public String parseItem() {
@@ -67,19 +61,6 @@ public class Object {
     public String parseEffects() {
         StringBuilder builder = new StringBuilder();
         boolean isFirst = true;
-
-        for (SpellEffect spellEffect : this.spellEffects) {
-            if (!isFirst)
-                builder.append(",");
-            String[] infos = spellEffect.getArguments().split("\\;");
-            try {
-                builder.append(Integer.toHexString(spellEffect.getEffectID())).append("#").append(infos[0]).append("#").append(infos[1]).append("#0#").append(infos[5]);
-            } catch (Exception e) {
-                e.printStackTrace();
-                continue;
-            }
-            isFirst = false;
-        }
 
         for (Map.Entry<Integer, Integer> entry : this.statistics.getEffects().entrySet()) {
             if (!isFirst)
@@ -123,7 +104,6 @@ public class Object {
                         String max = stats[2];
                         String jet = stats[4];
                         String args = min + ";" + max + ";-1;-1;0;" + jet;
-                        this.spellEffects.add(new SpellEffect(id, args, 0, -1));
                         follow1 = false;
                         break;
                 }
@@ -131,12 +111,10 @@ public class Object {
                     continue;
 
                 boolean follow2 = true;
-                for (int a : template.getSwordEffectId()) {
-                    if (a == id) {
-                        this.spellEffects.add(new SpellEffect(id, stats[1] + ";" + stats[2] + ";-1;-1;0;" + stats[4], 0, -1));
+                for (int a : template.getSwordEffectId())
+                    if (a == id)
                         follow2 = false;
-                    }
-                }
+
                 if (!follow2)
                     continue;
                 this.statistics.addEffect(id, Integer.parseInt(stats[1], 16));

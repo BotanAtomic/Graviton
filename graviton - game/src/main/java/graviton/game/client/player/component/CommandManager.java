@@ -31,7 +31,7 @@ public class CommandManager implements Manager {
 
     @Override
     public void start() {
-        this.commands.put("exemple", (player, arguments) -> player.changeOrientation(player.getOrientation() + 1, true));
+        this.commands.put("guilde", (player, arguments) -> player.send("gn"));
     }
 
     @Override

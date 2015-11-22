@@ -1,4 +1,4 @@
-package graviton.game.packet;
+package graviton.game;
 
 import com.google.inject.Inject;
 import graviton.api.Manager;
@@ -121,6 +121,7 @@ public class PacketManager implements Manager {
                 log.error("Probleme at packet {} : {}", packet, e);
             }
         });
+        packets.put("gC", (client, packet) -> client.getCurrentPlayer().createGuild(packet));
 
         packets.put("eD", (client, packet) -> client.getCurrentPlayer().changeOrientation(Integer.parseInt(packet), true));
 
@@ -128,7 +129,7 @@ public class PacketManager implements Manager {
 
         packets.put("BS", (client, packet) -> client.getCurrentPlayer().getMap().send("cS" + client.getCurrentPlayer().getId() + "|" + packet));
 
-        packets.put("BM", (client, packet) -> client.getCurrentPlayer().speak(packet.substring(1, packet.length() - 1), packet.substring(0, 1)));
+        packets.put("BM", (client, packet) -> client.getCurrentPlayer().speak(packet.substring(0, packet.length() - 1), packet.substring(0, 1)));
 
         packets.put("AT", (client, packet) -> {
             client.setAccount(gameManager.getAccounts().get(Integer.parseInt(packet)));
@@ -204,8 +205,6 @@ public class PacketManager implements Manager {
                     client.send("WV");
                     break;
                 case "PR":
-                    if (client.getCurrentPlayer() == null)
-                        break;
                     if (client.getCurrentPlayer().getInviting() == 0)
                         break;
                     client.send("BN");
@@ -213,6 +212,17 @@ public class PacketManager implements Manager {
                     assert player != null;
                     player.send("PR");
                     player.setInviting(0);
+                    client.getCurrentPlayer().setInviting(0);
+                    break;
+                case "PA" :
+                    if (client.getCurrentPlayer().getInviting() == 0)
+                        break;
+                    client.send("BN");
+                    Player player2 = client.getCurrentPlayer().getGameManager().getPlayers().get(client.getCurrentPlayer().getInviting());
+                    assert player2 != null;
+                    client.getCurrentPlayer().createGroup(player2);
+                    player2.send("PR");
+                    player2.setInviting(0);
                     client.getCurrentPlayer().setInviting(0);
                     break;
                 default:

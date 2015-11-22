@@ -4,6 +4,13 @@ import com.google.inject.AbstractModule;
 import graviton.common.Scanner;
 import graviton.core.Configuration;
 import graviton.core.Manager;
+import graviton.database.DatabaseManager;
+import graviton.game.GameManager;
+import graviton.game.PacketManager;
+import graviton.game.client.player.component.CommandManager;
+import graviton.network.NetworkManager;
+import graviton.network.exchange.ExchangeNetwork;
+import graviton.network.game.GameNetwork;
 
 
 /**
@@ -13,7 +20,14 @@ public class DefaultModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(Configuration.class).asEagerSingleton();
-        bind(Manager.class).asEagerSingleton();
         bind(Scanner.class).asEagerSingleton();
+        bind(DatabaseManager.class).asEagerSingleton();
+        bind(GameManager.class).asEagerSingleton();
+        bind(CommandManager.class).asEagerSingleton();
+        bind(NetworkManager.class).asEagerSingleton();
+        bind(PacketManager.class).asEagerSingleton();
+        bind(GameNetwork.class).asEagerSingleton();
+        bind(ExchangeNetwork.class).asEagerSingleton();
+        bind(Manager.class).asEagerSingleton();
     }
 }

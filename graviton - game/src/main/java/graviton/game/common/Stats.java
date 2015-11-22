@@ -4,7 +4,6 @@ package graviton.game.common;
  * Created by Botan on 23/06/2015.
  */
 public class Stats {
-    //TODO : A refaire c'est de la GROSSE merde !
     public static final int ADD_PM2 = 78;
     public static final int REM_PA = 101;
     public static final int ADD_VIE = 110;

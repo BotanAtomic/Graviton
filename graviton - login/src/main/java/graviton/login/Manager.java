@@ -11,7 +11,6 @@ import graviton.game.Account;
 import graviton.game.Player;
 import graviton.game.Server;
 import graviton.network.NetworkManager;
-import graviton.network.application.ApplicationClient;
 import graviton.network.exchange.ExchangeClient;
 import graviton.network.login.LoginClient;
 import lombok.Data;
@@ -98,7 +97,7 @@ public class Manager {
 
     public Client getClient(IoSession session) {
         for (Client client : clients.values())
-            if (client.getSession() == session)
+            if (client.getSession().getId() == session.getId())
                 return client;
         return null;
     }
@@ -120,9 +119,10 @@ public class Manager {
     }
 
     public final String getServerForApplication() {
-        String[] name = {""};
-        if (getExchangeClients().size() == 0)
-            return "";
+        String[] name = {"L"};
+        if(getExchangeClients().size() == 0) {
+            return "L";
+        }
         getExchangeClients().forEach(exchangeClient -> name[0] += exchangeClient.getServer().getKey() + ";");
         return name[0].substring(0, name[0].length() - 1);
     }
@@ -146,12 +146,6 @@ public class Manager {
         return exchangeClients;
     }
 
-    public List<ApplicationClient> getApplicationClients() {
-        List<ApplicationClient> applicationClients = new ArrayList<>();
-        clients.values().stream().filter(client -> client instanceof ApplicationClient).forEach(client -> applicationClients.add((ApplicationClient) client));
-        return applicationClients;
-    }
-
     public void checkAccount(int id) {
         if (accounts.get(id) != null) {
             accounts.get(id).getClient().send("AlEa");
@@ -167,4 +161,6 @@ public class Manager {
     public graviton.api.Data getData(String name) {
         return datas.get(name);
     }
+
+
 }

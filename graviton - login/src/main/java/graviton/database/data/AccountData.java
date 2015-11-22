@@ -37,6 +37,8 @@ public class AccountData extends Data {
         boolean isGood = false;
         try {
             locker.lock();
+            if(connection.isClosed())
+                configuration.getDatabase().connect();
             String query = "SELECT * from accounts WHERE account = '" + username + "';";
             ResultSet resultSet = connection.createStatement().executeQuery(query);
             if (resultSet.next()) {
@@ -72,6 +74,25 @@ public class AccountData extends Data {
             locker.unlock();
         }
         return account;
+    }
+
+    public final Account load(String account,String password) {
+        Account selectedAccount = null;
+        try {
+            locker.lock();
+            String query = "SELECT * from accounts WHERE account = '" + account + "' AND password = '" + password + "';";
+            ResultSet resultSet = configuration.getDatabase().getConnection().createStatement().executeQuery(query);
+            if (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                selectedAccount =  new Account(resultSet.getString("pseudo"), resultSet.getInt("rank"),injector);
+            }
+            resultSet.close();
+        } catch (SQLException e) {
+            log.error("Exception > {}", e.getMessage());
+        } finally {
+            locker.unlock();
+        }
+        return selectedAccount;
     }
 
     public void updateNickname(Account account) {

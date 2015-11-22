@@ -8,6 +8,7 @@ import graviton.network.exchange.ExchangeNetwork;
 import graviton.network.game.GameNetwork;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -21,7 +22,7 @@ public class NetworkManager implements Manager {
 
     @Inject
     public NetworkManager(ExchangeNetwork exchangeNetwork, GameNetwork gameNetwork) {
-        this.services = asList(exchangeNetwork, gameNetwork);
+        this.services = Arrays.asList(exchangeNetwork, gameNetwork);
     }
 
     @Override
@@ -34,9 +35,4 @@ public class NetworkManager implements Manager {
         services.forEach(NetworkService::stop);
     }
 
-    private final List<NetworkService> asList(NetworkService... networks) {
-        List<NetworkService> services = new ArrayList<>();
-        Collections.addAll(services, networks);
-        return services;
-    }
 }

@@ -10,6 +10,7 @@ import graviton.game.client.Account;
 import graviton.game.client.player.Player;
 import graviton.game.common.Action;
 import graviton.game.common.Stats;
+import graviton.game.creature.monster.MonsterTemplate;
 import graviton.game.enums.Classe;
 import graviton.game.enums.StatsType;
 import graviton.game.experience.Experience;
@@ -18,7 +19,7 @@ import graviton.game.maps.Zaap;
 import graviton.game.maps.object.InteractiveObjectTemplate;
 import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
-import graviton.game.spells.Spell;
+import graviton.game.spells.SpellTemplate;
 import graviton.game.statistics.Statistics;
 import graviton.game.zone.SubZone;
 import graviton.game.zone.Zone;
@@ -29,10 +30,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,10 +44,13 @@ public class DatabaseManager implements Manager {
     Injector injector;
 
     final private ReentrantLock locker = new ReentrantLock();
+
     @Getter
     private final Database loginDatabase, gameDatabase;
+
     private GameManager manager;
     private Configuration config;
+
 
     @Inject
     public DatabaseManager(Configuration config) {
@@ -127,7 +128,7 @@ public class DatabaseManager implements Manager {
                     players.add(getPlayer(result, account));
             result.close();
         } catch (SQLException e) {
-            log.error(e.getMessage());
+            log.error("load players {}", e);
         } finally {
             locker.unlock();
         }
@@ -143,7 +144,7 @@ public class DatabaseManager implements Manager {
             exist = result.next();
             result.close();
         } catch (SQLException e) {
-            log.error(e.getMessage());
+            log.error("check if player exist {}", e);
         } finally {
             locker.unlock();
         }
@@ -202,7 +203,7 @@ public class DatabaseManager implements Manager {
             preparedStatement.executeUpdate();
             preparedStatement.close();
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("update player {}", e);
         } finally {
             locker.unlock();
         }
@@ -217,7 +218,7 @@ public class DatabaseManager implements Manager {
             id = result.next() ? result.getInt("max") + 1 : -1;
             result.close();
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("get next player id {}", e);
         } finally {
             locker.unlock();
         }
@@ -239,18 +240,12 @@ public class DatabaseManager implements Manager {
 
         String[] position = result.getString("position").split(";");
         String[] alignement = result.getString("alignement").split(";");
-        Player player = null;
-        try {
-            player = new Player(result.getInt("id"), account, result.getString("name"),
-                    result.getInt("sex"), result.getInt("class"), Integer.parseInt(alignement[0]),
-                    Integer.parseInt(alignement[1]), Integer.parseInt(alignement[2]), Integer.parseInt(alignement[3]) == 1, result.getInt("level"),
-                    result.getInt("gfx"), finalColor, result.getLong("experience"), result.getInt("size"),
-                    stats, result.getString("items"), result.getLong("kamas"), result.getInt("capital"), result.getString("spells"), result.getInt("spellpoints"),
-                    Integer.parseInt(position[0]), Integer.parseInt(position[1]), injector);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return player;
+        return new Player(result.getInt("id"), account, result.getString("name"),
+                result.getInt("sex"), result.getInt("class"), Integer.parseInt(alignement[0]),
+                Integer.parseInt(alignement[1]), Integer.parseInt(alignement[2]), Integer.parseInt(alignement[3]) == 1, result.getInt("level"),
+                result.getInt("gfx"), finalColor, result.getLong("experience"), result.getInt("size"),
+                stats, result.getString("items"), result.getLong("kamas"), result.getInt("capital"), result.getString("spells"), result.getInt("spellpoints"),
+                Integer.parseInt(position[0]), Integer.parseInt(position[1]), injector);
     }
 
     /**
@@ -269,7 +264,7 @@ public class DatabaseManager implements Manager {
             if (map != null)
                 configureCell(map);
         } catch (SQLException e) {
-            log.error(e.getMessage());
+            log.error("load map {}", e);
         } finally {
             locker.unlock();
         }
@@ -296,7 +291,7 @@ public class DatabaseManager implements Manager {
             }
             return map;
         } catch (SQLException e) {
-            log.error(e.getMessage());
+            log.error("load map by position {}", e);
         } finally {
             locker.unlock();
         }
@@ -334,7 +329,7 @@ public class DatabaseManager implements Manager {
                 template = getObject(resultSet);
             resultSet.close();
         } catch (SQLException e) {
-            log.error(e.getMessage());
+            log.error("load object template {}", e);
         } finally {
             locker.unlock();
         }
@@ -358,7 +353,7 @@ public class DatabaseManager implements Manager {
             }
             resultSet.close();
         } catch (SQLException e) {
-            log.error(e.getMessage());
+            log.error("load object {}", e);
         } finally {
             locker.unlock();
         }
@@ -381,7 +376,7 @@ public class DatabaseManager implements Manager {
             statement.close();
             return true;
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("create object {}", e);
         }
         return false;
     }
@@ -402,7 +397,7 @@ public class DatabaseManager implements Manager {
             preparedStatement.executeUpdate();
             preparedStatement.close();
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("update object {}", e);
         } finally {
             locker.unlock();
         }
@@ -417,7 +412,7 @@ public class DatabaseManager implements Manager {
             id = result.next() ? result.getInt("max") + 1 : -1;
             result.close();
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("get next object id {}", e);
         } finally {
             locker.unlock();
         }
@@ -432,6 +427,28 @@ public class DatabaseManager implements Manager {
     }
 
     /**
+     * #Monster
+     **/
+
+    public MonsterTemplate loadMonsterOnMap(int id) {
+        MonsterTemplate monsterTemplate = null;
+        try {
+            locker.lock();
+            String query = "SELECT * FROM monsters WHERE id = " + id;
+            ResultSet result = getGame().createStatement().executeQuery(query);
+            if(result.next())
+                monsterTemplate = new MonsterTemplate(result.getInt("id"), result.getInt("gfxID"));
+
+            result.close();
+        } catch (SQLException e) {
+            log.error("load account {}", e);
+        } finally {
+            locker.unlock();
+        }
+        return monsterTemplate;
+    }
+
+    /**
      * #Static
      **/
 
@@ -440,13 +457,13 @@ public class DatabaseManager implements Manager {
         try {
             locker.lock();
             loadZone();
-            loadClass();
+            loadClassData();
             loadExperience();
             loadSpells();
             loadInteractiveObject();
             loadZaaps();
         } catch (SQLException e) {
-            log.error(e.getMessage());
+            log.error("load all data {}", e);
         } finally {
             locker.unlock();
         }
@@ -469,49 +486,20 @@ public class DatabaseManager implements Manager {
         result.close();
     }
 
-    private void loadClass() throws SQLException {
-        ResultSet result = getGame().createStatement().executeQuery("SELECT * FROM class_data;");
-        Map<Integer, Integer> feca = new LinkedHashMap<>();
-        Map<Integer, Integer> sram = new LinkedHashMap<>();
-        Map<Integer, Integer> eniripsa = new LinkedHashMap<>();
-        Map<Integer, Integer> ecaflip = new LinkedHashMap<>();
-        Map<Integer, Integer> cra = new LinkedHashMap<>();
-        Map<Integer, Integer> iop = new LinkedHashMap<>();
-        Map<Integer, Integer> sadida = new LinkedHashMap<>();
-        Map<Integer, Integer> osamodas = new LinkedHashMap<>();
-        Map<Integer, Integer> xelor = new LinkedHashMap<>();
-        Map<Integer, Integer> pandawa = new LinkedHashMap<>();
-        Map<Integer, Integer> enutrof = new LinkedHashMap<>();
-        Map<Integer, Integer> sacrieur = new LinkedHashMap<>();
-        int level;
-        while (result.next()) {
-            level = result.getInt("level");
-            feca.put(level, result.getInt("feca"));
-            sram.put(level, result.getInt("sram"));
-            eniripsa.put(level, result.getInt("eniripsa"));
-            ecaflip.put(level, result.getInt("ecaflip"));
-            cra.put(level, result.getInt("cra"));
-            iop.put(level, result.getInt("iop"));
-            sadida.put(level, result.getInt("sadida"));
-            osamodas.put(level, result.getInt("osamodas"));
-            xelor.put(level, result.getInt("xelor"));
-            pandawa.put(level, result.getInt("pandawa"));
-            enutrof.put(level, result.getInt("enutrof"));
-            sacrieur.put(level, result.getInt("sacrieur"));
+    private void loadClassData() throws SQLException {
+        for(Classe classe : Classe.values())
+            combine(classe,classe.getSpells());
+    }
+
+    private void combine(Classe classe, int[] spells) {
+        final int[] level = {3  ,6  ,9  ,13 ,17 ,21 ,26 ,31 ,36 ,42 ,48 ,54 ,60 ,70 ,80 ,90 ,100,200};
+        Map<Integer,Integer> map = new LinkedHashMap<>();
+        int count = 0;
+        for(int i : level) {
+            map.put(i,spells[count]);
+            count++;
         }
-        manager.getClassData().put(Classe.FECA, feca);
-        manager.getClassData().put(Classe.SRAM, sram);
-        manager.getClassData().put(Classe.ENIRIPSA, eniripsa);
-        manager.getClassData().put(Classe.ECAFLIP, ecaflip);
-        manager.getClassData().put(Classe.CRA, cra);
-        manager.getClassData().put(Classe.IOP, iop);
-        manager.getClassData().put(Classe.SADIDA, sadida);
-        manager.getClassData().put(Classe.OSAMODAS, osamodas);
-        manager.getClassData().put(Classe.XELOR, xelor);
-        manager.getClassData().put(Classe.PANDAWA, pandawa);
-        manager.getClassData().put(Classe.ENUTROF, enutrof);
-        manager.getClassData().put(Classe.SACRIEUR, sacrieur);
-        result.close();
+        manager.getClassData().put(classe,map);
     }
 
     private void loadExperience() throws SQLException {
@@ -534,20 +522,14 @@ public class DatabaseManager implements Manager {
 
     private void loadSpells() throws SQLException {
         ResultSet result = getGame().createStatement().executeQuery("SELECT * FROM spells");
-        Map<Integer, Spell> spells = new ConcurrentHashMap<>();
-        Spell spell;
+        Map<Integer, SpellTemplate> spells = new ConcurrentHashMap<>();
+        SpellTemplate spellTemplate;
         while (result.next()) {
-            spell = new Spell(result.getInt("id"), result.getInt("sprite"), result.getString("spriteInfos"), result.getString("effectTarget"));
-            spell.addSpellStats(1, result.getString("level1"));
-            spell.addSpellStats(2, result.getString("level2"));
-            spell.addSpellStats(3, result.getString("level3"));
-            spell.addSpellStats(4, result.getString("level4"));
-            spell.addSpellStats(5, result.getString("level5"));
-            spell.addSpellStats(6, result.getString("level6"));
-            spells.put(spell.getId(), spell);
+            spellTemplate = new SpellTemplate(result.getInt("id"), result.getInt("sprite"), result.getString("spriteInfos"),result);
+            spells.put(spellTemplate.getId(), spellTemplate);
         }
         result.close();
-        manager.setSpells(spells);
+        manager.setSpellTemplates(spells);
     }
 
     private void loadInteractiveObject() throws SQLException {

@@ -64,15 +64,12 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
         String packet = decryptPacket(message);
-        if (packet.equals("PING")) {
+        if (packet.equals("PING") && packet.length() == 4) {
             manager.getClient(session).send("PONG");
             return;
         }
-        System.err.println("STAPE 1");
         manager.getClient(session).parsePacket(packet);
-        System.err.println("STAPE 2");
         log.info("[(E)Session {}] recev < {}", session.getId(), packet);
-        System.err.println("STAPE 3");
     }
 
     @Override

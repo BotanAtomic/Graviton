@@ -30,10 +30,8 @@ public class Configuration {
             configFromFile(config);
             return;
         }
-        //TODO : Encrypt informations
-
-        this.loginDatabase = new Database("127.0.0.1", "login", "root", "");
-        this.gameDatabase = new Database("127.0.0.1", "game", "root", "");
+        this.loginDatabase = new Database("PRFPOUz8cPFkhmkZatwE6A==", "XtxV1iNc82puQyu1UdWQKg==", "psUkfKpV6xHmdvuIMk05CQ==", "");
+        this.gameDatabase = new Database("PRFPOUz8cPFkhmkZatwE6A==", "M7jst2i9joSes1wu7XiQjw==", "psUkfKpV6xHmdvuIMk05CQ==", "");
         this.serverId = 1;
         this.serverKey = "pvp";
         this.ip = "127.0.0.1";

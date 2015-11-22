@@ -22,7 +22,7 @@ public class Account {
     Manager manager;
 
     private final int id;
-    private final String name, password, question;
+    private String name, password, question;
     private String pseudo;
     private int rank;
     private LoginClient client;
@@ -38,6 +38,12 @@ public class Account {
         this.players = new ArrayList<>();
         this.rank = rank;
         manager.getAccounts().put(id, this);
+    }
+    public Account(String pseudo, int rank,Injector injector) {
+        injector.injectMembers(this);
+        this.id = 0;
+        this.pseudo = pseudo;
+        this.rank = rank;
     }
 
     public void delete() {

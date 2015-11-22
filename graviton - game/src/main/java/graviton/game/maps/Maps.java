@@ -67,6 +67,7 @@ public class Maps {
     public void removeCreature(Creature creature) {
         this.creatures.remove(creature.getId());
         creature.getPosition().getCell().removeCreature(creature);
+        unloadCreature(creature);
     }
 
     private void loadCreature(Creature creature) {

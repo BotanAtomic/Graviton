@@ -29,14 +29,14 @@ public class Cell {
     @Getter
     private InteractiveObject interactiveObject;
 
-    public Cell(int id, Maps map, boolean walkable, int interactiveObject,Injector injector) {
+    public Cell(int id, Maps map, boolean walkable, int interactiveObject, Injector injector) {
         injector.injectMembers(this);
         this.id = id;
         this.map = map;
         this.walkable = walkable;
         this.creatures = new CopyOnWriteArrayList<>();
         if (interactiveObject != -1) {
-            this.interactiveObject = new InteractiveObject(interactiveObject, map, this,injector);
+            this.interactiveObject = new InteractiveObject(interactiveObject, map, this, injector);
             injector.injectMembers(interactiveObject);
         }
     }

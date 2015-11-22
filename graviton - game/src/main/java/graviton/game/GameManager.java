@@ -14,7 +14,7 @@ import graviton.game.maps.Zaap;
 import graviton.game.maps.object.InteractiveObjectTemplate;
 import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
-import graviton.game.spells.Spell;
+import graviton.game.spells.SpellTemplate;
 import graviton.game.zone.SubZone;
 import graviton.game.zone.Zone;
 import lombok.Data;
@@ -40,7 +40,6 @@ public class GameManager implements Manager {
     private DatabaseManager databaseManager;
 
     private Experience experience;
-    private Date dateOfStart;
 
     private Map<Classe, Map<Integer, Integer>> classData;
 
@@ -50,7 +49,7 @@ public class GameManager implements Manager {
     private Map<Integer, Maps> maps;
     private Map<Integer, Zone> zones;
     private Map<Integer, SubZone> subZones;
-    private Map<Integer, Spell> spells;
+    private Map<Integer, SpellTemplate> spellTemplates;
     private Map<Integer, ObjectTemplate> objectTemplates;
     private Map<Integer, Object> objects;
     private Map<Integer, InteractiveObjectTemplate> interactiveObjectTemplates;
@@ -60,7 +59,6 @@ public class GameManager implements Manager {
 
     @Override
     public void start() {
-        this.dateOfStart = new Date();
         this.accounts = new ConcurrentHashMap<>();
         this.players = new ConcurrentHashMap<>();
         this.maps = new ConcurrentHashMap<>();
@@ -104,18 +102,16 @@ public class GameManager implements Manager {
     }
 
     public void save() {
-        locker.lock();
 
-        locker.unlock();
     }
 
     public void send(String packet) {
         locker.lock();
-        getOnlinePlayer().forEach(player -> player.send(packet));
+        getOnlinePlayers().forEach(player -> player.send(packet));
         locker.unlock();
     }
 
-    public List<Player> getOnlinePlayer() {
+    public List<Player> getOnlinePlayers() {
         List<Player> onlinePlayers = new ArrayList<>();
         players.values().stream().filter(Player::isOnline).forEach(onlinePlayers::add);
         return onlinePlayers;
@@ -123,7 +119,7 @@ public class GameManager implements Manager {
 
     public void sendToPlayers(String packet) {
         locker.lock();
-        getOnlinePlayer().forEach(player -> player.getAccount().send(packet));
+        getOnlinePlayers().forEach(player -> player.getAccount().send(packet));
         locker.unlock();
     }
 
@@ -147,7 +143,7 @@ public class GameManager implements Manager {
     }
 
     public void mute(Player muted, Player player, int time, String reason) {
-        String message = "Le joueur <b>" + muted.getName() + "</b> s'est fait mute " +
+        String message = "Le joueur <b>" + muted.getPacketName() + "</b> s'est fait muter " +
                 "pour <b>" + time + "</b> minutes " +
                 "par <b>" + player.getName() + "</b>" +
                 "pour la raison suivante : <b>" + reason + "</b>";

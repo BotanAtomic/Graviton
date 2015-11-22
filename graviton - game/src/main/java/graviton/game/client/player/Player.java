@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Pair;
 import graviton.core.Configuration;
-import graviton.core.Main;
 import graviton.database.DatabaseManager;
 import graviton.game.GameManager;
 import graviton.game.alignement.Alignement;
@@ -24,8 +23,8 @@ import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
 import graviton.game.maps.Zaap;
 import graviton.game.object.Object;
+import graviton.game.spells.SpellTemplate;
 import graviton.game.spells.Spell;
-import graviton.game.spells.SpellStats;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 
@@ -78,7 +77,7 @@ public class Player implements Creature, Fighter {
     private Position position;
     private Map<Integer, Object> objects;
     private List<Zaap> zaaps;
-    private Map<Integer, SpellStats> spells;
+    private Map<Integer, Spell> spells;
     private Map<Integer, Character> spellPlace;
     private int inviting;
 
@@ -117,7 +116,7 @@ public class Player implements Creature, Fighter {
         gameManager.getPlayers().put(id, this);
     }
 
-    public Player(String name, byte sex, byte classeId, int[] colors, Account account,Injector injector) {
+    public Player(String name, byte sex, byte classeId, int[] colors, Account account, Injector injector) {
         injector.injectMembers(this);
         this.account = account;
         this.id = data.getNextPlayerId();
@@ -152,11 +151,13 @@ public class Player implements Creature, Fighter {
 
     private void configureStatisctics(Map<Integer, Integer> stats) {
         this.statistics = new HashMap<>();
-        this.statistics.put(StatsType.BASE, new Statistics(this, stats));
-        this.statistics.put(StatsType.BUFF, new Statistics());
-        this.statistics.put(StatsType.GIFT, new Statistics());
-        this.statistics.put(StatsType.STUFF, new Statistics());
-        this.statistics.put(StatsType.MOUNT, new Statistics());
+        for(StatsType type : StatsType.values()) {
+            if(type == StatsType.BASE) {
+                this.statistics.put(type, new Statistics(this, stats));
+                continue;
+            }
+            this.statistics.put(type, new Statistics());
+        }
     }
 
     public void joinGame() {
@@ -164,18 +165,16 @@ public class Player implements Creature, Fighter {
             return;
         account.setCurrentPlayer(this);
         this.online = true;
-        this.account.setLastConnection();
-        if (this.mount != null) {
+        if (this.mount != null)
             send("Re+" + this.mount.getPacket());
-        }
         send("Rx" + (this.mount == null ? 0 : this.mount.getExperience()));
         send(getPacket("ASK"));
         //TODO : Bonus pano & job
         send("ZS" + this.alignement.getType().getId());
         send("cC+*%!p$?^#i^@^:");
         //TODO : Gs guild packet
-        send("al|"); //TODO : Sub zone
-        send(getPacket("SL")); //TODO: spells
+        send("al|");
+        send(getPacket("SL"));
         send("eL7667711|0");
         send("AR6bk");
         send("Ow0|1000"); //TODO : System for pods
@@ -183,7 +182,6 @@ public class Player implements Creature, Fighter {
         send("ILS2000");
         sendText(configuration.getDefaultMessage(), configuration.getDefaultColor());
         this.account.setOnline();
-        //TODO : Show last IP etc.. (for account)
     }
 
     public void createGame() {
@@ -207,6 +205,52 @@ public class Player implements Creature, Fighter {
                 builder.append(getPacket("GMS")).append(";");
                 builder.append(0).append(";");
                 builder.append("1;");
+                builder.append(";");
+                builder.append(";");
+                return builder.toString();
+            case "PM":
+                builder.append(this.id).append(";");
+                builder.append(this.name).append(";");
+                builder.append(this.gfx).append(";");
+                builder.append(this.getColor(1)).append(";");
+                builder.append(this.getColor(2)).append(";");
+                builder.append(this.getColor(3)).append(";");
+                builder.append(this.getPacket("GMS")).append(";");
+                builder.append(this.life.getFirst()).append(",").append(this.life.getSecond()).append(";");
+                builder.append(this.getLevel()).append(";");
+                builder.append(this.getInitiative()).append(";");
+                builder.append(this.getTotalStatistics().getEffect(Stats.ADD_PROS)).append(";");
+                builder.append("0");
+                return builder.toString();
+            case "GM":
+                builder.append(this.getCell().getId());//Id de la cellule
+                builder.append(";").append(this.getOrientation()).append(";");
+                builder.append("0").append(";");
+                builder.append(this.id).append(";");//id de la personne
+                builder.append(this.name).append(";");//nom de la personne
+                builder.append(this.getClasse().getId());//Classe
+                builder.append((this.getTitle() > 0 ? ("," + this.getTitle()) : ""));
+                builder.append(";").append(this.gfx).append("^");
+                builder.append(this.getSize());//gfxID^size
+                builder.append(";");
+                builder.append(this.getSex()).append(";");
+                builder.append(this.getAlignement().getType().getId()).append(",");//1,0,0,4055064
+                builder.append("0").append(",");
+                builder.append((this.alignement.isShowWings() ? this.alignement.getGrade() : "0")).append(",");
+                builder.append(this.level + this.id);
+                if (this.alignement.isShowWings() && this.alignement.getDeshonnor() > 0)
+                    builder.append(",").append(1).append(';');
+                else
+                    builder.append(";");
+                builder.append(this.getColor(1) == -1 ? "-1" : Integer.toHexString(this.getColor(1))).append(";");
+                builder.append(this.getColor(2) == -1 ? "-1" : Integer.toHexString(this.getColor(2))).append(";");
+                builder.append(this.getColor(3) == -1 ? "-1" : Integer.toHexString(this.getColor(3))).append(";");
+                builder.append(this.getPacket("GMS")).append(";");
+                builder.append(this.level > 99 ? (this.level > 199 ? (2) : (1)) : (0)).append(";");
+                builder.append(";");
+                builder.append(";");
+                builder.append(";;");
+                builder.append(0).append(";");//Rebuilderiction
                 builder.append(";");
                 builder.append(";");
                 return builder.toString();
@@ -293,8 +337,8 @@ public class Player implements Creature, Fighter {
                 return builder.toString();
             case "SL":
                 builder.append("SL");
-                for (SpellStats spellStats : this.spells.values())
-                    builder.append(spellStats.getSpell()).append("~").append(spellStats.getLevel()).append("~").append(this.spellPlace.get(spellStats.getSpell())).append(";");
+                for (Spell spell : this.spells.values())
+                    builder.append(spell.getTemplate()).append("~").append(spell.getLevel()).append("~").append(this.spellPlace.get(spell.getTemplate())).append(";");
 
                 return builder.toString();
         }
@@ -303,38 +347,7 @@ public class Player implements Creature, Fighter {
 
     @Override
     public String getGm() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(this.getCell().getId());//Id de la cellule
-        builder.append(";").append(this.getOrientation()).append(";");
-        builder.append("0").append(";");
-        builder.append(this.id).append(";");//id de la personne
-        builder.append(this.name).append(";");//nom de la personne
-        builder.append(this.getClasse().getId());//Classe
-        builder.append((this.getTitle() > 0 ? ("," + this.getTitle()) : ""));
-        builder.append(";").append(this.gfx).append("^");
-        builder.append(this.getSize());//gfxID^size
-        builder.append(";");
-        builder.append(this.getSex()).append(";");
-        builder.append(this.getAlignement().getType().getId()).append(",");//1,0,0,4055064
-        builder.append("0").append(",");
-        builder.append((this.alignement.isShowWings() ? this.alignement.getGrade() : "0")).append(",");
-        builder.append(this.level + this.id);
-        if (this.alignement.isShowWings() && this.alignement.getDeshonnor() > 0)
-            builder.append(",").append(1).append(';');
-        else
-            builder.append(";");
-        builder.append(this.getColor(1) == -1 ? "-1" : Integer.toHexString(this.getColor(1))).append(";");
-        builder.append(this.getColor(2) == -1 ? "-1" : Integer.toHexString(this.getColor(2))).append(";");
-        builder.append(this.getColor(3) == -1 ? "-1" : Integer.toHexString(this.getColor(3))).append(";");
-        builder.append(this.getPacket("GMS")).append(";");
-        builder.append(this.level > 99 ? (this.level > 199 ? (2) : (1)) : (0)).append(";");
-        builder.append(";");
-        builder.append(";");
-        builder.append(";;");
-        builder.append(0).append(";");//Rebuilderiction
-        builder.append(";");
-        builder.append(";");
-        return builder.toString();
+        return getPacket("GM");
     }
 
     private void configureSpells(String data) {
@@ -342,22 +355,20 @@ public class Player implements Creature, Fighter {
         this.spellPlace = new HashMap<>();
         String[] spells = data.split(",");
         for (String element : spells) {
-            try {
-                int id = Integer.parseInt(element.split(";")[0]);
-                int level = Integer.parseInt(element.split(";")[1]);
-                char place = element.split(";")[2].charAt(0);
-                this.spells.put(id, gameManager.getSpells().get(id).getStats(level));
-                this.spellPlace.put(id, place);
-            } catch (NumberFormatException e1) {
-            }
+            int id = Integer.parseInt(element.split(";")[0]);
+            int level = Integer.parseInt(element.split(";")[1]);
+            char place = element.split(";")[2].charAt(0);
+            this.spells.put(id, gameManager.getSpellTemplates().get(id).getStats(level));
+            this.spellPlace.put(id, place);
         }
+
     }
 
     public String parseSpells() {
         StringBuilder builder = new StringBuilder();
         for (int key : this.spells.keySet()) {
-            SpellStats spellStats = this.spells.get(key);
-            builder.append(spellStats.getSpell()).append(";").append(spellStats.getLevel()).append(";");
+            Spell spell = this.spells.get(key);
+            builder.append(spell.getTemplate()).append(";").append(spell.getLevel()).append(";");
             if (this.spellPlace.get(key) != null)
                 builder.append(this.spellPlace.get(key));
             else
@@ -407,13 +418,13 @@ public class Player implements Creature, Fighter {
     public boolean boostSpell(int id) {
         if (!spells.containsKey(id))
             return false;
-        Spell spell = gameManager.getSpells().get(id);
+        SpellTemplate spellTemplate = gameManager.getSpellTemplates().get(id);
         int oldLevel = spells.get(id).getLevel();
-        if (spellPoints < oldLevel || oldLevel == 6 || spell.getStats(oldLevel + 1).getRequiredLevel() > this.level)
+        if (spellPoints < oldLevel || oldLevel == 6 || spellTemplate.getStats(oldLevel + 1).getRequiredLevel() > this.level)
             return false;
 
         spellPoints -= oldLevel;
-        spells.put(id, gameManager.getSpells().get(id).getStats(oldLevel + 1));
+        spells.put(id, gameManager.getSpellTemplates().get(id).getStats(oldLevel + 1));
         send("SUK" + id + "~" + (oldLevel + 1));
         send(getPacket("As"));
         save();
@@ -515,7 +526,17 @@ public class Player implements Creature, Fighter {
         return null;
     }
 
-    public void speak(String message, String canal) {
+    public void createGuild(String parameters) {
+        String[] arguements = parameters.split("\\|");
+        String backGround = arguements[0];
+        String color = arguements[1];
+        String motif = arguements[2];
+        String name = arguements[4];
+        //Guild guild = new Guild();
+    }
+
+    public void speak(String packet, String canal) {
+        String message = packet.substring(1);
         if (!account.canSpeak()) return;
         if (this.floodCheck == null) this.floodCheck = new FloodCheck(this);
         if (message.charAt(1) == '.') {
@@ -537,6 +558,8 @@ public class Player implements Creature, Fighter {
                 if (guild != null)
                     guild.send("cMK%|" + id + "|" + name + message);
                 break;
+            case "¤":
+                break;
             case "!": /** Canal alignement **/
                 break;
             case "?": /** Canal recrutement **/
@@ -551,7 +574,18 @@ public class Player implements Creature, Fighter {
                 if (account.getRank().id != 0)
                     gameManager.sendToAdmins("cMK@|" + id + "|" + name + message);
                 break;
+            default: /** Message prive **/
+                Player target = gameManager.getPlayer(packet.split("\\|")[0]);
+                if(target != null) {
+                    String finalMessage = "|" + packet.split("\\|")[1];
+                    target.send("cMKF|" + id + "|" + name + finalMessage);
+                    send("cMKT|" + target.getId() + "|" + target.getName() + finalMessage);
+                }
         }
+    }
+
+    public void createGroup(Player player) {
+        new Group(this,player);
     }
 
     public void openZaap() {
@@ -599,6 +633,10 @@ public class Player implements Creature, Fighter {
         refresh();
     }
 
+    public String getPacketName() {
+        return "<a href='asfunction:onHref,ShowPlayerPopupMenu," + name + "'><b>" + name + "</b></a>";
+    }
+
     public void refresh() {
         getMap().refreshCreature(this);
     }
@@ -632,6 +670,9 @@ public class Player implements Creature, Fighter {
     }
 
     public void changePosition(Cell cell) {
+        if(actionManager.getStatus() == ActionManager.Status.MOVING)
+            return;
+
         if (this.getMap() != cell.getMap()) {
             this.getMap().removeCreature(this);
             this.position.setCell(cell);

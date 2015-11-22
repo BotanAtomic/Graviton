@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.NetworkService;
 import graviton.core.Configuration;
-import graviton.game.packet.PacketManager;
+import graviton.game.PacketManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
@@ -40,7 +40,7 @@ public class GameNetwork implements IoHandler, NetworkService {
     public GameNetwork(Configuration configuration) {
         this.acceptor = new NioSocketAcceptor();
         this.PORT = configuration.getGamePort();
-        this.acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new TextLineCodecFactory(Charset.forName("UTF8"), LineDelimiter.NUL, new LineDelimiter("\n\0"))));
+        this.acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new TextLineCodecFactory(Charset.forName("UTF-8"), LineDelimiter.NUL, new LineDelimiter("\n\0"))));
         this.acceptor.setHandler(this);
         this.clients = new ConcurrentHashMap<>();
     }

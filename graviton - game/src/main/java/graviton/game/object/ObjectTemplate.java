@@ -3,11 +3,9 @@ package graviton.game.object;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Utils;
-import graviton.core.Main;
 import graviton.game.GameManager;
 import graviton.game.enums.ObjectPosition;
 import graviton.game.enums.ObjectType;
-import graviton.game.spells.SpellEffect;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 
@@ -53,7 +51,7 @@ public class ObjectTemplate {
     }
 
     public Object createObject(int qua, boolean useMax) {
-        Object object = new Object(manager.getDatabaseManager().getNextObjectId(), this.getId(), qua, ObjectPosition.NO_EQUIPED, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)), (statistics.equals("") ? new ArrayList<>() : this.getEffectTemplate(statistics)),injector);
+        Object object = new Object(manager.getDatabaseManager().getNextObjectId(), this.getId(), qua, ObjectPosition.NO_EQUIPED, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)),injector);
         return object;
     }
 
@@ -105,43 +103,6 @@ public class ObjectTemplate {
             itemStats.addEffect(statID, value);
         }
         return itemStats;
-    }
-
-    private ArrayList<SpellEffect> getEffectTemplate(String statsTemplate) {
-        ArrayList<SpellEffect> effects = new ArrayList<>();
-        if (statsTemplate.equals(""))
-            return effects;
-
-        String[] splitted = statsTemplate.split("\\,");
-
-        for (String s : splitted) {
-
-            String[] stats = s.split("\\#");
-            int id = Integer.parseInt(stats[0], 16);
-
-            for (int a : this.swordEffectId) {
-                if (a == id) {
-                    String min = stats[1];
-                    String max = stats[2];
-                    String jet = stats[4];
-                    String args = min + ";" + max + ";-1;-1;0;" + jet;
-                    effects.add(new SpellEffect(id, args, 0, -1));
-                }
-            }
-            switch (id) {
-                case 110:
-                case 139:
-                case 605:
-                case 614:
-                    String min = stats[1];
-                    String max = stats[2];
-                    String jet = stats[4];
-                    String args = min + ";" + max + ";-1;-1;0;" + jet;
-                    effects.add(new SpellEffect(id, args, 0, -1));
-                    break;
-            }
-        }
-        return effects;
     }
 
     private int getRandomJet(String jet) {

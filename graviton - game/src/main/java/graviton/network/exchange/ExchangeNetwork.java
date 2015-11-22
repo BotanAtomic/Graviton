@@ -2,6 +2,7 @@ package graviton.network.exchange;
 
 import com.google.inject.Inject;
 import graviton.api.NetworkService;
+import graviton.common.Scanner;
 import graviton.core.Configuration;
 import graviton.core.Main;
 import graviton.database.DatabaseManager;
@@ -31,6 +32,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
     private final Configuration configuration;
     private final IoConnector connector;
     private final GameNetwork gameNetwork;
+    private final Scanner scanner;
 
     private final String IP;
     private final int PORT;
@@ -44,7 +46,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
     private long responseTime;
 
     @Inject
-    public ExchangeNetwork(Configuration configuration, DatabaseManager databaseManager, GameNetwork gameNetwork,GameManager gameManager) {
+    public ExchangeNetwork(Configuration configuration, DatabaseManager databaseManager, GameNetwork gameNetwork,GameManager gameManager,Scanner scanner) {
         this.IP = configuration.getExchangeIp();
         this.PORT = configuration.getExchangePort();
         this.connector = new NioSocketConnector();
@@ -53,6 +55,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
         this.gameManager = gameManager;
         this.databaseManager = databaseManager;
         this.gameNetwork = gameNetwork;
+        this.scanner = scanner;
     }
 
     @Override
@@ -79,7 +82,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
-        //TODO : Close
+        System.exit(0);
     }
 
     @Override
@@ -95,10 +98,6 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
         String packet = decryptPacket(message);
-        if (packet.equals("PONG")) {
-            responseTime = (System.currentTimeMillis() - time);
-            return;
-        }
         parse(packet);
     }
 
@@ -108,7 +107,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
 
     @Override
     public void inputClosed(IoSession session) throws Exception {
-        //TODO : Close
+        System.exit(0);
     }
 
     public void send(String packet) {
@@ -155,7 +154,14 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
                     client.getSession().close(true);
                 });
                 break;
+            case 'L':
+                send("R" + scanner.launch(packet.substring(1)));
+                break;
             default:
+                if (packet.equals("PONG") && packet.length() == 4) {
+                    responseTime = (System.currentTimeMillis() - time);
+                    return;
+                }
                 log.info("Undefined packet : {}", packet);
         }
     }

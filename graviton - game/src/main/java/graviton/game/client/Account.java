@@ -33,10 +33,11 @@ public class Account {
     private final Rank rank;
     private final String pseudo;
 
-    private String ipAdress, lastConnection;
+    private String ipAdress;
 
     private GameClient client;
 
+    private boolean seefriends;
     private List<Integer> friends;
     private List<Integer> enemmy;
 
@@ -45,7 +46,7 @@ public class Account {
 
     private Pair<Integer, Date> mute;
 
-    public Account(int id, String answer, String pseudo, int rank,Injector injector) { //TODO : get IP for last IP
+    public Account(int id, String answer, String pseudo, int rank,Injector injector) {
         injector.injectMembers(this);
         this.injector = injector;
         this.id = id;
@@ -82,11 +83,6 @@ public class Account {
         for (Player player : this.players)
             packet += (player.getPacket("ALK"));
         return packet;
-    }
-
-    public final void setLastConnection() {
-        Calendar calendar = GregorianCalendar.getInstance();
-        this.lastConnection = (calendar.get(Calendar.YEAR) + "~" + calendar.get(Calendar.MONTH) + "~" + calendar.get(Calendar.DAY_OF_MONTH) + "~" + calendar.get(Calendar.HOUR_OF_DAY) + "~" + calendar.get(Calendar.MINUTE));
     }
 
     public void setCurrentPlayer(Player currentPlayer) {

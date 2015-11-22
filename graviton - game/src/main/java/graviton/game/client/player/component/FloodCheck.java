@@ -6,17 +6,22 @@ package graviton.game.client.player.component;
 
 import graviton.common.Pair;
 import graviton.game.client.player.Player;
+import org.joda.time.Interval;
+import org.joda.time.Period;
 
 import java.util.Date;
 
 
 public class FloodCheck {
     final private Player player;
-    private final long FLOOD_TIME = 60000;
-    private long alignTime;
-    private long tradeTime;
-    private long incorporationTime;
-    private long basicTime;
+
+    private Date alignTime;
+    private Date tradeTime;
+    private Date incorporationTime;
+
+    private Date basicTime = new Date();
+    private Period period;
+
     private int message = 0;
     private int warning;
 
@@ -29,10 +34,10 @@ public class FloodCheck {
     }
 
     public boolean autorize(String canal) {
-        int difference;
         switch (canal) {
             case "*": /** Canal general **/
-                if (getDifference(basicTime, System.currentTimeMillis()) < 1500) {
+                period = new Interval(basicTime.getTime(), new Date().getTime()).toPeriod();
+                if (period.getSeconds() < 2) {
                     if (message > 2) {
                         if (!addWarning())
                             player.sendText("<b>Anti - Flood :</b> vous devez ralentir votre rythme de message", "FF0000");
@@ -41,32 +46,36 @@ public class FloodCheck {
                     message++;
                     return true;
                 }
-                basicTime = System.currentTimeMillis();
+                basicTime = new Date();
                 message = 1;
                 break;
             case "!": /** Canal alignement **/
-                difference = getDifference(alignTime, System.currentTimeMillis());
-                if (difference < FLOOD_TIME) {
-                    player.send("Im0115;" + getRemainingTime(difference));
+                period = new Interval(alignTime.getTime(), new Date().getTime()).toPeriod();
+                if (period.getSeconds() < 45) {
+                    player.send("Im0115;" + (45 - period.getSeconds()));
                     return false;
                 }
-                alignTime = System.currentTimeMillis();
+                alignTime = new Date();
                 break;
             case "?": /** Canal recrutement **/
-                difference = getDifference(incorporationTime, System.currentTimeMillis());
-                if (difference < FLOOD_TIME) {
-                    player.send("Im0115;" + getRemainingTime(difference));
-                    return false;
+                if (incorporationTime != null) {
+                    period = new Interval(incorporationTime.getTime(), new Date().getTime()).toPeriod();
+                    if (period.getSeconds() < 45) {
+                        player.send("Im0115;" + (45 - period.getSeconds()));
+                        return false;
+                    }
                 }
-                incorporationTime = System.currentTimeMillis();
+                incorporationTime = new Date();
                 break;
             case ":": /** Canal commerce **/
-                difference = getDifference(tradeTime, System.currentTimeMillis());
-                if (difference < FLOOD_TIME) {
-                    player.send("Im0115;" + getRemainingTime(difference));
-                    return false;
+                if (tradeTime != null) {
+                    period = new Interval(tradeTime.getTime(), new Date().getTime()).toPeriod();
+                    if (period.getSeconds() < 45) {
+                        player.send("Im0115;" + (45 - period.getSeconds()));
+                        return false;
+                    }
                 }
-                tradeTime = System.currentTimeMillis();
+                tradeTime = new Date();
                 break;
         }
         return true;
@@ -74,8 +83,8 @@ public class FloodCheck {
 
     private boolean addWarning() {
         warning++;
-        if (warning == 2) {
-            player.sendText("<b>Anti - Flood :</b> c'est votre 2eme avertissement ! Vous etes maintenant muet pour 10 minutes", "FF0000");
+        if (warning == 3) {
+            player.sendText("<b>Anti - Flood :</b> c'est votre 3eme avertissement ! Vous etes maintenant muet pour 10 minutes", "FF0000");
             mute();
             warning = 0;
             return true;
@@ -84,17 +93,10 @@ public class FloodCheck {
     }
 
     private void mute() {
-        String message = "[AntiFlood] - Le joueur <b>" + player.getName() + "</b> s'est fait mute <b>10 minutes</b> pour la raison suivante : <b> flood </b>";
+        String message = "<b>[Anti Flood]</b> - Le joueur " + player.getPacketName() + " s'est fait muter <b>10 minutes</b> pour la raison suivante : <b> flood </b>";
         player.getAccount().setMute(new Pair<>(10, new Date()));
         player.getGameManager().sendToPlayers("cs<font color='#000000'>" + message + "</font>");
         return;
     }
 
-    private int getDifference(long lastTime, long actualTime) {
-        return (int) ((actualTime - lastTime));
-    }
-
-    private int getRemainingTime(long difference) {
-        return (int) (FLOOD_TIME - difference) / 1000;
-    }
 }

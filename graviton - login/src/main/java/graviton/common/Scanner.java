@@ -1,6 +1,8 @@
 package graviton.common;
 
+import com.google.inject.Inject;
 import graviton.login.Manager;
+import graviton.network.application.ApplicationNetwork;
 import lombok.extern.slf4j.Slf4j;
 import org.fusesource.jansi.AnsiConsole;
 import org.joda.time.Interval;
@@ -14,6 +16,9 @@ import java.util.Date;
  */
 @Slf4j
 public class Scanner extends Thread {
+    @Inject
+    ApplicationNetwork network;
+
     private final java.util.Scanner scanner;
     private Manager manager;
 
@@ -50,7 +55,7 @@ public class Scanner extends Thread {
                 System.out.println("| Total server : " + (manager.getServers().size()) + manager.getServerName(false));
                 System.out.println("| Number of connected servers : " + manager.getExchangeClients().size() + manager.getServerName(true));
                 System.out.println("| Number of connected clients on the manager : " + manager.getLoginClients().size());
-                System.out.println("| Number of connected applications : " + manager.getApplicationClients().size());
+                System.out.println("| Application is connected : " + network.applicationIsConnected());
                 System.out.println("| Process PID : " + ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
                 System.out.println("| Client who passed and connected : " + manager.getConnected().size());
                 System.out.println("| Memory usage: " + Double.toString(currentMemory).substring(0, 4) + " Mb / " + Double.toString(currentMemory / 8).substring(0, 4) + " Mo");
