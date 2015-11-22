@@ -239,6 +239,6 @@ public class PacketManager implements Manager {
 
     @Override
     public void stop() {
-        packets.clear();
+        this.packets.clear();
     }
 }
