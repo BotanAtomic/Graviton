@@ -1,6 +1,5 @@
 package graviton.game.maps;
 
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Utils;
 import graviton.game.client.player.Player;
