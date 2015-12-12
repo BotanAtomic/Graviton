@@ -109,7 +109,7 @@ public Database(String ip, String name, String user, String pass) {
 
 &#9989; Map actions
 
-&#9989; Player group (30%)
+&#9989; Player group 
 
 &#9989; Spells (place and level only)
 
