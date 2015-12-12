@@ -48,6 +48,8 @@ public class AccountData extends Data {
             resultSet.close();
         } catch (SQLException e) {
             log.error("Exception > {}", e.getMessage());
+            if(injector.getInstance(Configuration.class).getDatabase().connect() != null)
+                return isGood(username,password,client);
         } finally {
             locker.unlock();
         }
@@ -83,8 +85,7 @@ public class AccountData extends Data {
             String query = "SELECT * from accounts WHERE account = '" + account + "' AND password = '" + password + "';";
             ResultSet resultSet = configuration.getDatabase().getConnection().createStatement().executeQuery(query);
             if (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                selectedAccount =  new Account(resultSet.getString("pseudo"), resultSet.getInt("rank"),injector);
+                 selectedAccount =  new Account(resultSet.getString("pseudo"), resultSet.getInt("rank"),injector);
             }
             resultSet.close();
         } catch (SQLException e) {
@@ -116,7 +117,7 @@ public class AccountData extends Data {
                 isValid = false;
             resultSet.close();
         } catch (SQLException e) {
-            log.error("Exception > {}", e.getMessage());
+            log.error("Exception > {}", e);
         } finally {
             locker.unlock();
         }

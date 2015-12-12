@@ -4,15 +4,18 @@ import com.google.inject.Inject;
 import graviton.api.Manager;
 import graviton.api.PacketParser;
 import graviton.common.Utils;
-import graviton.core.Main;
 import graviton.database.DatabaseManager;
-import graviton.game.GameManager;
 import graviton.game.client.player.Player;
+import graviton.game.enums.Rank;
 import graviton.game.maps.Maps;
 import graviton.network.game.GameClient;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -49,16 +52,24 @@ public class PacketManager implements Manager {
     private Map<String, PacketParser> packets;
 
     public PacketManager() {
-        this.packets = new HashMap<>();
+        this.packets = new ConcurrentHashMap<>();
         this.calendar = GregorianCalendar.getInstance();
     }
 
     @Override
-    public void start() {
+    public void load() {
+        packets.put("PV", (client, packet) -> {
+            System.err.println(packet);
+            if (packet.isEmpty())
+                client.getCurrentPlayer().getGroup().removeMember(client.getCurrentPlayer());
+            else
+                client.getCurrentPlayer().getGroup().kick(client.getCurrentPlayer(), gameManager.getPlayer(packet));
+        });
+
         packets.put("FA", (client, packet) -> client.getAccount().addFriend(client.getCurrentPlayer().getGameManager().getPlayer(packet)));
 
         packets.put("Ba", (client, packet) -> {
-            if (client.getAccount().getRank().id < 1)
+            if (client.getAccount().getRank() == Rank.PLAYER)
                 return;
             String[] arguments = packet.substring(1).trim().split(",");
             Maps map = client.getCurrentPlayer().getData().loadMapByPosition(Integer.parseInt(arguments[0]), Integer.parseInt(arguments[1]));
@@ -172,73 +183,68 @@ public class PacketManager implements Manager {
             int[] colors = {Integer.parseInt(arguments[3]), Integer.parseInt(arguments[4]), Integer.parseInt(arguments[5])};
             client.getAccount().createPlayer(arguments[0], (byte) Integer.parseInt(arguments[1]), (byte) Integer.parseInt(arguments[2]), colors);
         });
+
+        /** Without argument **/
+
+        packets.put("AL", (client, packet) -> client.send(client.getAccount().getPlayersPacket()));
+
+        packets.put("AV", (client, packet) -> client.send("AV0"));
+
+        packets.put("Af", (client, packet) -> client.send("Af1|1|1|1|1"));
+
+        packets.put("AP", (client, packet) -> {
+            String pseudo = dictionary[(int) (Math.random() * dictionary.length - 1)] + dictionary[(int) (Math.random() * dictionary.length - 1)];
+            while (pseudo.length() < 4)
+                pseudo = dictionary[(int) (Math.random() * dictionary.length - 1)] + dictionary[(int) (Math.random() * dictionary.length - 1)];
+            client.send("AP" + pseudo);
+        });
+
+        packets.put("BD", (client, packet) -> {
+            client.send("BD" + calendar.get(Calendar.YEAR) + "|" + calendar.get(Calendar.MONTH) + "|" + calendar.get(Calendar.DAY_OF_MONTH));
+            client.send("BT" + (new Date().getTime() + 3600000));
+        });
+
+        packets.put("GI", (client, packet) -> {
+            client.send(client.getCurrentPlayer().getMap().getGMs());
+            client.getCurrentPlayer().getMap().sendGdf(client.getCurrentPlayer());
+            client.send("GDK");
+        });
+
+        packets.put("WV", (client, packet) -> client.send("WV"));
+
+        packets.put("PR", (client, packet) -> {
+            if (client.getCurrentPlayer().getInviting() == 0)
+                return;
+            client.send("BN");
+            Player player = client.getCurrentPlayer().getGameManager().getPlayers().get(client.getCurrentPlayer().getInviting());
+            assert player != null;
+            player.send("PR");
+            player.setInviting(0);
+            client.getCurrentPlayer().setInviting(0);
+        });
+
+        packets.put("PA", (client, packet) -> {
+            if (client.getCurrentPlayer().getInviting() == 0)
+                return;
+            client.send("BN");
+            Player player2 = client.getCurrentPlayer().getGameManager().getPlayer(client.getCurrentPlayer().getInviting());
+            assert player2 != null;
+            player2.createGroup(client.getCurrentPlayer());
+            player2.send("PR");
+            client.getCurrentPlayer().setInviting(0);
+            player2.setInviting(0);
+        });
     }
 
     public void parse(GameClient client, String packet) {
-        if (packet.length() == 2) {
-            switch (packet) {
-                case "AL":
-                    client.send(client.getAccount().getPlayersPacket());
-                    break;
-                case "AV":
-                    client.send("AV0");
-                    break;
-                case "AP":
-                    String pseudo = dictionary[(int) (Math.random() * dictionary.length - 1)] + dictionary[(int) (Math.random() * dictionary.length - 1)];
-                    while (pseudo.length() < 4)
-                        pseudo = dictionary[(int) (Math.random() * dictionary.length - 1)] + dictionary[(int) (Math.random() * dictionary.length - 1)];
-                    client.send("AP" + pseudo);
-                    break;
-                case "BD":
-                    client.send("BD" + calendar.get(Calendar.YEAR) + "|" + calendar.get(Calendar.MONTH) + "|" + calendar.get(Calendar.DAY_OF_MONTH));
-                    client.send("BT" + (new Date().getTime() + 3600000));
-                    break;
-                case "Af":
-                    client.send("Af1|1|1|1|1");
-                    break;
-                case "GI":
-                    client.send(client.getCurrentPlayer().getMap().getGMs());
-                    client.getCurrentPlayer().getMap().sendGdf(client.getCurrentPlayer());
-                    client.send("GDK");
-                    break;
-                case "WV":
-                    client.send("WV");
-                    break;
-                case "PR":
-                    if (client.getCurrentPlayer().getInviting() == 0)
-                        break;
-                    client.send("BN");
-                    Player player = client.getCurrentPlayer().getGameManager().getPlayers().get(client.getCurrentPlayer().getInviting());
-                    assert player != null;
-                    player.send("PR");
-                    player.setInviting(0);
-                    client.getCurrentPlayer().setInviting(0);
-                    break;
-                case "PA" :
-                    if (client.getCurrentPlayer().getInviting() == 0)
-                        break;
-                    client.send("BN");
-                    Player player2 = client.getCurrentPlayer().getGameManager().getPlayers().get(client.getCurrentPlayer().getInviting());
-                    assert player2 != null;
-                    client.getCurrentPlayer().createGroup(player2);
-                    player2.send("PR");
-                    player2.setInviting(0);
-                    client.getCurrentPlayer().setInviting(0);
-                    break;
-                default:
-                    log.error("Unknown packet {}", packet);
-            }
-            return;
-        }
-        try {
+        if(packets.containsKey(packet.substring(0, 2)))
             packets.get(packet.substring(0, 2)).parse(client, packet.substring(2));
-        } catch (NullPointerException e) {
+        else
             log.error("Unknown packet {}", packet);
-        }
     }
 
     @Override
-    public void stop() {
+    public void unload() {
         this.packets.clear();
     }
 }

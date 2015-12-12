@@ -58,7 +58,7 @@ public class GameManager implements Manager {
     private List<Zaap> zaaps;
 
     @Override
-    public void start() {
+    public void load() {
         this.accounts = new ConcurrentHashMap<>();
         this.players = new ConcurrentHashMap<>();
         this.maps = new ConcurrentHashMap<>();
@@ -129,9 +129,12 @@ public class GameManager implements Manager {
         locker.unlock();
     }
 
-    public Player getPlayer(String name) {
+    public Player getPlayer(java.lang.Object object) {
         final Player[] player = {null};
-        this.players.values().stream().filter(player1 -> player1.getName().equals(name)).forEach(playerSelected -> player[0] = playerSelected);
+        if(object instanceof String)
+            this.players.values().stream().filter(player1 -> player1.getName().equals(object)).forEach(playerSelected -> player[0] = playerSelected);
+        else
+            this.players.values().stream().filter(player1 -> player1.getId() == (int) object).forEach(playerSelected -> player[0] = playerSelected);
         return player[0];
     }
 
@@ -155,7 +158,7 @@ public class GameManager implements Manager {
     }
 
     @Override
-    public void stop() {
-
+    public void unload() {
+        /** Usuless **/
     }
 }

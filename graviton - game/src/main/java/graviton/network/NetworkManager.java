@@ -26,12 +26,12 @@ public class NetworkManager implements Manager {
     }
 
     @Override
-    public void start() {
+    public void load() {
         services.forEach(NetworkService::start);
     }
 
     @Override
-    public void stop() {
+    public void unload() {
         services.forEach(NetworkService::stop);
     }
 

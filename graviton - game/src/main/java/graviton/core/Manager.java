@@ -28,12 +28,12 @@ public class Manager {
     }
 
     public void start() {
-        this.managers.forEach(graviton.api.Manager::start);
+        this.managers.forEach(graviton.api.Manager::load);
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
     public void stop() {
-        this.managers.forEach(graviton.api.Manager::stop);
+        this.managers.forEach(graviton.api.Manager::unload);
     }
 
 }

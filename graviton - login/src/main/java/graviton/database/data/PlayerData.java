@@ -40,13 +40,13 @@ public class PlayerData extends Data {
             ResultSet result = connection.createStatement().executeQuery("SELECT * FROM players WHERE account = " + account.getId());
             Player player;
             while (result.next()) {
-                player = new Player(result.getInt("id"), result.getString("name"), result.getInt("server"));
+                player = new Player(result.getInt("id"), result.getString("name"), result.getInt("server"),injector);
                 injector.injectMembers(player);
                 account.getPlayers().add(player);
             }
             result.close();
         } catch (Exception e) {
-            log.error("Exception > {}", e.getMessage());
+            log.error("Exception > {}", e);
         } finally {
             locker.unlock();
         }
@@ -71,7 +71,7 @@ public class PlayerData extends Data {
                 players.add(new Player(result.getInt("server")));
             }
         } catch (Exception e) {
-            log.error("Exception > {}", e.getMessage());
+            log.error("Exception > {}", e);
         } finally {
             locker.unlock();
         }

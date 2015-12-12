@@ -543,13 +543,13 @@ public class DatabaseManager implements Manager {
     }
 
     @Override
-    public void start() {
+    public void load() {
         loginDatabase.configure();
         gameDatabase.configure();
     }
 
     @Override
-    public void stop() {
+    public void unload() {
         loginDatabase.stop();
         gameDatabase.stop();
     }

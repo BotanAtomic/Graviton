@@ -24,10 +24,23 @@ public class Group {
 
     public void addMember(Player player) {
         this.players.add(player);
+        player.setGroup(this);
     }
 
     public void removeMember(Player player) {
         this.players.remove(player);
+        player.setGroup(null);
+        player.send("PV");
+        player.send("IH");
+        sendPackets();
+    }
+
+    public void kick(Player kicker,Player kicked) {
+        if(chief.getId() != kicker.getId())
+            return;
+        kicked.send("PV" + kicker.getId());
+        kicked.send("IH");
+        sendPackets();
     }
 
     public void send(String packet) {
@@ -36,14 +49,14 @@ public class Group {
         locker.unlock();
     }
 
-    private final List<Player> asList(Player... players) {
+    private List<Player> asList(Player... players) {
         List<Player> list = new CopyOnWriteArrayList<>();
         Collections.addAll(list,players);
         return list;
     }
 
     private void sendPackets() {
-        this.send("PCK"+chief.getName());
+        this.send("PCK"+ chief.getName());
         this.send("PL"+chief.getId());
         final String[] packet = {"PM+" + chief.getPacket("PM")};
         this.players.stream().filter(player1 -> player1 != chief).forEach(player -> packet[0] += ("|" + player.getPacket("PM")));

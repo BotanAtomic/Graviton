@@ -85,6 +85,7 @@ public class LoginClient implements Client {
                 account.setPseudo(packet);
                 accountData.updateNickname(account);
                 statut = Statut.SERVER;
+                sendInformations();
                 break;
             case SERVER:
                 switch (packet.substring(0, 2)) {

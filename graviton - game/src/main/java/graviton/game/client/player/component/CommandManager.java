@@ -30,12 +30,12 @@ public class CommandManager implements Manager {
     }
 
     @Override
-    public void start() {
+    public void load() {
         this.commands.put("guilde", (player, arguments) -> player.send("gn"));
     }
 
     @Override
-    public void stop() {
-
+    public void unload() {
+        this.commands.clear();
     }
 }
