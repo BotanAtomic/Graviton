@@ -23,16 +23,25 @@ public class Group {
     }
 
     public void addMember(Player player) {
+        this.send("PM+" + player.getPacket("PM"));
         this.players.add(player);
         player.setGroup(this);
+        sendPackets(player);
     }
 
     public void removeMember(Player player) {
+        if(chief.getId() == player.getId()) {
+            players.forEach(member -> member.setGroup(null));
+            this.send("PV");
+            this.send("IH");
+            players.clear();
+            return;
+        }
         this.players.remove(player);
         player.setGroup(null);
         player.send("PV");
         player.send("IH");
-        sendPackets();
+        this.send("PM-" + player.getId());
     }
 
     public void kick(Player kicker,Player kicked) {
@@ -40,7 +49,10 @@ public class Group {
             return;
         kicked.send("PV" + kicker.getId());
         kicked.send("IH");
-        sendPackets();
+        removeMember(kicked);
+        if(players.size() == 1)
+            removeMember(chief);
+
     }
 
     public void send(String packet) {
@@ -51,15 +63,24 @@ public class Group {
 
     private List<Player> asList(Player... players) {
         List<Player> list = new CopyOnWriteArrayList<>();
-        Collections.addAll(list,players);
+        Collections.addAll(list, players);
         return list;
     }
 
     private void sendPackets() {
         this.send("PCK"+ chief.getName());
         this.send("PL"+chief.getId());
-        final String[] packet = {"PM+" + chief.getPacket("PM")};
-        this.players.stream().filter(player1 -> player1 != chief).forEach(player -> packet[0] += ("|" + player.getPacket("PM")));
-        this.send(packet[0]);
+        final String[] packet = {""};
+        this.players.stream().forEach(player -> packet[0] += ("|" + player.getPacket("PM")));
+        this.send("PM+" + packet[0].substring(1));
     }
+
+    private void sendPackets(Player newPlayer) {
+        newPlayer.send("PCK" + chief.getName());
+        newPlayer.send("PL" + chief.getId());
+        final String[] packet = {""};
+        this.players.stream().forEach(player -> packet[0] += ("|" + player.getPacket("PM")));
+        newPlayer.send("PM+" + packet[0].substring(1));
+    }
+
 }

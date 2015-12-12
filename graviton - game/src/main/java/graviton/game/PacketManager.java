@@ -59,11 +59,10 @@ public class PacketManager implements Manager {
     @Override
     public void load() {
         packets.put("PV", (client, packet) -> {
-            System.err.println(packet);
             if (packet.isEmpty())
                 client.getCurrentPlayer().getGroup().removeMember(client.getCurrentPlayer());
             else
-                client.getCurrentPlayer().getGroup().kick(client.getCurrentPlayer(), gameManager.getPlayer(packet));
+                client.getCurrentPlayer().getGroup().kick(client.getCurrentPlayer(), gameManager.getPlayer(Integer.parseInt(packet)));
         });
 
         packets.put("FA", (client, packet) -> client.getAccount().addFriend(client.getCurrentPlayer().getGameManager().getPlayer(packet)));
@@ -229,7 +228,10 @@ public class PacketManager implements Manager {
             client.send("BN");
             Player player2 = client.getCurrentPlayer().getGameManager().getPlayer(client.getCurrentPlayer().getInviting());
             assert player2 != null;
-            player2.createGroup(client.getCurrentPlayer());
+            if(player2.getGroup() != null)
+                player2.getGroup().addMember(client.getCurrentPlayer());
+            else
+                player2.createGroup(client.getCurrentPlayer());
             player2.send("PR");
             client.getCurrentPlayer().setInviting(0);
             player2.setInviting(0);

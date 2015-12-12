@@ -129,12 +129,15 @@ public class GameManager implements Manager {
         locker.unlock();
     }
 
-    public Player getPlayer(java.lang.Object object) {
+    public Player getPlayer(String name) {
         final Player[] player = {null};
-        if(object instanceof String)
-            this.players.values().stream().filter(player1 -> player1.getName().equals(object)).forEach(playerSelected -> player[0] = playerSelected);
-        else
-            this.players.values().stream().filter(player1 -> player1.getId() == (int) object).forEach(playerSelected -> player[0] = playerSelected);
+        this.players.values().stream().filter(player1 -> player1.getName().equals(name)).forEach(playerSelected -> player[0] = playerSelected);
+        return player[0];
+    }
+
+    public Player getPlayer(int id) {
+        final Player[] player = {null};
+        this.players.values().stream().filter(player1 -> player1.getId() == id).forEach(playerSelected -> player[0] = playerSelected);
         return player[0];
     }
 
