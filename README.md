@@ -119,4 +119,8 @@ public Database(String ip, String name, String user, String pass) {
 
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
 </p>
-
+<p align="center"><IMG SRC="https://i.gyazo.com/aee0118d86f139ddc16680c8479f612d.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/4e4524c7d85ee4ac452e66a85890b048.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/d2475817eae6ecd688ec7dbae07163ab.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/9edf640580be98eaf9c46d8f72d18fec.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/7ad1ca743573ef2ed453e18382bd6d0b.png"></p>
