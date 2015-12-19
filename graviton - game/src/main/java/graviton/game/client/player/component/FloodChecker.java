@@ -12,7 +12,7 @@ import org.joda.time.Period;
 import java.util.Date;
 
 
-public class FloodCheck {
+public class FloodChecker {
     final private Player player;
 
     private Date alignTime;
@@ -25,7 +25,7 @@ public class FloodCheck {
     private int message = 0;
     private int warning;
 
-    public FloodCheck(Player player) {
+    public FloodChecker(Player player) {
         this.player = player;
     }
 

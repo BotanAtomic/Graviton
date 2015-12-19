@@ -6,9 +6,9 @@ GmCommand
 Equipement object etc
 friend
 ennemi
+NPC
 
 Player :
 pods
-Groupe
 Guilde
 Dragodinde

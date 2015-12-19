@@ -8,7 +8,7 @@ public enum Rank {
     ANIMATOR(1),
     MODERATOR(2),
     MANAGER(3),
-    BOSS(4);
+    BOSS(4); // I'ts me ahaha !
 
     public final int id;
 

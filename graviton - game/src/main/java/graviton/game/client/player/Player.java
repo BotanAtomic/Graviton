@@ -10,7 +10,7 @@ import graviton.game.alignement.Alignement;
 import graviton.game.client.Account;
 import graviton.game.client.player.component.ActionManager;
 import graviton.game.client.player.component.CommandManager;
-import graviton.game.client.player.component.FloodCheck;
+import graviton.game.client.player.component.FloodChecker;
 import graviton.game.common.Stats;
 import graviton.game.creature.Creature;
 import graviton.game.creature.mount.Mount;
@@ -18,7 +18,9 @@ import graviton.game.enums.Classe;
 import graviton.game.enums.ObjectPosition;
 import graviton.game.enums.StatsType;
 import graviton.game.fight.Fighter;
+import graviton.game.group.Group;
 import graviton.game.guild.Guild;
+import graviton.game.guild.GuildMember;
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
 import graviton.game.maps.Zaap;
@@ -58,7 +60,7 @@ public class Player implements Creature, Fighter {
 
     private Guild guild;
     private Group group;
-    private FloodCheck floodCheck;
+    private FloodChecker floodCheck;
     private ActionManager actionManager;
 
     private Alignement alignement;
@@ -249,7 +251,10 @@ public class Player implements Creature, Fighter {
                 builder.append(this.level > 99 ? (this.level > 199 ? (2) : (1)) : (0)).append(";");
                 builder.append(";");
                 builder.append(";");
-                builder.append(";;");
+                if(this.guild != null)
+                    builder.append(guild.getName() + ";" + guild.getEmblem() + ";");
+                else
+                    builder.append(";;");
                 builder.append(0).append(";");//Rebuilderiction
                 builder.append(";");
                 builder.append(";");
@@ -432,10 +437,7 @@ public class Player implements Creature, Fighter {
     }
 
     public void moveSpell(int spell, char place) {
-        for (int key : this.spells.keySet())
-            if (this.spellPlace.get(key) != null)
-                if (this.spellPlace.get(key).equals(place))
-                    this.spellPlace.remove(key);
+        this.spells.keySet().stream().filter(key -> this.spellPlace.get(key) != null).filter(key -> this.spellPlace.get(key).equals(place)).forEach(this.spellPlace::remove);
         spellPlace.put(spell, place);
         save();
     }
@@ -526,19 +528,48 @@ public class Player implements Creature, Fighter {
         return null;
     }
 
+    public void sendGuildInfos(char e) {
+        switch (e) {
+            case 'M' :
+                this.send("gIM+" + guild.getMembersGm());
+                break;
+            case 'G' :
+                int level = guild.getLevel();
+                this.send( ("gIG") + (guild.getMembers().size() > 9 ? 1 : 0) + "|" + level + "|" +
+                        gameManager.getGuildExperience(level) + "|" + guild.getExperience() + "|" + gameManager.getGuildExperience(level + 1));
+                break;
+        }
+    }
+
     public void createGuild(String parameters) {
         String[] arguements = parameters.split("\\|");
-        String backGround = arguements[0];
-        String color = arguements[1];
-        String motif = arguements[2];
+        String background = Integer.toString(Integer.parseInt(arguements[0]), 36);
+        String backgroundColor = Integer.toString(Integer.parseInt(arguements[1]), 36);
+        String emblem = Integer.toString(Integer.parseInt(arguements[2]), 36);
+        String emblemColor = Integer.toString(Integer.parseInt(arguements[3]), 36);
         String name = arguements[4];
-        //Guild guild = new Guild();
+
+        if(!data.guildNameAvailable(name)) {
+            send("gCEan");
+            return;
+        }
+
+        String compiledEmbel = background + "," + backgroundColor + "," + emblem + "," + emblemColor;
+
+        if(!data.guildEmblemAvailable(compiledEmbel)) {
+            send("gCEae");
+            return;
+        }
+
+        this.guild = new Guild(name,compiledEmbel);
+        this.guild.addMember(new GuildMember(this,1));
+        this.refresh();
     }
 
     public void speak(String packet, String canal) {
         String message = packet.substring(1);
         if (!account.canSpeak()) return;
-        if (this.floodCheck == null) this.floodCheck = new FloodCheck(this);
+        if (this.floodCheck == null) this.floodCheck = new FloodChecker(this);
         if (message.charAt(1) == '.') {
             commandManager.launchCommand(this, message.substring(2).split(" "));
             return;

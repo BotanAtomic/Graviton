@@ -1,4 +1,6 @@
-package graviton.game.client.player;
+package graviton.game.group;
+
+import graviton.game.client.player.Player;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,10 +40,18 @@ public class Group {
             return;
         }
         this.players.remove(player);
-        player.setGroup(null);
-        player.send("PV");
-        player.send("IH");
-        this.send("PM-" + player.getId());
+
+        if(players.size() == 1) {
+            players.forEach(member -> member.setGroup(null));
+            this.send("PV");
+            this.send("IH");
+            players.clear();
+        } else {
+            player.setGroup(null);
+            player.send("PV");
+            player.send("IH");
+            this.send("PM-" + player.getId());
+        }
     }
 
     public void kick(Player kicker,Player kicked) {

@@ -128,9 +128,12 @@ public class PacketManager implements Manager {
                 gameActionId = Integer.parseInt(infos[0]);
                 client.getCurrentPlayer().getActionManager().endAction(gameActionId, packet.charAt(0) == 'K', infos.length > 1 ? infos[1] : "");
             } catch (Exception e) {
-                log.error("Probleme at packet {} : {}", packet, e);
+                log.error("Problem at packet {} : {}", packet, e);
             }
         });
+
+        packets.put("gI", (client, packet) -> client.getCurrentPlayer().sendGuildInfos(packet.charAt(0)));
+
         packets.put("gC", (client, packet) -> client.getCurrentPlayer().createGuild(packet));
 
         packets.put("eD", (client, packet) -> client.getCurrentPlayer().changeOrientation(Integer.parseInt(packet), true));

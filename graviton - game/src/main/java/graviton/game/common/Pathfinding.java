@@ -14,7 +14,7 @@ public abstract class Pathfinding {
 
     protected int isValidPathfinding(Maps map, int cell, AtomicReference<String> pathRef) {
         int newPos = cell;
-        int Steps = 0;
+        int steps = 0;
         String path = pathRef.get();
         String newPath = "";
         for (int i = 0; i < path.length(); i += 3) {
@@ -22,22 +22,22 @@ public abstract class Pathfinding {
             char dir = smallPath.charAt(0);
             String[] aPathInfos = validSinglePath(newPos, smallPath, map);
             newPos = Integer.parseInt(aPathInfos[1]);
-            Steps += Integer.parseInt(aPathInfos[2]);
+            steps += Integer.parseInt(aPathInfos[2]);
             newPath += dir + cellToCode(newPos);
             if (aPathInfos[0].equalsIgnoreCase("stop"))
                 break;
         }
         pathRef.set(newPath);
-        return Steps;
+        return steps;
     }
 
     protected String[] validSinglePath(int CurrentPos, String Path, Maps map) {
         char dir = Path.charAt(0);
-        int _nSteps;
+        int newStep;
         String[] result = new String[3];
         int dirCaseID = codeToCell(Path.substring(1));
         int lastPos = CurrentPos;
-        for (_nSteps = 0; _nSteps <= 64; _nSteps++) {
+        for (newStep = 0; newStep <= 64; newStep++) {
             result[1] = Integer.toString(lastPos);
             if (lastPos == dirCaseID) {
                 result[0] = "ok";
@@ -49,7 +49,7 @@ public abstract class Pathfinding {
                 break;
             }
         }
-        result[2] = Integer.toString(_nSteps);
+        result[2] = Integer.toString(newStep);
         return result;
     }
 

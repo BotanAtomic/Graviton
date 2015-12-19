@@ -441,11 +441,45 @@ public class DatabaseManager implements Manager {
 
             result.close();
         } catch (SQLException e) {
-            log.error("load account {}", e);
+            log.error("load monster {}", e);
         } finally {
             locker.unlock();
         }
         return monsterTemplate;
+    }
+
+    /**
+     * #Guild
+     **/
+
+    public boolean guildNameAvailable(String name) {
+        boolean available = false;
+        try {
+            locker.lock();
+            String query = "SELECT * FROM guild WHERE name = '" + name+"';";
+            available = !getGame().createStatement().executeQuery(query).next();
+
+        } catch (SQLException e) {
+            log.error("check guild name {}", e);
+        } finally {
+            locker.unlock();
+        }
+        return available;
+    }
+
+    public boolean guildEmblemAvailable(String emblem) {
+        boolean available = false;
+        try {
+            locker.lock();
+            String query = "SELECT * FROM guild WHERE emblem = '" + emblem+"';";
+            available = !getGame().createStatement().executeQuery(query).next();
+
+        } catch (SQLException e) {
+            log.error("check guild emblem {}", e);
+        } finally {
+            locker.unlock();
+        }
+        return available;
     }
 
     /**

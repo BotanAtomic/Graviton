@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Data
 @Slf4j
 public class GameManager implements Manager {
-    private final ReentrantLock locker = new ReentrantLock();
+    private final ReentrantLock locker = new ReentrantLock(); //For syncronization
 
     @Inject
     private DatabaseManager databaseManager;
@@ -94,6 +94,11 @@ public class GameManager implements Manager {
     public long getPlayerExperience(int level) {
         if (level > 200) level = 200;
         return experience.getData().get(DataType.PLAYER).get(level);
+    }
+
+    public long getGuildExperience(int level) {
+        if (level > 200) return -1;
+        return experience.getData().get(DataType.MOUNT).get(level);
     }
 
     public long getMountExperience(int level) {
@@ -162,6 +167,6 @@ public class GameManager implements Manager {
 
     @Override
     public void unload() {
-        /** Usuless **/
+
     }
 }
