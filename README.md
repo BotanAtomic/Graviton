@@ -30,7 +30,9 @@ HikariCP by Zaxxer group : for JBCD mysql pool connection
 
 Slf4j & Logback for loggers
 
-Lombok : for use @Annotation 
+Lombok : for use @Getter & @Setter
+
+JOOQ : for typesafe SQL query construction and execution.
 
 #Exemple 
 
@@ -105,6 +107,8 @@ public Database(String ip, String name, String user, String pass) {
 
 &#9989; Emotes
 
+&#9989; Guild (60%)
+
 &#9989; Alignement
 
 &#9989; Map actions
@@ -119,8 +123,8 @@ public Database(String ip, String name, String user, String pass) {
 
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
 </p>
-<p align="center"><IMG SRC="https://i.gyazo.com/aee0118d86f139ddc16680c8479f612d.png"></p>
-<p align="center"><IMG SRC="https://i.gyazo.com/4e4524c7d85ee4ac452e66a85890b048.png"></p>
-<p align="center"><IMG SRC="https://i.gyazo.com/d2475817eae6ecd688ec7dbae07163ab.png"></p>
-<p align="center"><IMG SRC="https://i.gyazo.com/9edf640580be98eaf9c46d8f72d18fec.png"></p>
-<p align="center"><IMG SRC="https://i.gyazo.com/7ad1ca743573ef2ed453e18382bd6d0b.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/d0fd9654b2c24593b040d1c24d7b9be2.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/1ab31a8c1e2d873b031b3808e834816e.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/775847439d8119cee261a2c7bd60683c.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/46af196de4cef681b3745d1f52fb572d.png"></p>
+<p align="center"><IMG SRC="https://i.gyazo.com/72802a92416a4cc411c325416a5ec117.png"></p>
