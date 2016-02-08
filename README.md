@@ -30,7 +30,9 @@ HikariCP by Zaxxer group : for JBCD mysql pool connection
 
 Slf4j & Logback for loggers
 
-Lombok : for use @Annotation 
+Lombok : for use @Getter & @Setter
+
+JOOQ : for typesafe SQL query construction and execution.
 
 #Exemple 
 
