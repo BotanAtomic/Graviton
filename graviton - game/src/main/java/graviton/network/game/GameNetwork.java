@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class GameNetwork implements IoHandler, NetworkService {
     @Inject
-    Injector injector;
+    private Injector injector;
     @Inject
     private PacketManager packetManager;
 
@@ -96,7 +96,7 @@ public class GameNetwork implements IoHandler, NetworkService {
         this.clients.remove(client.getId());
     }
 
-    public GameClient getClient(long id) {
+    private GameClient getClient(long id) {
         if (clients.get(id) != null)
             return clients.get(id);
         return null;

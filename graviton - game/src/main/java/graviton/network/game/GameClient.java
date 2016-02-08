@@ -2,7 +2,6 @@ package graviton.network.game;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.core.Main;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
 import lombok.Data;

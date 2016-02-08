@@ -2,7 +2,6 @@ package graviton.network.application;
 
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
-import com.google.inject.Injector;
 import graviton.api.NetworkService;
 import graviton.database.data.AccountData;
 import graviton.game.Account;
@@ -94,7 +93,7 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
         this.client = null;
     }
 
-    public void parsePacket(String packet) {
+    private void parsePacket(String packet) {
         if (remoteIP == null)
             return;
         String finalPacket = packet.substring(1);

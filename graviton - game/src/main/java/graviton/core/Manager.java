@@ -2,14 +2,15 @@ package graviton.core;
 
 import com.google.inject.Inject;
 import graviton.common.Scanner;
-import graviton.database.DatabaseManager;
 import graviton.game.GameManager;
-import graviton.game.client.player.component.CommandManager;
 import graviton.game.PacketManager;
+import graviton.game.client.player.component.CommandManager;
 import graviton.network.NetworkManager;
 import lombok.Getter;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by Botan on 16/06/2015.
@@ -22,9 +23,9 @@ public class Manager {
     final private Date dateOfStart;
 
     @Inject
-    public Manager(DatabaseManager databaseManager,NetworkManager networkManager,GameManager gameManager,PacketManager packetManager,CommandManager commandManager, Scanner scanner) {
+    public Manager(NetworkManager networkManager,GameManager gameManager,PacketManager packetManager,CommandManager commandManager, Scanner scanner) {
         this.dateOfStart = new Date();
-        managers = Arrays.asList( databaseManager, networkManager, gameManager, packetManager, commandManager, scanner);
+        managers = Arrays.asList(gameManager, packetManager, commandManager, scanner, networkManager);
     }
 
     public void start() {
@@ -32,7 +33,7 @@ public class Manager {
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
-    public void stop() {
+    private void stop() {
         this.managers.forEach(graviton.api.Manager::unload);
     }
 

@@ -6,8 +6,8 @@ package graviton.game.maps;
  * Created by Botan on 22/06/2015.
  */
 public class Zaap {
-    private Maps map;
-    private int cell;
+    private final Maps map;
+    private final int cell;
 
     public Zaap(Maps map, int cell) {
         this.map = map;

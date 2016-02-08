@@ -12,7 +12,6 @@ import java.io.File;
  */
 @Data
 public class Configuration {
-
     private Database loginDatabase;
     private Database gameDatabase;
 

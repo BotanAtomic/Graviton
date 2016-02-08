@@ -3,18 +3,20 @@ package graviton.database.data;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.Data;
+import graviton.database.Database;
 import graviton.game.Server;
 import graviton.login.Configuration;
 import graviton.login.Manager;
 import lombok.extern.slf4j.Slf4j;
+import org.jooq.Record;
+import org.jooq.Result;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static graviton.database.utils.Tables.SERVERS;
 
 /**
  * Created by Botan on 08/07/2015.
@@ -28,31 +30,20 @@ public class ServerData extends Data {
     @Inject
     Manager manager;
 
-    private Connection connection;
+    private Database database;
 
     @Override
     public void initialize() {
-        this.connection =  configuration.getDatabase().getConnection();
+        this.database = configuration.getDatabase();
         loadAll();
     }
 
     private void loadAll() {
-        locker.lock();
-        Map<Integer,Server> servers = new HashMap<>();
-        try {
-            String query = "SELECT * from servers";
-            ResultSet resultSet = connection.createStatement().executeQuery(query);
-            Server server;
-            while (resultSet.next()) {
-                server = new Server(resultSet.getInt("id"), resultSet.getString("key"),injector);
-                servers.put(server.getId(),server);
-            }
-            manager.setServers(servers);
-        } catch (SQLException e) {
-            log.error("Exception > {}", e.getMessage());
-        } finally {
-            locker.unlock();
-        }
+        Map<Integer, Server> servers = new HashMap<>();
+        Result<Record> result = database.getResult(SERVERS);
+        for (Record record : result)
+            servers.put(record.getValue(SERVERS.ID), new Server(record.getValue(SERVERS.ID), record.getValue(SERVERS.KEY), injector));
+        manager.setServers(servers);
     }
 
     public final String getHostList() {

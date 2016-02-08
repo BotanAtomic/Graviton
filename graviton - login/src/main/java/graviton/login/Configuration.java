@@ -32,7 +32,7 @@ public final class Configuration {
         this.exchangeIp = "127.0.0.1";
         this.loginPort = 699;
         this.exchangePort = 807;
-        this.database = new Database("PRFPOUz8cPFkhmkZatwE6A==", "psUkfKpV6xHmdvuIMk05CQ==", "XtxV1iNc82puQyu1UdWQKg==", "").connect();
+        this.database = new Database("PRFPOUz8cPFkhmkZatwE6A==", "psUkfKpV6xHmdvuIMk05CQ==", "XtxV1iNc82puQyu1UdWQKg==", "");
         log.trace("The login is configured with method 1");
     }
 
@@ -41,10 +41,8 @@ public final class Configuration {
         this.exchangeIp = config.getString("login.network.exchange.ip");
         this.loginPort = config.getInt("login.network.login.port");
         this.exchangePort = config.getInt("login.network.exchange.port");
-        this.database = new Database(config.getString("login.database.host"),
-                config.getString("login.database.user"),
-                config.getString("login.database.name"),
-                config.getString("login.database.pass")).connect();
+        this.database = new Database(config.getString("login.database.host"), config.getString("login.database.user"),
+                config.getString("login.database.name"), config.getString("login.database.pass"));
 
     }
 

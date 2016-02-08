@@ -7,8 +7,8 @@ import graviton.game.common.Action;
 import graviton.game.creature.Creature;
 import graviton.game.maps.object.InteractiveObject;
 import lombok.Getter;
-import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -24,8 +24,9 @@ public class Cell {
     private final boolean walkable;
     @Getter
     private final List<Creature> creatures;
-    @Setter
-    private Action action;
+
+    private List<Action> action;
+
     @Getter
     private InteractiveObject interactiveObject;
 
@@ -43,7 +44,7 @@ public class Cell {
 
     public void applyAction(Player player) {
         if (action != null)
-            action.apply(player);
+            action.forEach(action1 -> action1.apply(player));
     }
 
     public boolean isWalkable() {
@@ -83,7 +84,7 @@ public class Cell {
                 map.send(interactiveObject.getGDF());
                 player.send("IQ" + player.getId() + "|" + quantity);
                 graviton.game.object.Object newObject = player.getGameManager().getObjectTemplate(311).createObject(quantity, false);
-                player.addObject(newObject);
+                player.addObject(newObject, true);
                 break;
         }
     }
@@ -96,5 +97,10 @@ public class Cell {
 
     public void removeCreature(Creature creature) {
         creatures.remove(creature);
+    }
+
+    public void addAction(Action action) {
+        if(this.action == null) this.action = new ArrayList<>();
+        this.action.add(action);
     }
 }

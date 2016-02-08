@@ -1,4 +1,4 @@
-package graviton.game.client.player.action;
+package graviton.game.creature.action;
 
 import graviton.api.Action;
 

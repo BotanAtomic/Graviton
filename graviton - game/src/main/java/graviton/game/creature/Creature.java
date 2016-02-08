@@ -1,7 +1,5 @@
 package graviton.game.creature;
 
-import graviton.game.client.player.Position;
-
 /**
  * Created by Botan on 25/06/2015.
  */
@@ -11,6 +9,8 @@ public interface Creature {
     String getGm();
 
     void send(String packet);
+
+    void speak(String message);
 
     Position getPosition();
 }

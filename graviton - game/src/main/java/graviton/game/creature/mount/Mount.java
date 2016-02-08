@@ -2,7 +2,6 @@ package graviton.game.creature.mount;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.core.Main;
 import graviton.game.GameManager;
 import graviton.game.object.Object;
 import graviton.game.statistics.Statistics;
@@ -53,29 +52,7 @@ public class Mount {
     }
 
     public String getPacket() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(this.id).append(":");
-        builder.append(this.color).append(":");
-        builder.append(this.ancestor).append(":");
-        builder.append(",").append(":");
-        builder.append(this.name).append(":");
-        builder.append(this.sex).append(":");
-        builder.append(this.getXpString()).append(":");
-        builder.append(this.level).append(":");
-        builder.append("1").append(":");
-        builder.append("1000").append(":");//Total pod
-        builder.append("0").append(":");
-        builder.append(this.endurance).append(",10000:");
-        builder.append(this.maturity).append(",").append(1000).append(":");
-        builder.append(this.energy).append(",").append(10000).append(":");
-        builder.append(this.serenity).append(",-10000,10000:");
-        builder.append(this.love).append(",10000:");
-        builder.append("-1").append(":");
-        builder.append("0").append(":");
-        builder.append(getStatsString()).append(":");
-        builder.append(this.fatigue).append(",240:");
-        builder.append(this.reproduction).append(",20:");
-        return builder.toString();
+        return String.valueOf(this.id) + ":" + this.color + ":" + this.ancestor + ":" + "," + ":" + this.name + ":" + this.sex + ":" + this.getXpString() + ":" + this.level + ":" + "1" + ":" + "1000" + ":" + "0" + ":" + this.endurance + ",10000:" + this.maturity + "," + 1000 + ":" + this.energy + "," + 10000 + ":" + this.serenity + ",-10000,10000:" + this.love + ",10000:" + "-1" + ":" + "0" + ":" + getStatsString() + ":" + this.fatigue + ",240:" + this.reproduction + ",20:";
     }
 
     private String getXpString() {

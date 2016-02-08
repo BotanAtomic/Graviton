@@ -4,8 +4,11 @@ import com.google.inject.Inject;
 import graviton.api.Manager;
 import graviton.api.PacketParser;
 import graviton.common.Utils;
-import graviton.database.DatabaseManager;
+import graviton.factory.PlayerFactory;
 import graviton.game.client.player.Player;
+import graviton.game.creature.Creature;
+import graviton.game.creature.npc.Npc;
+import graviton.game.enums.IdType;
 import graviton.game.enums.Rank;
 import graviton.game.maps.Maps;
 import graviton.network.game.GameClient;
@@ -26,7 +29,7 @@ public class PacketManager implements Manager {
     @Inject
     GameManager gameManager;
     @Inject
-    DatabaseManager databaseManager;
+    PlayerFactory playerFactory;
 
     private final String[] dictionary = {"ae", "au", "ao", "ap", "ka", "ha", "ah",
             "na", "hi", "he", "eh", "an", "ma", "wa", "we", "wh", "sk", "sa",
@@ -49,7 +52,7 @@ public class PacketManager implements Manager {
     private final String[] forbiden = {"admin", "modo", "mj", "-"};
     private final Calendar calendar;
 
-    private Map<String, PacketParser> packets;
+    private final Map<String, PacketParser> packets;
 
     public PacketManager() {
         this.packets = new ConcurrentHashMap<>();
@@ -58,6 +61,28 @@ public class PacketManager implements Manager {
 
     @Override
     public void load() {
+        packets.put("EK", (client, packet) -> client.getCurrentPlayer().getExchange().toogleOk(client.getCurrentPlayer().getId()));
+
+        packets.put("EM", (client, packet) -> client.getCurrentPlayer().doExchangeAction(packet));
+
+        packets.put("EA", (client, packet) -> client.getCurrentPlayer().startExchange());
+
+        packets.put("EV", (client, packet) -> client.getCurrentPlayer().getExchange().cancel());
+
+        packets.put("ER", (client, packet) -> client.getCurrentPlayer().askExchange(packet));
+
+        packets.put("OM", (client, packet) -> client.getCurrentPlayer().moveObject(packet));
+
+        packets.put("DV", (client, packet) -> client.send("DV"));
+
+        packets.put("DC", (client, packet) -> {
+            Creature creature = client.getCurrentPlayer().getMap().getCreatures(IdType.NPC).get(Integer.parseInt(packet));
+            if (creature != null)
+                client.getCurrentPlayer().createDialog((Npc) creature);
+            else
+                log.error("Le PNJ {} est introuvable", packet);
+        });
+
         packets.put("PV", (client, packet) -> {
             if (packet.isEmpty())
                 client.getCurrentPlayer().getGroup().removeMember(client.getCurrentPlayer());
@@ -71,7 +96,7 @@ public class PacketManager implements Manager {
             if (client.getAccount().getRank() == Rank.PLAYER)
                 return;
             String[] arguments = packet.substring(1).trim().split(",");
-            Maps map = client.getCurrentPlayer().getData().loadMapByPosition(Integer.parseInt(arguments[0]), Integer.parseInt(arguments[1]));
+            Maps map = gameManager.getMapByPosition(Integer.parseInt(arguments[0]), Integer.parseInt(arguments[1]));
             if (map != null)
                 client.getCurrentPlayer().changePosition(map.getRandomCell());
         });
@@ -145,7 +170,7 @@ public class PacketManager implements Manager {
         packets.put("BM", (client, packet) -> client.getCurrentPlayer().speak(packet.substring(0, packet.length() - 1), packet.substring(0, 1)));
 
         packets.put("AT", (client, packet) -> {
-            client.setAccount(gameManager.getAccounts().get(Integer.parseInt(packet)));
+            client.setAccount(gameManager.getAccount(Integer.parseInt(packet)));
             if (client.getAccount() != null) {
                 client.getAccount().setClient(client);
                 client.getAccount().setIpAdress(client.getSession().getLocalAddress().toString().replace("/", "").split(":")[0]);
@@ -173,7 +198,7 @@ public class PacketManager implements Manager {
 
         packets.put("AA", (client, packet) -> {
             String[] arguments = packet.split("\\|");
-            if (databaseManager.ifPlayerExist(arguments[0]) || arguments[0].length() < 4 || arguments[0].length() > 12) {
+            if (playerFactory.checkName(arguments[0]) || arguments[0].length() < 4 || arguments[0].length() > 12) {
                 client.send("AAEa");
                 return;
             }
@@ -218,7 +243,7 @@ public class PacketManager implements Manager {
             if (client.getCurrentPlayer().getInviting() == 0)
                 return;
             client.send("BN");
-            Player player = client.getCurrentPlayer().getGameManager().getPlayers().get(client.getCurrentPlayer().getInviting());
+            Player player = playerFactory.get(client.getCurrentPlayer().getInviting());
             assert player != null;
             player.send("PR");
             player.setInviting(0);
@@ -229,9 +254,9 @@ public class PacketManager implements Manager {
             if (client.getCurrentPlayer().getInviting() == 0)
                 return;
             client.send("BN");
-            Player player2 = client.getCurrentPlayer().getGameManager().getPlayer(client.getCurrentPlayer().getInviting());
+            Player player2 = playerFactory.get(client.getCurrentPlayer().getInviting());
             assert player2 != null;
-            if(player2.getGroup() != null)
+            if (player2.getGroup() != null)
                 player2.getGroup().addMember(client.getCurrentPlayer());
             else
                 player2.createGroup(client.getCurrentPlayer());
@@ -242,7 +267,7 @@ public class PacketManager implements Manager {
     }
 
     public void parse(GameClient client, String packet) {
-        if(packets.containsKey(packet.substring(0, 2)))
+        if (packets.containsKey(packet.substring(0, 2)))
             packets.get(packet.substring(0, 2)).parse(client, packet.substring(2));
         else
             log.error("Unknown packet {}", packet);

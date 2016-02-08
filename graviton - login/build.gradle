@@ -1,6 +1,45 @@
-apply plugin: 'application'
-mainClassName = "graviton.login.Main"
+apply plugin: 'java'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'nu.studer:gradle-jooq-plugin:1.0.5'
+        classpath 'mysql:mysql-connector-java:+'
+    }
+}
+
+apply plugin: 'nu.studer.jooq'
+
+repositories {
+    mavenCentral()
+}
 
 dependencies {
+    compile 'org.jooq:jooq:+'
+    compile 'mysql:mysql-connector-java:+'
+}
 
+jooq {
+    login(sourceSets.main) {
+        jdbc {
+            driver = 'com.mysql.jdbc.Driver'
+            url = 'jdbc:mysql://localhost:3306'
+            user = 'root'
+            password = ''
+            schema = 'login'
+        }
+        generator {
+            database {
+                name = 'org.jooq.util.mysql.MySQLDatabase'
+                inputSchema = 'login'
+            }
+            target {
+                packageName = 'graviton.database.utils'
+                directory = 'src/main/java'
+            }
+        }
+    }
 }

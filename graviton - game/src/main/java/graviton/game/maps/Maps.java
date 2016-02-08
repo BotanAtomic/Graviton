@@ -4,9 +4,12 @@ import com.google.inject.Injector;
 import graviton.common.Utils;
 import graviton.game.client.player.Player;
 import graviton.game.creature.Creature;
+import graviton.game.creature.npc.Npc;
+import graviton.game.enums.IdType;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,21 +37,38 @@ public class Maps {
     private final String loadingPacket;
     private Map<Integer, Creature> creatures;
 
-    public Maps(int id, long date, int width, int heigth, String places, String key, String data, String position,Injector injector) {
+    public Maps(int id, String date, int width, int heigth, String places, String key, String data, String position,String monster,Injector injector) {
         injector.injectMembers(this);
         this.id = id;
-        this.date = date;
+        this.date = Long.parseLong(date);
         this.width = width;
         this.heigth = heigth;
         this.places = places;
         this.key = key;
         this.data = data;
-        String[] mapInfos = position.split(",");
-        this.X = Integer.parseInt(mapInfos[0]);
-        this.Y = Integer.parseInt(mapInfos[1]);
-        this.cells = decompileCells(data,injector);
+        this.X = Integer.parseInt(position.split(",")[0]);
+        this.Y = Integer.parseInt(position.split(",")[1]);
+        this.cells = decompileCells(data, injector);
         this.loadingPacket = "GA;2;" + this.getId() + ";";
-        this.descriptionPacket = "GDM|" + id + "|0" + date + "|" + (!key.isEmpty() ? key : data);
+        this.descriptionPacket = "GDM|" + String.valueOf(this.id) + "|0" + this.date + "|" + (!this.key.isEmpty() ? this.key : this.data);
+        configureMonster(monster);
+    }
+
+    private void configureMonster(String group) {
+
+    }
+
+    public Map<Integer,Creature> getCreatures(IdType type) {
+        Map<Integer,Creature> creatures = new HashMap<>();
+        switch (type) {
+            case NPC :
+                this.creatures.values().stream().filter(creature -> creature instanceof Npc).forEach(creature -> creatures.put(creature.getId(), creature));
+                return creatures;
+            case CREATURE :
+                this.creatures.values().stream().filter(creature -> creature instanceof Player).forEach(creature -> creatures.put(creature.getId(), creature));
+                return creatures;
+        }
+        return null;
     }
 
     public Cell getCell(int id) {
@@ -93,14 +113,17 @@ public class Maps {
     }
 
     public void send(String packet) {
-        locker.lock();
-        creatures.values().forEach(creature -> creature.send(packet));
-        locker.unlock();
+        try {
+            locker.lock();
+            creatures.values().forEach(creature -> creature.send(packet));
+        } finally {
+            locker.unlock();
+        }
     }
 
     public Cell getRandomCell() {
         List<Cell> goodCells = new ArrayList<>();
-        this.cells.values().stream().filter(Cell::isWalkable).filter(cell1 -> cell1.getCreatures().isEmpty()).forEach(cell2 -> goodCells.add(cell2));
+        this.cells.values().stream().filter(Cell::isWalkable).filter(cell1 -> cell1.getCreatures().isEmpty()).forEach(goodCells::add);
         return goodCells.get(Utils.getRandomValue(0, goodCells.size() - 1));
     }
 
@@ -111,6 +134,8 @@ public class Maps {
     public void refreshCreature(Creature creature) {
         send("GM|+" + creature.getGm());
     }
+
+
 
     /**
      * Tools

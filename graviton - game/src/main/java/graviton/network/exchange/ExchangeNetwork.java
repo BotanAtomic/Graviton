@@ -4,10 +4,8 @@ import com.google.inject.Inject;
 import graviton.api.NetworkService;
 import graviton.common.Scanner;
 import graviton.core.Configuration;
-import graviton.core.Main;
-import graviton.database.DatabaseManager;
+import graviton.factory.AccountFactory;
 import graviton.game.GameManager;
-import graviton.network.game.GameClient;
 import graviton.network.game.GameNetwork;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +35,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
     private final String IP;
     private final int PORT;
 
-    private final DatabaseManager databaseManager;
+    private final AccountFactory accountFactory;
 
     private IoSession session;
 
@@ -46,14 +44,14 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
     private long responseTime;
 
     @Inject
-    public ExchangeNetwork(Configuration configuration, DatabaseManager databaseManager, GameNetwork gameNetwork,GameManager gameManager,Scanner scanner) {
+    public ExchangeNetwork(Configuration configuration, AccountFactory accountFactory, GameNetwork gameNetwork,GameManager gameManager,Scanner scanner) {
         this.IP = configuration.getExchangeIp();
         this.PORT = configuration.getExchangePort();
         this.connector = new NioSocketConnector();
         this.connector.setHandler(this);
         this.configuration = configuration;
         this.gameManager = gameManager;
-        this.databaseManager = databaseManager;
+        this.accountFactory = accountFactory;
         this.gameNetwork = gameNetwork;
         this.scanner = scanner;
     }
@@ -146,7 +144,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
                 gameManager.save();
                 break;
             case '+':
-                databaseManager.loadAccount(Integer.parseInt(packet.substring(1)));
+                accountFactory.load(Integer.parseInt(packet.substring(1)));
                 break;
             case '-':
                 gameNetwork.getClients().values().stream().filter(client -> client.getAccount().getId() == Integer.parseInt(packet.substring(1))).forEach(client -> {

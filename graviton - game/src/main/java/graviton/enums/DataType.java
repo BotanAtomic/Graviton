@@ -7,5 +7,12 @@ public enum DataType {
     JOB,
     MOUNT,
     PVP,
-    PLAYER
+    PLAYER,
+    MAPS,
+    ACCOUNT,
+    OBJECT,
+    SPELL,
+    NPC,
+    MONSTER,
+    GUILD
 }

@@ -29,9 +29,9 @@ public class Scanner extends Thread {
     public void start(Manager manager) {
         AnsiConsole.out.println("                 _____                     _  _                \n                / ____|                   (_)| |               \n               | |  __  _ __  __ _ __   __ _ | |_  ___   _ __  \n               | | |_ || '__|/ _` |\\ \\ / /| || __|/ _ \\ | '_ \\ \n               | |__| || |  | (_| | \\ V / | || |_| (_) || | | |\n                \\_____||_|   \\__,_|  \\_/  |_| \\__|\\___/ |_| |_|\n");
         AnsiConsole.out.append("\033]0;").append("Graviton - Login").append("\007");
+        this.manager = manager;
         super.setDaemon(true);
         super.start();
-        this.manager = manager;
     }
 
     @Override

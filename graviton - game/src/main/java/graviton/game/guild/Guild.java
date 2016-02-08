@@ -34,7 +34,7 @@ public class Guild {
     }
 
     public void addMember(GuildMember member) {
-        member.send("gS" + (name) + ("|") + (emblem.replace(',', '|')) + ("|"));
+        member.send("gS" + (name) + ("|") + (emblem.replace(',', '|')) + ("|") + Integer.toString(member.getRight(), 36));
         member.send("gCK");
         member.send("gV");
         this.members.add(member);

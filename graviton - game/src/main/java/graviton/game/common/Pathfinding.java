@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class Pathfinding {
 
-    protected final char[] HASH = Utils.HASH;
+    private final char[] HASH = Utils.HASH;
 
     protected int isValidPathfinding(Maps map, int cell, AtomicReference<String> pathRef) {
         int newPos = cell;
@@ -31,7 +31,7 @@ public abstract class Pathfinding {
         return steps;
     }
 
-    protected String[] validSinglePath(int CurrentPos, String Path, Maps map) {
+    private String[] validSinglePath(int CurrentPos, String Path, Maps map) {
         char dir = Path.charAt(0);
         int newStep;
         String[] result = new String[3];
@@ -53,7 +53,7 @@ public abstract class Pathfinding {
         return result;
     }
 
-    protected int getCellFromDirection(int CaseID, char Direction, Maps map) {
+    private int getCellFromDirection(int CaseID, char Direction, Maps map) {
         switch (Direction) {
             case 'a':
                 return CaseID + 1;
@@ -81,7 +81,7 @@ public abstract class Pathfinding {
         return HASH[char1] + "" + HASH[char2];
     }
 
-    protected int codeToCell(String cellCode) {
+    private int codeToCell(String cellCode) {
         char char1 = cellCode.charAt(0), char2 = cellCode.charAt(1);
         int code1 = 0, code2 = 0;
         for (int a = 0; a < HASH.length; a++) {

@@ -6,8 +6,8 @@ import graviton.game.common.Stats;
 import graviton.game.enums.Classe;
 import lombok.Data;
 
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -58,13 +58,20 @@ public class Statistics {
         return (effects.containsKey(value) ? effects.get(value) : 0);
     }
 
-    public Statistics cumulStatistics(List<Statistics> stats) {
+    public Statistics cumulStatistics(Collection<Statistics> stats) {
         Map<Integer, Integer> builder = new HashMap<>();
         stats.stream().filter(statistics -> statistics.getEffects() != null).forEach(statistics -> {
             for (Integer i : statistics.getEffects().keySet())
                 builder.put(i, (builder.get(i) == null ? 0 : builder.get(i)) + statistics.getEffects().get(i));
         });
         this.effects = builder;
+        return this;
+    }
+
+    public Statistics cumulStatistics(Statistics statistics) {
+        if(statistics == null) return this;
+            for (Integer i : statistics.getEffects().keySet())
+                effects.put(i, (effects.get(i) == null ? 0 : effects.get(i)) + statistics.getEffects().get(i));
         return this;
     }
 }

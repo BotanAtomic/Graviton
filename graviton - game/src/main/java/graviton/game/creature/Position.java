@@ -1,4 +1,4 @@
-package graviton.game.client.player;
+package graviton.game.creature;
 
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;

@@ -15,12 +15,12 @@ public class Experience {
     @Getter
     private Map<DataType,Map<Integer,Long>> data;
 
-    public Experience(Map<Integer,Long> players,Map<Integer,Long> job,Map<Integer,Long> mount,Map<Integer,Long> pvp) {
+    public Experience(Object players,Object job,Object mount,Object pvp) {
         this.data = new ConcurrentHashMap<DataType,Map<Integer,Long>>() {{
-                put(DataType.PLAYER, players);
-                put(DataType.JOB, job);
-                put(DataType.MOUNT, mount);
-                put(DataType.PVP, pvp);
+                put(DataType.PLAYER, (Map<Integer, Long>) players);
+                put(DataType.JOB, (Map<Integer, Long>) job);
+                put(DataType.MOUNT, (Map<Integer, Long>) mount);
+                put(DataType.PVP, (Map<Integer, Long>) pvp);
             }};
     }
 }

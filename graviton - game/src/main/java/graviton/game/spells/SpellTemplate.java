@@ -2,11 +2,12 @@ package graviton.game.spells;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.jooq.Record;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static graviton.database.utils.game.Tables.SPELLS;
 
 /**
  * Created by Botan on 23/06/2015.
@@ -20,28 +21,21 @@ public class SpellTemplate {
 
     private Map<Integer, Spell> stats;
 
-    public SpellTemplate(int id, int sprite, String spriteInfos, ResultSet resultSet) {
+    public SpellTemplate(int id, int sprite, String spriteInfos, Record record) {
         this.id = id;
         this.sprite = sprite;
         this.spriteInfos = spriteInfos;
         this.stats = new HashMap<>();
-        configureStats(resultSet);
+        configureStats(record);
     }
 
-    private void configureStats(ResultSet result) {
-        try {
-            String[] results = {result.getString("level1"), result.getString("level2"), result.getString("level3"),
-                    result.getString("level4"), result.getString("level5"), result.getString("level6")};
-            addSpellStats(1, results[0]);
-            addSpellStats(2, results[1]);
-            addSpellStats(3, results[2]);
-            addSpellStats(4, results[3]);
-            addSpellStats(5, results[4]);
-            addSpellStats(6, results[5]);
-        } catch (SQLException e) {
-            log.error("Configure stats ", e);
-        }
-
+    private void configureStats(Record record) {
+        addSpellStats(1, record.getValue(SPELLS.LEVEL1));
+        addSpellStats(2, record.getValue(SPELLS.LEVEL2));
+        addSpellStats(3, record.getValue(SPELLS.LEVEL3));
+        addSpellStats(4, record.getValue(SPELLS.LEVEL4));
+        addSpellStats(5, record.getValue(SPELLS.LEVEL5));
+        addSpellStats(6, record.getValue(SPELLS.LEVEL6));
     }
 
     private void addSpellStats(int level, String arguments) {

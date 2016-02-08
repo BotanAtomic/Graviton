@@ -3,8 +3,8 @@ package graviton.game.client;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Pair;
-import graviton.core.Main;
-import graviton.database.DatabaseManager;
+import graviton.factory.AccountFactory;
+import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.admin.Admin;
 import graviton.game.client.player.Player;
@@ -14,7 +14,9 @@ import lombok.Data;
 import org.joda.time.Interval;
 import org.joda.time.Period;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by Botan on 19/06/2015.
@@ -24,7 +26,9 @@ public class Account {
     @Inject
     GameManager manager;
     @Inject
-    DatabaseManager databaseManager;
+    PlayerFactory playerFactory;
+    @Inject
+    AccountFactory accountFactory;
 
     private final Injector injector;
 
@@ -52,8 +56,8 @@ public class Account {
         this.id = id;
         this.answer = answer;
         this.pseudo = pseudo;
-        this.manager.getAccounts().put(id, this);
-        this.players = databaseManager.loadPlayers(this);
+        this.accountFactory.getElements().put(id, this);
+        this.players = playerFactory.load(this);
         this.friends = new ArrayList<>();
         this.enemmy = new ArrayList<>();
         this.rank = Rank.values()[rank - 1];
@@ -94,9 +98,9 @@ public class Account {
         if (currentPlayer != null) {
             currentPlayer.save();
             currentPlayer.getPosition().getMap().removeCreature(currentPlayer);
-            manager.getPlayers().remove(currentPlayer.getId());
+            playerFactory.delete(currentPlayer.getId());
         }
-        manager.getAccounts().remove(this.id);
+        accountFactory.getElements().remove(this.id);
     }
 
     public void setOnline() {
@@ -110,9 +114,9 @@ public class Account {
 
     public boolean canSpeak() {
         if (this.mute != null) {
-            Period period = new Interval(this.mute.getSecond().getTime(), new Date().getTime()).toPeriod();
-            int remainingTime = (this.mute.getFirst() - period.getMinutes());
-            if (period.getMinutes() < this.mute.getFirst()) {
+            Period period = new Interval(this.mute.getValue().getTime(), new Date().getTime()).toPeriod();
+            int remainingTime = (this.mute.getKey() - period.getMinutes());
+            if (period.getMinutes() < this.mute.getKey()) {
                 currentPlayer.sendText("A force de trop parler, vous en avez perdu la voix... Vous devriez vous taire pendant les " + remainingTime + " prochaine " + (remainingTime > 1 ? "minutes" : "minute"), "FF0000");
                 return false;
             }

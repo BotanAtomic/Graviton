@@ -83,7 +83,7 @@ public class Manager {
         datas.put("account", accountData);
         datas.put("player", playerData);
         datas.put("server", serverData);
-        datas.values().forEach(data -> data.initialize());
+        datas.values().forEach(graviton.api.Data::initialize);
     }
 
     public void addClient(Client client) {
@@ -156,7 +156,6 @@ public class Manager {
             connected.remove(id);
         }
     }
-
 
     public graviton.api.Data getData(String name) {
         return datas.get(name);

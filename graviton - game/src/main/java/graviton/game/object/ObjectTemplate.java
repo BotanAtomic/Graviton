@@ -3,13 +3,12 @@ package graviton.game.object;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Utils;
-import graviton.game.GameManager;
+import graviton.factory.ObjectFactory;
 import graviton.game.enums.ObjectPosition;
 import graviton.game.enums.ObjectType;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 
-import java.util.ArrayList;
 
 /**
  * Created by Botan on 21/06/2015.
@@ -17,7 +16,7 @@ import java.util.ArrayList;
 @Data
 public class ObjectTemplate {
     @Inject
-    GameManager manager;
+    ObjectFactory manager;
 
     final private Injector injector;
 
@@ -51,8 +50,7 @@ public class ObjectTemplate {
     }
 
     public Object createObject(int qua, boolean useMax) {
-        Object object = new Object(manager.getDatabaseManager().getNextObjectId(), this.getId(), qua, ObjectPosition.NO_EQUIPED, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)),injector);
-        return object;
+        return new Object(manager.getNextId(), this.getId(), qua, ObjectPosition.NO_EQUIPED, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)),injector);
     }
 
     private Statistics getStatistics(String statsTemplate, boolean useMax) {
@@ -98,7 +96,7 @@ public class ObjectTemplate {
 
                 }
             } catch (Exception e) {
-
+                e.printStackTrace();
             }
             itemStats.addEffect(statID, value);
         }

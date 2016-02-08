@@ -2,8 +2,8 @@ package graviton.game.client.player.component;
 
 import graviton.api.Action;
 import graviton.game.client.player.Player;
-import graviton.game.client.player.action.MapAction;
-import graviton.game.client.player.action.Movement;
+import graviton.game.creature.action.MapAction;
+import graviton.game.creature.action.Movement;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +65,7 @@ public class ActionManager {
         locker.unlock();
     }
 
-    protected void startAction(Action gameActions) {
+    private void startAction(Action gameActions) {
         if (!gameActions.start())
             currentActions.remove(gameActions);
     }
@@ -85,13 +85,13 @@ public class ActionManager {
         }
     }
 
-    public void resetActions() {
+    private void resetActions() {
         currentActions.forEach(Action::cancel);
         currentActions.clear();
         setStatus(Status.WAITING);
     }
 
-    protected int nextActionId() {
+    private int nextActionId() {
         for (Action action : currentActions)
             if (action.getId() > 0)
                 return action.getId() + 1;

@@ -20,7 +20,6 @@ public class FloodChecker {
     private Date incorporationTime;
 
     private Date basicTime = new Date();
-    private Period period;
 
     private int message = 0;
     private int warning;
@@ -33,10 +32,10 @@ public class FloodChecker {
         return true;
     }
 
-    public boolean autorize(String canal) {
+    private boolean autorize(String canal) {
         switch (canal) {
             case "*": /** Canal general **/
-                period = new Interval(basicTime.getTime(), new Date().getTime()).toPeriod();
+                Period period = new Interval(basicTime.getTime(), new Date().getTime()).toPeriod();
                 if (period.getSeconds() < 2) {
                     if (message > 2) {
                         if (!addWarning())
@@ -81,6 +80,49 @@ public class FloodChecker {
         return true;
     }
 
+    public void speak(String packet,String canal) {
+        String message = packet.substring(1);
+        switch (canal) {
+            case "*": /** Canal general **/
+                if (autorize(canal))
+                    player.getMap().send("cMK|" + player.getId() + "|" + player.getName() + message);
+                break;
+            case "#": /** Canal equipe **/
+                break;
+            case "$": /** Canal groupe **/
+                if (player.getGroup() != null)
+                    player.getGroup().send("cMK$|" + player.getId() + "|" + player.getName() + message);
+                break;
+            case "%": /** Canal guilde **/
+                if (player.getGuild() != null)
+                    player.getGuild().send("cMK%|" + player.getId() + "|" + player.getName() + message);
+                break;
+            case "¤":
+                break;
+            case "!": /** Canal alignement **/
+                break;
+            case "?": /** Canal recrutement **/
+                if (autorize(canal))
+                    player.getFactory().send("cMK?|" + player.getId() + "|" + player.getName() + message);
+                break;
+            case ":": /** Canal commerce **/
+                if (autorize(canal))
+                    player.getFactory().send("cMK:|" + player.getId() + "|" + player.getName() + message);
+                break;
+            case "@": /** Canal admin **/
+                if (player.getAccount().getRank().id != 0)
+                    player.getGameManager().sendToAdmins("cMK@|" + player.getId() + "|" + player.getName() + message);
+                break;
+            default: /** Message prive **/
+                Player target = player.getFactory().get(packet.split("\\|")[0]);
+                if(target != null) {
+                    String finalMessage = "|" + packet.split("\\|")[1];
+                    target.send("cMKF|" + player.getId() + "|" + player.getName() + finalMessage);
+                    player.send("cMKT|" + target.getId() + "|" + target.getName() + finalMessage);
+                }
+        }
+    }
+
     private boolean addWarning() {
         warning++;
         if (warning == 3) {
@@ -95,8 +137,7 @@ public class FloodChecker {
     private void mute() {
         String message = "<b>[Anti Flood]</b> - Le joueur " + player.getPacketName() + " s'est fait muter <b>10 minutes</b> pour la raison suivante : <b> flood </b>";
         player.getAccount().setMute(new Pair<>(10, new Date()));
-        player.getGameManager().sendToPlayers("cs<font color='#000000'>" + message + "</font>");
-        return;
+        player.getGameManager().send("cs<font color='#000000'>" + message + "</font>");
     }
 
 }

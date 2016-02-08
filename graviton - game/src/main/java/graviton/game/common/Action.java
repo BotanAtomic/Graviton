@@ -1,6 +1,5 @@
 package graviton.game.common;
 
-import com.google.inject.Injector;
 import graviton.game.client.player.Player;
 import graviton.game.maps.Maps;
 import lombok.Data;

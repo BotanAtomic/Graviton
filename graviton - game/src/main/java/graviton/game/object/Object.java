@@ -2,13 +2,12 @@ package graviton.game.object;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import graviton.factory.ObjectFactory;
 import graviton.game.GameManager;
 import graviton.game.enums.ObjectPosition;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -18,7 +17,13 @@ import java.util.TreeMap;
 @Data
 public class Object {
     @Inject
+    Injector injector;
+
+    @Inject
     GameManager manager;
+
+    @Inject
+    ObjectFactory objectFactory;
 
     private final int id;
     private final ObjectTemplate template;
@@ -51,6 +56,20 @@ public class Object {
         this.stringStats = new TreeMap<>();
     }
 
+    public Object getClone(int quantity) {
+        return new Object(objectFactory.getNextId(),template.getId(),quantity,ObjectPosition.NO_EQUIPED,this.statistics,injector);
+    }
+
+    public void changePlace(ObjectPosition newPlace) {
+        this.position = newPlace;
+        objectFactory.update(this);
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+        objectFactory.update(this);
+    }
+
     public String parseItem() {
         StringBuilder builder = new StringBuilder();
         String position = this.getPosition() == ObjectPosition.NO_EQUIPED ? "" : Integer.toHexString(this.getPosition().id);
@@ -81,10 +100,9 @@ public class Object {
 
     public void parseStringToStats(String statistics) {
         if (statistics.equals("")) return;
-        String[] split = statistics.split(",");
-        for (String s : split) {
+        for (String s : statistics.split(",")) {
             try {
-                String[] stats = s.split("\\#");
+                String[] stats = s.split("#");
                 int id = Integer.parseInt(stats[0], 16);
                 if (id == 997 || id == 996) {
                     stringStats.put(id, stats[4]);
@@ -100,10 +118,6 @@ public class Object {
                     case 139:
                     case 605:
                     case 614:
-                        String min = stats[1];
-                        String max = stats[2];
-                        String jet = stats[4];
-                        String args = min + ";" + max + ";-1;-1;0;" + jet;
                         follow1 = false;
                         break;
                 }
@@ -122,7 +136,6 @@ public class Object {
                 e.printStackTrace();
             }
         }
-
 
     }
 }

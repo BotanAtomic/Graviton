@@ -1,12 +1,14 @@
 package graviton.game;
 
 import com.google.inject.Inject;
+import graviton.api.Factory;
 import graviton.api.Manager;
-import graviton.database.DatabaseManager;
 import graviton.enums.DataType;
+import graviton.factory.*;
 import graviton.game.admin.Admin;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
+import graviton.game.creature.npc.NpcTemplate;
 import graviton.game.enums.Classe;
 import graviton.game.experience.Experience;
 import graviton.game.maps.Maps;
@@ -15,17 +17,13 @@ import graviton.game.maps.object.InteractiveObjectTemplate;
 import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
 import graviton.game.spells.SpellTemplate;
-import graviton.game.zone.SubZone;
-import graviton.game.zone.Zone;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -36,59 +34,95 @@ import java.util.concurrent.locks.ReentrantLock;
 public class GameManager implements Manager {
     private final ReentrantLock locker = new ReentrantLock(); //For syncronization
 
-    @Inject
-    private DatabaseManager databaseManager;
+    @Inject PlayerFactory playerFactory;
+    @Inject MapFactory mapFactory;
+    @Inject AccountFactory accountFactory;
+    @Inject ObjectFactory objectFactory;
+    @Inject SpellFactory spellFactory;
+    @Inject NpcFactory npcFactory;
+    @Inject GuildFactory guildFactory;
 
     private Experience experience;
 
+    private Map<DataType, Factory<?>> factorys;
+
     private Map<Classe, Map<Integer, Integer>> classData;
 
-    private Map<Integer, Account> accounts;
-    private Map<Integer, Player> players;
-
-    private Map<Integer, Maps> maps;
-    private Map<Integer, Zone> zones;
-    private Map<Integer, SubZone> subZones;
-    private Map<Integer, SpellTemplate> spellTemplates;
-    private Map<Integer, ObjectTemplate> objectTemplates;
-    private Map<Integer, Object> objects;
-    private Map<Integer, InteractiveObjectTemplate> interactiveObjectTemplates;
-
     private List<Admin> admins;
-    private List<Zaap> zaaps;
+
+    @Inject
+    public GameManager() {
+        this.admins = new ArrayList<>();
+ }
 
     @Override
     public void load() {
-        this.accounts = new ConcurrentHashMap<>();
-        this.players = new ConcurrentHashMap<>();
-        this.maps = new ConcurrentHashMap<>();
-        this.zones = new ConcurrentHashMap<>();
-        this.subZones = new ConcurrentHashMap<>();
-        this.classData = new ConcurrentHashMap<>();
-        this.objectTemplates = new ConcurrentHashMap<>();
-        this.objects = new ConcurrentHashMap<>();
-        this.zaaps = new CopyOnWriteArrayList<>();
-        this.interactiveObjectTemplates = new ConcurrentHashMap<>();
-        this.admins = new ArrayList<>();
-        databaseManager.loadData(this);
+        this.factorys = getFactorys(playerFactory, mapFactory, accountFactory, objectFactory, spellFactory,npcFactory,guildFactory);
+        this.factorys.values().forEach(Factory::configure);
+        this.experience = new Experience(mapFactory.decodeObject("experience/player"),mapFactory.decodeObject("experience/job"),mapFactory.decodeObject("experience/mount"),mapFactory.decodeObject("experience/pvp"));
+    }
+
+    public Map<Integer, ?> getElements(DataType type) {
+        return this.factorys.get(type).getElements();
     }
 
     public Maps getMap(int id) {
-        if (!maps.containsKey(id))
-            return databaseManager.loadMap(id);
-        return maps.get(id);
+        return mapFactory.get(id);
+    }
+
+    public Maps getMapByPosition(int x1, int y1) {
+        return mapFactory.getByPosition(x1, y1);
+    }
+
+    public SpellTemplate getSpellTemplate(int id) {
+        return spellFactory.get(id);
+    }
+
+    public Account getAccount(int id) {
+        return accountFactory.get(id);
     }
 
     public ObjectTemplate getObjectTemplate(int id) {
-        if (!objectTemplates.containsKey(id))
-            return databaseManager.loadObjectTemplate(id);
-        return objectTemplates.get(id);
+        return objectFactory.get((java.lang.Object)id);
     }
 
+    public InteractiveObjectTemplate getInteractiveObjectTemplates(int id) {
+        return objectFactory.get(id);
+    }
     public Object getObject(int id) {
-        if (!objects.containsKey(id))
-            return databaseManager.loadObject(id);
-        return objects.get(id);
+        return objectFactory.load(id);
+    }
+
+    public void updateObject(Object object) {
+        objectFactory.update(object);
+    }
+
+    public void saveObject(Object object) {
+        objectFactory.create(object);
+    }
+
+    public void removeObject(int id) {
+        objectFactory.remove(id);
+    }
+
+    public NpcTemplate getNpcTemplate(int id) {
+        return npcFactory.get(id);
+    }
+
+    public Map<Classe, Map<Integer, Integer>> getClassData() {
+        return this.playerFactory.getClassData();
+    }
+
+    public List<Zaap> getZaaps() {
+        return mapFactory.getZaaps();
+    }
+
+    public boolean checkName(String name) {
+        return guildFactory.check(name,true);
+    }
+
+    public boolean checkEmblem(String emblem) {
+        return guildFactory.check(emblem, false);
     }
 
     public long getPlayerExperience(int level) {
@@ -111,39 +145,24 @@ public class GameManager implements Manager {
     }
 
     public void send(String packet) {
-        locker.lock();
-        getOnlinePlayers().forEach(player -> player.send(packet));
-        locker.unlock();
+        playerFactory.send(packet);
     }
 
     public List<Player> getOnlinePlayers() {
-        List<Player> onlinePlayers = new ArrayList<>();
-        players.values().stream().filter(Player::isOnline).forEach(onlinePlayers::add);
-        return onlinePlayers;
-    }
-
-    public void sendToPlayers(String packet) {
-        locker.lock();
-        getOnlinePlayers().forEach(player -> player.getAccount().send(packet));
-        locker.unlock();
+        return playerFactory.getOnlinePlayers();
     }
 
     public void sendToAdmins(String packet) {
-        locker.lock();
-        admins.forEach(admin -> admin.getAccount().send(packet));
-        locker.unlock();
+        try {
+            locker.lock();
+            admins.forEach(admin -> admin.getAccount().send(packet));
+        } finally {
+            locker.unlock();
+        }
     }
 
-    public Player getPlayer(String name) {
-        final Player[] player = {null};
-        this.players.values().stream().filter(player1 -> player1.getName().equals(name)).forEach(playerSelected -> player[0] = playerSelected);
-        return player[0];
-    }
-
-    public Player getPlayer(int id) {
-        final Player[] player = {null};
-        this.players.values().stream().filter(player1 -> player1.getId() == id).forEach(playerSelected -> player[0] = playerSelected);
-        return player[0];
+    public Player getPlayer(java.lang.Object object) {
+        return playerFactory.get(object);
     }
 
     public String getAdminsName() {
@@ -158,11 +177,22 @@ public class GameManager implements Manager {
                 "pour <b>" + time + "</b> minutes " +
                 "par <b>" + player.getName() + "</b>" +
                 "pour la raison suivante : <b>" + reason + "</b>";
-        sendToPlayers("cs<font color='#000000'>" + message + "</font>");
+        send("cs<font color='#000000'>" + message + "</font>");
     }
 
     public void ban(Player muted, Player player, int time, String reason) {
 
+    }
+
+    private Map<DataType, Factory<?>> getFactorys(Factory... a) {
+        Map<DataType, Factory<?>> factorys = new ConcurrentHashMap<>();
+        for (Factory factory : a) {
+            if(factory.getType() == null) {
+                System.err.println("NULL");
+            }
+            factorys.put(factory.getType(), factory);
+        }
+       return factorys;
     }
 
     @Override

@@ -3,16 +3,15 @@ package graviton.database.data;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.Data;
-import graviton.common.CryptManager;
+import graviton.database.Database;
 import graviton.game.Account;
 import graviton.login.Configuration;
 import graviton.login.Manager;
 import graviton.network.login.LoginClient;
 import lombok.extern.slf4j.Slf4j;
+import org.jooq.Record;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import static graviton.database.utils.Tables.ACCOUNTS;
 
 /**
  * Created by Botan on 08/07/2015.
@@ -26,102 +25,66 @@ public class AccountData extends Data {
     @Inject
     Manager manager;
 
-    private Connection connection;
+    private Database database;
 
     @Override
     public void initialize() {
-        this.connection =  configuration.getDatabase().getConnection();
+        this.database = configuration.getDatabase();
     }
 
-    public boolean isGood(String username, String password, final LoginClient client) {
-        boolean isGood = false;
-        try {
-            locker.lock();
-            if(connection.isClosed())
-                configuration.getDatabase().connect();
-            String query = "SELECT * from accounts WHERE account = '" + username + "';";
-            ResultSet resultSet = connection.createStatement().executeQuery(query);
-            if (resultSet.next()) {
-                if (CryptManager.encrypt(resultSet.getString("password"), client.getKey()).equals(password))
-                    isGood = true;
-            }
-            resultSet.close();
-        } catch (SQLException e) {
-            log.error("Exception > {}", e.getMessage());
-            if(injector.getInstance(Configuration.class).getDatabase().connect() != null)
-                return isGood(username,password,client);
-        } finally {
-            locker.unlock();
-        }
-        return isGood;
+    public boolean isGood(String username, String password, LoginClient client) {
+        Record record = database.getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(username));
+        if (record != null)
+            if (encrypt(record.getValue(ACCOUNTS.PASSWORD), client.getKey()).equals(password))
+                return true;
+        return false;
     }
 
     public final Account load(String arguments) {
-        Account account = null;
-        try {
-            locker.lock();
-            String query = "SELECT * from accounts WHERE account = '" + arguments + "';";
-            ResultSet resultSet = connection.createStatement().executeQuery(query);
-            if (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                manager.checkAccount(id);
-                account = new Account(id,
-                        resultSet.getString("account"), resultSet.getString("password"),
-                        resultSet.getString("pseudo"), resultSet.getString("question"), resultSet.getInt("rank"),injector);
-            }
-            resultSet.close();
-        } catch (SQLException e) {
-            log.error("Exception > {}", e.getMessage());
-        } finally {
-            locker.unlock();
+        Record record = database.getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(arguments));
+
+        if (record != null) {
+            manager.checkAccount(record.getValue(ACCOUNTS.ID));
+            return new Account(record.getValue(ACCOUNTS.ID),
+                    record.getValue(ACCOUNTS.ACCOUNT), record.getValue(ACCOUNTS.PASSWORD),
+                    record.getValue(ACCOUNTS.PSEUDO), record.getValue(ACCOUNTS.QUESTION), record.getValue(ACCOUNTS.RANK), injector);
         }
-        return account;
+        return null;
     }
 
-    public final Account load(String account,String password) {
-        Account selectedAccount = null;
-        try {
-            locker.lock();
-            String query = "SELECT * from accounts WHERE account = '" + account + "' AND password = '" + password + "';";
-            ResultSet resultSet = configuration.getDatabase().getConnection().createStatement().executeQuery(query);
-            if (resultSet.next()) {
-                 selectedAccount =  new Account(resultSet.getString("pseudo"), resultSet.getInt("rank"),injector);
-            }
-            resultSet.close();
-        } catch (SQLException e) {
-            log.error("Exception > {}", e.getMessage());
-        } finally {
-            locker.unlock();
-        }
-        return selectedAccount;
+    public final Account load(String account, String password) {
+        Record record = database.getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(account), ACCOUNTS.PASSWORD.equal(password));
+        if (record != null)
+            return new Account(record.getValue(ACCOUNTS.ACCOUNT), record.getValue(ACCOUNTS.RANK), injector);
+        return null;
     }
 
     public void updateNickname(Account account) {
-        try {
-            locker.lock();
-            String query = "UPDATE accounts SET pseudo = '" + account.getPseudo() + "' WHERE id = '" + account.getId() + "';";
-            connection.prepareStatement(query).executeUpdate();
-        } catch (SQLException e) {
-            log.error("Exception > {}", e.getMessage());
-        } finally {
-            locker.unlock();
-        }
+        database.getContext().update(ACCOUNTS).set(ACCOUNTS.PSEUDO, account.getPseudo()).where(ACCOUNTS.ID.equal(account.getId()));
     }
 
-    public boolean isAvaiableNickname(String nickName) {
-        boolean isValid = true;
-        try {
-            locker.lock();
-            ResultSet resultSet = connection.createStatement().executeQuery("SELECT pseudo from accounts WHERE pseudo = '" + nickName + "';");
-            if (resultSet.next())
-                isValid = false;
-            resultSet.close();
-        } catch (SQLException e) {
-            log.error("Exception > {}", e);
-        } finally {
-            locker.unlock();
+    public boolean isAvaiableNickname(String nickname) {
+        Record record = database.getRecord(ACCOUNTS, ACCOUNTS.PSEUDO.equal(nickname));
+        return record != null;
+    }
+
+    private String encrypt(String pass, String key) {
+        final char[] HASH = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+                'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A',
+                'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4',
+                '5', '6', '7', '8', '9', '-', '_'};
+
+        int i = HASH.length;
+        StringBuilder crypted = new StringBuilder("#1");
+        for (int y = 0; y < pass.length(); y++) {
+            char c1 = pass.charAt(y);
+            char c2 = key.charAt(y);
+            double d = Math.floor(c1 / 16);
+            int j = c1 % 16;
+            crypted.append(HASH[(int) ((d + c2 % i) % i)]).append(HASH[(j + c2 % i) % i]);
         }
-        return isValid;
+        return crypted.toString();
     }
 }
 

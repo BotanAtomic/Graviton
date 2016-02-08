@@ -132,7 +132,7 @@ public enum ObjectType {
         return null;
     }
 
-    public int getValue() {
+    private int getValue() {
         return value;
     }
 

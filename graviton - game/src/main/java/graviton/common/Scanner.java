@@ -2,6 +2,7 @@ package graviton.common;
 
 import com.google.inject.Inject;
 import graviton.core.Manager;
+import graviton.enums.DataType;
 import graviton.game.GameManager;
 import graviton.network.exchange.ExchangeNetwork;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +45,7 @@ public class Scanner extends Thread implements graviton.api.Manager {
 
     @Override
     public void run() {
-        while (true) {
+        while (!super.isInterrupted()) {
             System.out.println("\nConsole > ");
             execute(scanner.next());
         }
@@ -61,12 +62,12 @@ public class Scanner extends Thread implements graviton.api.Manager {
                 StringBuilder builder = new StringBuilder();
                 Period period = new Interval(manager.getDateOfStart().getTime(), new Date().getTime()).toPeriod();
                 double currentMemory = (((double) (Runtime.getRuntime().totalMemory() / 1024) / 1024)) - (((double) (Runtime.getRuntime().freeMemory() / 1024) / 1024));
-                builder.append("Number of accounts : " + (gameManager.getAccounts().size()));
-                builder.append(";Number of players : " + gameManager.getPlayers().size());
-                builder.append(";Number of loaded maps : " + gameManager.getMaps().size());
-                builder.append(";Number of connected admin : " + gameManager.getAdmins().size() + gameManager.getAdminsName());
+                builder.append("Number of accounts : ").append(gameManager.getElements(DataType.ACCOUNT).size());
+                builder.append(";Number of players : ").append(gameManager.getPlayerFactory().getElements().size());
+                builder.append(";Number of loaded maps : ").append(gameManager.getElements(DataType.MAPS).size());
+                builder.append(";Number of connected admin : ").append(gameManager.getAdmins().size()).append(gameManager.getAdminsName());
                 builder.append(";Current memory usage: " + Double.toString(currentMemory).substring(0, 4) + " Mb / " + Double.toString(currentMemory / 8).substring(0, 4) + " Mo");
-                builder.append(";Uptime : " + period.getDays() + "d " + period.getHours() + "h " + period.getMinutes() + "m " + period.getSeconds() + "s");
+                builder.append(";Uptime : ").append(period.getDays()).append("d ").append(period.getHours()).append("h ").append(period.getMinutes()).append("m ").append(period.getSeconds()).append("s");
                 message = builder.toString();
                 break;
             default:
@@ -86,9 +87,9 @@ public class Scanner extends Thread implements graviton.api.Manager {
                 Period period = new Interval(manager.getDateOfStart().getTime(), new Date().getTime()).toPeriod();
                 double currentMemory = (((double) (Runtime.getRuntime().totalMemory() / 1024) / 1024)) - (((double) (Runtime.getRuntime().freeMemory() / 1024) / 1024));
                 System.out.println(" _________________________________________");
-                System.out.println("| Number of accounts : " + (gameManager.getAccounts().size()));
-                System.out.println("| Number of players : " + gameManager.getPlayers().size());
-                System.out.println("| Number of loaded maps : " + gameManager.getMaps().size());
+                System.out.println("| Number of accounts : " + (gameManager.getElements(DataType.ACCOUNT).size()));
+                System.out.println("| Number of players : " + gameManager.getPlayerFactory().getElements().size());
+                System.out.println("| Number of loaded maps : " + (gameManager.getElements(DataType.MAPS).size()));
                 System.out.println("| Number of connected admin : " + gameManager.getAdmins().size() + gameManager.getAdminsName());
                 System.out.println("| Current memory usage: " + Double.toString(currentMemory).substring(0, 4) + " Mb / " + Double.toString(currentMemory / 8).substring(0, 4) + " Mo");
                 System.out.println("| Login response time : " + network.getResponseTime() + "ms");

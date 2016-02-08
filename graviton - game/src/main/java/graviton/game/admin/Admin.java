@@ -2,7 +2,6 @@ package graviton.game.admin;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.core.Main;
 import graviton.game.GameManager;
 import graviton.game.client.Account;
 import graviton.game.enums.Rank;
@@ -13,7 +12,7 @@ import graviton.game.enums.Rank;
  */
 public class Admin {
     @Inject
-    GameManager gameManager;
+    private GameManager gameManager;
 
     private final Rank rank;
     private final Account account;

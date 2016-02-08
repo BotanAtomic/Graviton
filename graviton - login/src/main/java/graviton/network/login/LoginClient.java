@@ -36,7 +36,7 @@ public class LoginClient implements Client {
     private Statut statut;
     private Account account;
 
-    public LoginClient(IoSession session, String key,Injector injector) {
+    public LoginClient(IoSession session, String key, Injector injector) {
         injector.injectMembers(this);
         this.id = session.getId();
         this.session = session;
@@ -64,7 +64,10 @@ public class LoginClient implements Client {
                     return;
                 }
                 this.account = accountData.load(args[0]);
-                this.account.setClient(this);
+                if (account != null)
+                    this.account.setClient(this);
+                else
+                    session.close(true);
                 statut = Statut.SERVER;
                 break;
             case NICKNAME:
