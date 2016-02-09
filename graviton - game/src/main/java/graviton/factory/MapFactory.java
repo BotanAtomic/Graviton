@@ -27,6 +27,8 @@ public class MapFactory extends Factory<Maps> {
     @Inject
     Injector injector;
 
+
+
     private final Map<Integer, Maps> maps;
     @Getter
     private final List<Zaap> zaaps;
@@ -51,8 +53,9 @@ public class MapFactory extends Factory<Maps> {
     public Maps get(Object object) {
         Record record = database.getRecord(MAPS, MAPS.ID.equal((int) object));
         if (record != null) {
-            final Maps finalMap = new Maps(record.getValue(MAPS.ID), record.getValue(MAPS.DATE), record.getValue(MAPS.WIDTH), record.getValue(MAPS.HEIGTH), record.getValue(MAPS.PLACES), record.getValue(MAPS.KEY), record.getValue(MAPS.MAPDATA), record.getValue(MAPS.MAPPOS), record.getValue(MAPS.MONSTERS), injector);
+            final Maps finalMap = new Maps(record.getValue(MAPS.ID), record.getValue(MAPS.DATE), record.getValue(MAPS.WIDTH), record.getValue(MAPS.HEIGTH), record.getValue(MAPS.PLACES), record.getValue(MAPS.KEY), record.getValue(MAPS.MAPDATA), record.getValue(MAPS.MAPPOS), record.getValue(MAPS.MONSTERS),record.getValue(MAPS.NUMGROUP), injector);
             database.getResult(CELLS, CELLS.MAP.equal(finalMap.getId())).forEach(record1 -> finalMap.getCells().get(record1.getValue(CELLS.CELL)).addAction(new Action(record1.getValue(CELLS.ACTION), record1.getValue(CELLS.ARGS))));
+
             return finalMap;
         }
         return null;

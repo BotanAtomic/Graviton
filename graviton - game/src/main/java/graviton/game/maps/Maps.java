@@ -1,9 +1,14 @@
 package graviton.game.maps;
 
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Utils;
+import graviton.factory.NpcFactory;
+import graviton.game.GameManager;
 import graviton.game.client.player.Player;
 import graviton.game.creature.Creature;
+import graviton.game.creature.monster.MonsterGrade;
+import graviton.game.creature.monster.MonsterGroup;
 import graviton.game.creature.npc.Npc;
 import graviton.game.enums.IdType;
 import lombok.Data;
@@ -24,6 +29,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @Data
 public class Maps {
+    @Inject
+    NpcFactory npcFactory;
+    @Inject
+    GameManager gameManager;
+
     private final ScheduledExecutorService sheduler = Executors.newScheduledThreadPool(1);
     private final ReentrantLock locker = new ReentrantLock();
 
@@ -37,7 +47,9 @@ public class Maps {
     private final String loadingPacket;
     private Map<Integer, Creature> creatures;
 
-    public Maps(int id, String date, int width, int heigth, String places, String key, String data, String position,String monster,Injector injector) {
+    private final int maxGroup;
+
+    public Maps(int id, String date, int width, int heigth, String places, String key, String data, String position,String monster,int maxGroup,Injector injector) {
         injector.injectMembers(this);
         this.id = id;
         this.date = Long.parseLong(date);
@@ -51,11 +63,52 @@ public class Maps {
         this.cells = decompileCells(data, injector);
         this.loadingPacket = "GA;2;" + this.getId() + ";";
         this.descriptionPacket = "GDM|" + String.valueOf(this.id) + "|0" + this.date + "|" + (!this.key.isEmpty() ? this.key : this.data);
-        configureMonster(monster);
+        this.maxGroup = maxGroup;
+        npcFactory.getNpcOnMap(this).forEach(this::addCreature);
+        spawnMonster(configureMonster(monster));
     }
 
-    private void configureMonster(String group) {
+    private List<MonsterGrade> configureMonster(String group) {
+        List<MonsterGrade> monsters = new ArrayList<>();
+        int monsterId,level;
+        for(String mob : group.split("\\|")) {
+            if(mob.equals(""))
+                continue;
 
+            try	{
+                monsterId = Integer.parseInt(mob.split(",")[0]);
+                level = Integer.parseInt(mob.split(",")[1]);
+            } catch(NumberFormatException e) {
+                continue;
+            }
+
+            if(monsterId == 0 || level == 0)
+                continue;
+
+            if(gameManager.getMonster(monsterId) == null)
+                continue;
+            if(gameManager.getMonster(monsterId).getGrade(level) == null)
+                continue;
+            monsters.add(gameManager.getMonster(monsterId).getGrade(level));
+        }
+       return monsters;
+    }
+
+    private void spawnMonster(List<MonsterGrade> monsters) {
+        int i = 0;
+        for(MonsterGrade grade : monsters) {
+            i++;
+            addCreature(new MonsterGroup(monsters, this));
+            if(i == maxGroup) break;
+        }
+    }
+
+    public int getNextId(IdType type) {
+        int startIndex = type.MAXIMAL_ID-this.id*1000;
+        for(int i = startIndex ; i > startIndex-1000 && i >= type.MINIMAL_ID ;i--)
+            if(!this.creatures.containsKey(i))
+                return i;
+        return 0;
     }
 
     public Map<Integer,Creature> getCreatures(IdType type) {
@@ -66,6 +119,9 @@ public class Maps {
                 return creatures;
             case CREATURE :
                 this.creatures.values().stream().filter(creature -> creature instanceof Player).forEach(creature -> creatures.put(creature.getId(), creature));
+                return creatures;
+            case MONSTER_GROUP:
+                this.creatures.values().stream().filter(creature -> creature instanceof MonsterGroup).forEach(creature -> creatures.put(creature.getId(), creature));
                 return creatures;
         }
         return null;

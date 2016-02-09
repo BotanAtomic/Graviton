@@ -18,6 +18,12 @@ public class Alignement {
     private int grade;
     private boolean showWings;
 
+    public Alignement(int id) {
+        this.player = null;
+        this.gameManager = null;
+        this.type = id == -1 ? Type.NEUTRE : Type.values()[id];
+    }
+
 
     public Alignement(Player player) {
         this.player = player;

@@ -596,7 +596,7 @@ public class Player implements Creature, Fighter {
         int cell = -1;
         int cost = 0;
         for (Zaap zaap : gameManager.getZaaps())
-            if (zaap.getMap() == maps) {
+            if (zaap.getMap().getId() == maps.getId()) {
                 cell = zaap.getCell();
                 cost = zaap.getCost(getMap());
             }
@@ -609,6 +609,8 @@ public class Player implements Creature, Fighter {
         this.kamas -= cost;
         send("Im046;" + cost);
         send(getPacket("As"));
+        System.err.println(cell);
+        System.err.println(cost);
         if (cell != -1)
             changePosition(maps.getCell(cell));
     }

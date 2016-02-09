@@ -5,6 +5,8 @@ import graviton.common.Utils;
 import graviton.game.client.player.Player;
 import graviton.game.common.Action;
 import graviton.game.creature.Creature;
+import graviton.game.creature.monster.MonsterGroup;
+import graviton.game.enums.IdType;
 import graviton.game.maps.object.InteractiveObject;
 import lombok.Getter;
 
@@ -45,6 +47,7 @@ public class Cell {
     public void applyAction(Player player) {
         if (action != null)
             action.forEach(action1 -> action1.apply(player));
+        map.getCreatures(IdType.MONSTER_GROUP).values().stream().filter(group -> group.getPosition().getCell().getId() == this.id).forEach(group -> player.speak("Combat lancé !"));
     }
 
     public boolean isWalkable() {
@@ -100,7 +103,7 @@ public class Cell {
     }
 
     public void addAction(Action action) {
-        if(this.action == null) this.action = new ArrayList<>();
+        if (this.action == null) this.action = new ArrayList<>();
         this.action.add(action);
     }
 }

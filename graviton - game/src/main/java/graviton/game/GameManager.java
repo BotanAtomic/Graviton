@@ -8,6 +8,7 @@ import graviton.factory.*;
 import graviton.game.admin.Admin;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
+import graviton.game.creature.monster.MonsterTemplate;
 import graviton.game.creature.npc.NpcTemplate;
 import graviton.game.enums.Classe;
 import graviton.game.experience.Experience;
@@ -41,6 +42,7 @@ public class GameManager implements Manager {
     @Inject SpellFactory spellFactory;
     @Inject NpcFactory npcFactory;
     @Inject GuildFactory guildFactory;
+    @Inject MonsterFactory monsterFactory;
 
     private Experience experience;
 
@@ -57,7 +59,7 @@ public class GameManager implements Manager {
 
     @Override
     public void load() {
-        this.factorys = getFactorys(playerFactory, mapFactory, accountFactory, objectFactory, spellFactory,npcFactory,guildFactory);
+        this.factorys = getFactorys(playerFactory, mapFactory, accountFactory, objectFactory, spellFactory,npcFactory,guildFactory,monsterFactory);
         this.factorys.values().forEach(Factory::configure);
         this.experience = new Experience(mapFactory.decodeObject("experience/player"),mapFactory.decodeObject("experience/job"),mapFactory.decodeObject("experience/mount"),mapFactory.decodeObject("experience/pvp"));
     }
@@ -118,11 +120,15 @@ public class GameManager implements Manager {
     }
 
     public boolean checkName(String name) {
-        return guildFactory.check(name,true);
+        return guildFactory.check(name, true);
     }
 
     public boolean checkEmblem(String emblem) {
         return guildFactory.check(emblem, false);
+    }
+
+    public MonsterTemplate getMonster(int id) {
+        return monsterFactory.get(id);
     }
 
     public long getPlayerExperience(int level) {

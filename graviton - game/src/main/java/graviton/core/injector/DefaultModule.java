@@ -37,5 +37,6 @@ public class DefaultModule extends AbstractModule {
         bind(ObjectFactory.class).asEagerSingleton();
         bind(SpellFactory.class).asEagerSingleton();
         bind(NpcFactory.class).asEagerSingleton();
+        bind(MonsterFactory.class).asEagerSingleton();
     }
 }

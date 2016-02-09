@@ -221,7 +221,7 @@ public class PacketManager implements Manager {
 
         packets.put("AP", (client, packet) -> {
             String pseudo = dictionary[(int) (Math.random() * dictionary.length - 1)] + dictionary[(int) (Math.random() * dictionary.length - 1)];
-            while (pseudo.length() < 4)
+            while (pseudo.length() < 5)
                 pseudo = dictionary[(int) (Math.random() * dictionary.length - 1)] + dictionary[(int) (Math.random() * dictionary.length - 1)];
             client.send("AP" + pseudo);
         });

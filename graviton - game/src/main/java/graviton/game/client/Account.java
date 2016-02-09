@@ -117,7 +117,7 @@ public class Account {
             Period period = new Interval(this.mute.getValue().getTime(), new Date().getTime()).toPeriod();
             int remainingTime = (this.mute.getKey() - period.getMinutes());
             if (period.getMinutes() < this.mute.getKey()) {
-                currentPlayer.sendText("A force de trop parler, vous en avez perdu la voix... Vous devriez vous taire pendant les " + remainingTime + " prochaine " + (remainingTime > 1 ? "minutes" : "minute"), "FF0000");
+                currentPlayer.sendText("A force de trop parler, vous en avez perdu la voix... Vous devriez vous taire pendant les " + remainingTime + (remainingTime > 1 ? "prochaines" : "prochaine") + (remainingTime > 1 ? "minutes" : "minute"), "FF0000");
                 return false;
             }
             this.mute = null;
