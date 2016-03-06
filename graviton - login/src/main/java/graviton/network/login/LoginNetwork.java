@@ -40,7 +40,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        session.write("HC" + new LoginClient(session, generateKey(),injector).getKey());
+        session.write("HC" + new LoginClient(session, generateKey(), injector).getKey());
         log.info("[Session {}] created", session.getId());
     }
 

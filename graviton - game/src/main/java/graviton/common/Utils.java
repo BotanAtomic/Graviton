@@ -26,8 +26,4 @@ public class Utils {
         return -1;
     }
 
-    public static int getRandomValue(int minimum, int maximum) {
-        Random random = new Random();
-        return random.nextInt((maximum - minimum) + 1) + minimum;
-    }
-}
+ }

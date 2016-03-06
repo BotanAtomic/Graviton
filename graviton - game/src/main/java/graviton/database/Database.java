@@ -19,13 +19,12 @@ import static org.jooq.impl.DSL.max;
 @Data
 public class Database {
 
-    private final HikariConfig dataConfig;
     private final HikariDataSource dataSource;
 
     private DSLContext dslContext;
 
     public Database(String host, String name, String user, String password) {
-        dataConfig = new HikariConfig() {
+        HikariConfig dataConfig = new HikariConfig() {
             {
                 setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
                 addDataSourceProperty("serverName", decrypt(host));

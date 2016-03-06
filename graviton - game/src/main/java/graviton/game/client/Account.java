@@ -1,5 +1,7 @@
 package graviton.game.client;
 
+import static graviton.database.utils.login.Tables.ACCOUNTS;
+
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Pair;
@@ -8,11 +10,14 @@ import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.admin.Admin;
 import graviton.game.client.player.Player;
+import graviton.game.client.player.component.CommandManager;
 import graviton.game.enums.Rank;
+import graviton.game.trunks.Trunk;
 import graviton.network.game.GameClient;
 import lombok.Data;
 import org.joda.time.Interval;
 import org.joda.time.Period;
+import org.jooq.Record;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,6 +34,8 @@ public class Account {
     PlayerFactory playerFactory;
     @Inject
     AccountFactory accountFactory;
+    @Inject
+    CommandManager commandManager;
 
     private final Injector injector;
 
@@ -41,28 +48,40 @@ public class Account {
 
     private GameClient client;
 
-    private boolean seefriends;
+    private boolean seefriends, online;
     private List<Integer> friends;
-    private List<Integer> enemmy;
+    private List<Integer> enemies;
 
     private List<Player> players;
     private Player currentPlayer;
 
     private Pair<Integer, Date> mute;
 
-    public Account(int id, String answer, String pseudo, int rank,Injector injector) {
+    private Trunk bank;
+
+    public Account(Record record, Injector injector) {
         injector.injectMembers(this);
         this.injector = injector;
-        this.id = id;
-        this.answer = answer;
-        this.pseudo = pseudo;
+        this.id = record.getValue(ACCOUNTS.ID);
+        this.answer = record.getValue(ACCOUNTS.ANSWER);
+        this.pseudo = record.getValue(ACCOUNTS.PSEUDO);
         this.accountFactory.getElements().put(id, this);
         this.players = playerFactory.load(this);
-        this.friends = new ArrayList<>();
-        this.enemmy = new ArrayList<>();
-        this.rank = Rank.values()[rank - 1];
-        if (rank != 0)
-            new Admin(this.rank, this,injector);
+        this.friends = convertToList(record.getValue(ACCOUNTS.FRIENDS));
+        this.enemies = convertToList(record.getValue(ACCOUNTS.ENEMIES));
+        this.rank = Rank.values()[record.getValue(ACCOUNTS.RANK)];
+        this.bank = new Trunk(record.getValue(ACCOUNTS.BANK),injector);
+        if (rank != Rank.PLAYER)
+            new Admin(this.rank, this, injector);
+    }
+
+    private List<Integer> convertToList(String data) {
+        List<Integer> list = new ArrayList<>();
+        if (data == null || data.isEmpty())
+            return list;
+        for (String value : data.split(";"))
+            list.add(Integer.parseInt(value));
+        return list;
     }
 
     public Player getPlayer(int id) {
@@ -72,9 +91,9 @@ public class Account {
     }
 
     public void createPlayer(String name, byte classeId, byte sexe, int[] colors) {
-        if (players.add(new Player(name, sexe, classeId, colors, this,injector))) {
-                client.send("AAK");
-                client.send(getPlayersPacket());
+        if (players.add(new Player(name, sexe, classeId, colors, this, injector))) {
+            client.send("AAK");
+            client.send(getPlayersPacket());
             return;
         }
         client.send("AAEF");
@@ -104,7 +123,15 @@ public class Account {
     }
 
     public void setOnline() {
-        //TODO : Set online for prevent friends
+        this.online = true;
+
+        for (Integer i : friends) {
+            Account account = accountFactory.getElements().get(i);
+            if (account == null) return;
+
+            if (account.isOnline())
+                account.send("Im0143;" + this.pseudo + " (" + currentPlayer.getPacketName() + ")");
+        }
     }
 
     public void mute(int time, Player player, String reason) {
@@ -117,7 +144,7 @@ public class Account {
             Period period = new Interval(this.mute.getValue().getTime(), new Date().getTime()).toPeriod();
             int remainingTime = (this.mute.getKey() - period.getMinutes());
             if (period.getMinutes() < this.mute.getKey()) {
-                currentPlayer.sendText("A force de trop parler, vous en avez perdu la voix... Vous devriez vous taire pendant les " + remainingTime + (remainingTime > 1 ? "prochaines" : "prochaine") + (remainingTime > 1 ? "minutes" : "minute"), "FF0000");
+                currentPlayer.sendText("A force de trop parler, vous en avez perdu la voix... Vous devriez vous taire pendant les " + remainingTime + (remainingTime > 1 ? " prochaines " : " prochaine ") + (remainingTime > 1 ? "minutes" : "minute"), "FF0000");
                 return false;
             }
             this.mute = null;
@@ -126,17 +153,85 @@ public class Account {
     }
 
     public void addFriend(Player friend) {
+        if (friends.contains(friend.getAccount().getId())) return;
+
         if (friend != null)
             friends.add(friend.getAccount().getId());
-        send("FAef");
+        send("FAe" + friend.getName());
+        accountFactory.update(this);
     }
 
-    public void removeFriend(Player friend) {
-        if (friend != null)
-            friends.remove(friend.getAccount().getId());
+    public void update() {
+        accountFactory.update(this);
+    }
+
+    public void removeFriend(String friend) {
+        Account account = accountFactory.load(friend.substring(1));
+        if (account != null)
+            friends.remove((java.lang.Object) account.getId());
+        send("FD" + account.getId());
+        accountFactory.update(this);
     }
 
     public void send(String packet) {
         this.client.getSession().write(packet);
+    }
+
+    public String parseFriends() {
+        if (friends.isEmpty()) return "";
+        final String[] data = {""};
+        this.friends.forEach(integer -> data[0] += integer + ";");
+        return data[0];
+    }
+
+    public String parseEnemies() {
+        if (enemies.isEmpty()) return "";
+        final String[] data = {""};
+        this.enemies.forEach(integer -> data[0] += integer + ";");
+        return data[0].substring(0, data[0].length() - 1);
+    }
+
+    public String parseMute() {
+        return mute == null ? "" : mute.getKey() + ";" + mute.getValue().getTime();
+    }
+
+    public String getFriendsPacket() {
+        if (friends.isEmpty()) return "FL";
+        StringBuilder builder = new StringBuilder("FL");
+        Account account;
+        for (Integer i : friends) {
+            account = accountFactory.get(i);
+            if (account == null) continue;
+            builder.append("|").append(account.getPseudo());
+            if (account.isOnline())
+                builder.append(account.getPlayerListPacket(this.id));
+        }
+        return builder.toString();
+    }
+
+    public String getPlayerListPacket(int id) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(";");
+        builder.append("0;"); //TODO : is in fight = 1
+        builder.append(currentPlayer.getName()).append(";");
+        if (this.friends.contains(id)) {
+            builder.append(currentPlayer.getLevel()).append(";");
+            builder.append(currentPlayer.getAlignement().getType().getId()).append(";");
+        } else {
+            builder.append("?;");
+            builder.append("-1;");
+        }
+        builder.append(currentPlayer.getClasse().getId()).append(";");
+        builder.append(currentPlayer.getSex()).append(";");
+        builder.append(currentPlayer.getGfx());
+        return builder.toString();
+    }
+
+    public void launchCommand(String arguments) {
+        commandManager.launchAdminCommand(currentPlayer, arguments.split(" "));
+    }
+
+    public int getBankPrice() {
+        return bank.getObjects().size();
     }
 }

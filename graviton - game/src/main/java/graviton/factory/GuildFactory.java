@@ -45,4 +45,9 @@ public class GuildFactory extends Factory<Guild> {
     public void configure() {
         super.configureDatabase();
     }
+
+    @Override
+    public void save() {
+
+    }
 }

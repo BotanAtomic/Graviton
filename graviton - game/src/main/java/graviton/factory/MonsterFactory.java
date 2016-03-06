@@ -50,6 +50,11 @@ public class MonsterFactory extends Factory<MonsterTemplate> {
 
     @Override
     public void configure() {
-configureDatabase();
+        configureDatabase();
+    }
+
+    @Override
+    public void save() {
+
     }
 }

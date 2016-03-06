@@ -9,6 +9,7 @@ import graviton.enums.DatabaseType;
 import graviton.game.client.Account;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
+import org.jooq.UpdateSetFirstStep;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,8 +23,6 @@ import static graviton.database.utils.login.Tables.ACCOUNTS;
 public class AccountFactory extends Factory<Account> {
     @Inject
     Injector injector;
-    @Inject
-    Configuration configuration;
 
     private final Map<Integer, Account> accounts;
 
@@ -33,10 +32,22 @@ public class AccountFactory extends Factory<Account> {
     }
 
     public Account load(int id) {
-        Record record = configuration.getLoginDatabase().getRecord(ACCOUNTS, ACCOUNTS.ID.equal(id));
-        if (record != null)
-            return new Account(record.getValue(ACCOUNTS.ID), record.getValue(ACCOUNTS.ANSWER), record.getValue(ACCOUNTS.PSEUDO), record.getValue(ACCOUNTS.RANK), injector);
-        return null;
+        Record record = database.getRecord(ACCOUNTS, ACCOUNTS.ID.equal(id));
+        return record == null ? null : new Account(record, injector);
+    }
+
+    public Account load(String name) {
+        Record record = database.getRecord(ACCOUNTS, ACCOUNTS.PSEUDO.equal(name));
+        return record == null ? null : new Account(record, injector);
+    }
+
+    public void update(Account account) {
+        UpdateSetFirstStep firstStep = database.getDSLContext().update(ACCOUNTS);
+        firstStep.set(ACCOUNTS.FRIENDS, account.parseFriends());
+        firstStep.set(ACCOUNTS.ENEMIES, account.parseEnemies());
+        firstStep.set(ACCOUNTS.RANK, account.getRank().id);
+        firstStep.set(ACCOUNTS.BANK, account.getBank().getKamas() + ";" + account.getBank().parseToDatabase());
+        firstStep.set(ACCOUNTS.MUTE, account.parseMute()).where(ACCOUNTS.ID.equal(account.getId())).execute();
     }
 
     @Override
@@ -59,6 +70,12 @@ public class AccountFactory extends Factory<Account> {
     @Override
     public void configure() {
         super.configureDatabase();
+    }
+
+    @Override
+    public void save() {
+        log.debug("saving accounts...");
+        this.accounts.values().forEach(account -> update(account));
     }
 
 }

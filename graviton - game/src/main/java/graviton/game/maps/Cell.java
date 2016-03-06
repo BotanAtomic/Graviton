@@ -1,14 +1,15 @@
 package graviton.game.maps;
 
 import com.google.inject.Injector;
-import graviton.common.Utils;
 import graviton.game.client.player.Player;
+import graviton.game.client.player.exchange.TrunkExchange;
 import graviton.game.common.Action;
 import graviton.game.creature.Creature;
-import graviton.game.creature.monster.MonsterGroup;
 import graviton.game.enums.IdType;
 import graviton.game.maps.object.InteractiveObject;
+import graviton.game.trunks.Trunk;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,9 @@ public class Cell {
 
     @Getter
     private InteractiveObject interactiveObject;
+
+    @Setter @Getter
+    private Trunk trunk;
 
     public Cell(int id, Maps map, boolean walkable, int interactiveObject, Injector injector) {
         injector.injectMembers(this);
@@ -76,6 +80,10 @@ public class Cell {
                 player.openZaap();
                 player.send("GA" + gameAction + ";" + 501 + ";" + player.getId() + ",0,0");
                 break;
+            case 153 : //trunk
+                if(trunk != null)
+                    player.setExchange(new TrunkExchange(player,trunk));
+                break;
         }
     }
 
@@ -83,7 +91,7 @@ public class Cell {
         switch (action) {
             case 102:
                 this.interactiveObject.setState(InteractiveObject.State.EMPTY);
-                final int quantity = Utils.getRandomValue(1, 10);
+                final int quantity = (int)(Math.random() * 9 + 1);
                 map.send(interactiveObject.getGDF());
                 player.send("IQ" + player.getId() + "|" + quantity);
                 graviton.game.object.Object newObject = player.getGameManager().getObjectTemplate(311).createObject(quantity, false);

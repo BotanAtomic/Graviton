@@ -2,6 +2,7 @@ package graviton.game.creature.action;
 
 import graviton.api.Action;
 import graviton.game.client.player.Player;
+import graviton.game.client.player.component.ActionManager;
 import graviton.game.maps.Cell;
 
 /**
@@ -30,12 +31,12 @@ public class MapAction implements Action {
 
     @Override
     public void cancel() {
-
+        player.setActionState(ActionManager.Status.WAITING);
     }
 
     @Override
     public void onFail(String args) {
-
+        player.setActionState(ActionManager.Status.WAITING);
     }
 
     @Override

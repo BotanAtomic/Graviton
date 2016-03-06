@@ -50,12 +50,12 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
         database.getDSLContext()
                 .insertInto(ITEMS, ITEMS.ID, ITEMS.TEMPLATE, ITEMS.QUANTITY, ITEMS.POSITION, ITEMS.STATS)
                 .values(object.getId(), object.getTemplate().getId(), object.getQuantity(), object.getPosition().id,
-                        object.parseEffects());
+                        object.parseEffects()).execute();
     }
 
     public void update(Object object) {
         database.getDSLContext().update(ITEMS).set(ITEMS.QUANTITY, object.getQuantity()).set(ITEMS.POSITION, object.getPosition().id)
-                .set(ITEMS.STATS, object.parseEffects()).where(ITEMS.ID.equal(object.getId()));
+                .set(ITEMS.STATS, object.parseEffects()).where(ITEMS.ID.equal(object.getId())).execute();
     }
 
     public int getNextId() {
@@ -113,5 +113,10 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
     @Override
     public DataType getType() {
         return DataType.OBJECT;
+    }
+
+    @Override
+    public void save() {
+
     }
 }

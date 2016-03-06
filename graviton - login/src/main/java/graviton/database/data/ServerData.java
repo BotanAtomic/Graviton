@@ -2,7 +2,6 @@ package graviton.database.data;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.api.Data;
 import graviton.database.Database;
 import graviton.game.Server;
 import graviton.login.Configuration;
@@ -22,7 +21,7 @@ import static graviton.database.utils.Tables.SERVERS;
  * Created by Botan on 08/07/2015.
  */
 @Slf4j
-public class ServerData extends Data {
+public class ServerData {
     @Inject
     Injector injector;
     @Inject
@@ -32,7 +31,6 @@ public class ServerData extends Data {
 
     private Database database;
 
-    @Override
     public void initialize() {
         this.database = configuration.getDatabase();
         loadAll();

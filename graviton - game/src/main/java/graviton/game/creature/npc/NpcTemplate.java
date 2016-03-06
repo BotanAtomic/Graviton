@@ -21,9 +21,10 @@ public class NpcTemplate {
     private String accessories;
     private int extraClip;
 
+    private int initQuestion;
     private List<Object> items;
 
-    public NpcTemplate(int id,int gfx,int sex, int[] colors,String accessories,int customArt,int extraClip) {
+    public NpcTemplate(int id,int gfx,int sex, int[] colors,String accessories,int customArt,int extraClip,int initQuestion) {
         this.id = id;
         this.gfx = gfx;
         this.sex = (byte)sex;
@@ -31,6 +32,7 @@ public class NpcTemplate {
         this.accessories = accessories;
         this.customArt = customArt;
         this.extraClip = extraClip;
+        this.initQuestion = initQuestion;
         this.items = new CopyOnWriteArrayList<>();
     }
 

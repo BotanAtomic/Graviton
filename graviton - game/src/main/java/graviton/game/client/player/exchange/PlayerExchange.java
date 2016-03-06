@@ -2,26 +2,28 @@ package graviton.game.client.player.exchange;
 
 import graviton.game.GameManager;
 import graviton.game.client.player.Player;
+import graviton.game.exchange.Exchange;
 import graviton.game.exchange.Exchanger;
 import graviton.game.object.Object;
 
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by Botan on 25/12/2015.
  */
 
-public class PlayerExchange {
+public class PlayerExchange implements Exchange {
 
-    private final Exchanger first;
-    private final Exchanger second;
+    private final Map<Integer, Exchanger> exchangers;
 
     private final GameManager manager;
 
     public PlayerExchange(Player player1, Player player2) {
-        this.first = new Exchanger(player1);
-        this.second = new Exchanger(player2);
+        this.exchangers = new HashMap<>();
+
+        this.exchangers.put(player1.getId(), new Exchanger(player1));
+        this.exchangers.put(player2.getId(), new Exchanger(player2));
 
         this.manager = player1.getGameManager();
 
@@ -30,73 +32,80 @@ public class PlayerExchange {
     }
 
     public void cancel() {
-        this.first.send("EV");
-        this.second.send("EV");
-
-        this.first.quit();
-        this.second.quit();
+        exchangers.values().forEach(exchanger -> exchanger.send("EV"));
+        exchangers.values().forEach(exchanger -> exchanger.quit());
     }
 
-    private void apply() {
-        this.first.getCreature().addKamas((-this.first.getKamas() + this.first.getKamas()));
-        this.second.getCreature().addKamas((-this.second.getKamas() + this.first.getKamas()));
+    public void apply() {
+        Exchanger exchanger = null;
+        for(Exchanger exchanger1 : exchangers.values())
+            exchanger = exchanger1;
 
-        for (Integer i : first.getObjects().keySet()) {
-            int quantity = first.getObjects().get(i);
+        Exchanger other = getOther(exchanger);
 
-            if (quantity == 0 || first.getCreature().hasObject(i)) {
-                first.getObjects().remove(i);
+        for (Integer i : exchanger.getObjects().keySet()) {
+            int quantity = exchanger.getObjects().get(i);
+
+            if (quantity == 0 || !exchanger.getCreature().hasObject(i)) {
+                exchanger.getObjects().remove(i);
                 continue;
             }
 
-            Object object = first.getCreature().getObjects().get(i);
+            Object object = exchanger.getCreature().getObjects().get(i);
 
             if ((object.getQuantity() - quantity) < 1) {
-                first.getCreature().removeObject(i, true);
-                second.getCreature().addObject(object, true);
+                exchanger.getCreature().removeObject(i, true);
+                other.getCreature().addObject(object, true);
             } else {
-                first.getCreature().setObjectQuantity(object, (object.getQuantity() - quantity));
-                second.getCreature().addObject(object.getClone(quantity), true);
+                exchanger.getCreature().setObjectQuantity(object, (object.getQuantity() - quantity));
+                other.getCreature().addObject(object.getClone(quantity, false), true);
             }
         }
 
-        for (Integer i : second.getObjects().keySet()) {
-            int quantity = second.getObjects().get(i);
+        for (Integer i : other.getObjects().keySet()) {
+            int quantity = other.getObjects().get(i);
 
-            if (quantity == 0 || second.getCreature().hasObject(i)) {
-                second.getObjects().remove(i);
+            if (quantity == 0 || !other.getCreature().hasObject(i)) {
+                other.getObjects().remove(i);
                 continue;
             }
 
-            Object object = first.getCreature().getObjects().get(i);
+            Object object = other.getCreature().getObjects().get(i);
 
             if ((object.getQuantity() - quantity) < 1) {
-                second.getCreature().removeObject(i, true);
-                first.getCreature().addObject(object, true);
+                other.getCreature().removeObject(i, true);
+                exchanger.getCreature().addObject(object, true);
             } else {
-                second.getCreature().setObjectQuantity(object, (object.getQuantity() - quantity));
-                first.getCreature().addObject(object.getClone(quantity), true);
+                other.getCreature().setObjectQuantity(object, (object.getQuantity() - quantity));
+                exchanger.getCreature().addObject(object.getClone(quantity, false), true);
             }
         }
 
 
-        for (Exchanger exchanger : Arrays.asList(first, second)) {
-            exchanger.quit();
-            exchanger.send(exchanger.getCreature().getPacket("As"));
-            exchanger.send("EVa");
-            exchanger.getCreature().refreshQuantity();
-            exchanger.getCreature().save();
+        for (Exchanger exchangers : this.exchangers.values()) {
+            exchangers.quit();
+            exchangers.send(exchangers.getCreature().getPacket("As"));
+            exchangers.send("EVa");
+            exchangers.getCreature().refreshQuantity();
+            exchangers.getCreature().save();
         }
+    }
+
+    private Exchanger getOther(Exchanger exchanger) {
+        for (Exchanger exchanger1 : this.exchangers.values())
+            if (exchanger1 != exchanger)
+                return exchanger1;
+        return null;
     }
 
     public void addObject(int idObject, int quantity, int idPlayer) {
-        this.first.setOk(false);
-        this.second.setOk(false);
+        exchangers.values().forEach(exchanger -> exchanger.setOk(false));
+        exchangers.values().forEach(exchanger -> this.sendOk(exchanger));
 
-        this.sendOk(this.first);
-        this.sendOk(this.second);
+        Exchanger exchanger = exchangers.get(idPlayer);
+        Exchanger other = getOther(exchanger);
 
-        Object object = manager.getObject(idObject);
+        Object object = exchanger.getCreature().getObjects().get(idObject);
 
         if (object == null)
             return;
@@ -104,99 +113,62 @@ public class PlayerExchange {
         String str = idObject + "|" + quantity;
         String add = "|" + object.getTemplate().getId() + "|" + object.parseEffects();
 
-        if (this.first.getCreature().getId() == idPlayer) {
-            if (first.getObjects().get(idObject) != null) {
-                int newQuantity = first.getObjects().get(idObject) + quantity;
-                first.getObjects().remove(idObject);
-                first.getObjects().put(idObject, newQuantity);
-                this.sendMoveOk(this.first.getCreature(), this.second.getCreature(), 'O', "+", idObject + "|" + newQuantity, add);
-                return;
-            }
-            this.sendMoveOk(this.first.getCreature(), this.second.getCreature(), 'O', "+", str, add);
-            this.first.getObjects().put(idObject, quantity);
-        } else if (this.second.getCreature().getId() == idPlayer) {
-            if (second.getObjects().get(idObject) != null) {
-                int newQuantity = second.getObjects().get(idObject) + quantity;
-                second.getObjects().remove(idObject);
-                second.getObjects().put(idObject, newQuantity);
-                this.sendMoveOk(this.second.getCreature(), this.first.getCreature(), 'O', "+", idObject + "|" + newQuantity, add);
-                return;
-            }
-            this.sendMoveOk(this.second.getCreature(), this.first.getCreature(), 'O', "+", str, add);
-            this.second.getObjects().put(idObject, quantity);
+        if (exchanger.getObjects().get(idObject) != null) {
+            int newQuantity = exchanger.getObjects().get(idObject) + quantity;
+            exchanger.getObjects().remove(idObject);
+            exchanger.getObjects().put(idObject, newQuantity);
+            this.sendMoveOk(exchanger.getCreature(), other.getCreature(), 'O', "+", idObject + "|" + newQuantity, add);
+            return;
         }
+        this.sendMoveOk(exchanger.getCreature(), other.getCreature(), 'O', "+", str, add);
+        exchanger.getObjects().put(idObject, quantity);
     }
 
     public void removeObject(int idObject, int quantity, int idPlayer) {
-        this.first.setOk(false);
-        this.second.setOk(false);
+        exchangers.values().forEach(exchanger -> exchanger.setOk(false));
+        exchangers.values().forEach(exchanger -> this.sendOk(exchanger));
 
-        this.sendOk(this.first);
-        this.sendOk(this.second);
-
-        Object object = manager.getObject(idObject);
+        Exchanger exchanger = exchangers.get(idPlayer);
+        Exchanger other = getOther(exchanger);
+        Object object = exchanger.getCreature().getObjects().get(idObject);
 
         if (object == null)
             return;
 
+        if (!exchanger.getCreature().hasObject(idObject) || (quantity <= 0))
+            return;
+
         String add = "|" + object.getTemplate().getId() + "|" + object.parseEffects();
 
-        if (this.first.getCreature().getId() == idPlayer) {
-            int newQuantity = this.first.getObjects().get(idObject) - quantity;
-            this.first.getObjects().remove(idObject);
-            if (newQuantity < 1)
-                this.sendMoveOk(this.first.getCreature(), this.second.getCreature(), 'O', "-", String.valueOf(idObject), "");
-            else {
-                this.first.getObjects().put(idObject, newQuantity);
-                this.sendMoveOk(this.first.getCreature(), this.second.getCreature(), 'O', "+", idObject + "|" + newQuantity, add);
-            }
-        } else if (this.second.getCreature().getId() == idPlayer) {
-            int newQuantity = this.second.getObjects().get(idObject) - quantity;
-            this.second.getObjects().remove(idObject);
-            if (newQuantity < 1)
-                this.sendMoveOk(this.second.getCreature(), this.first.getCreature(), 'O', "-", String.valueOf(idObject), "");
-            else {
-                this.second.getObjects().put(idObject, newQuantity);
-                this.sendMoveOk(this.second.getCreature(), this.first.getCreature(), 'O', "+", idObject + "|" + newQuantity, add);
-            }
+        int newQuantity = exchanger.getObjects().get(idObject) - quantity;
+        exchanger.getObjects().remove(idObject);
+        if (newQuantity < 1)
+            this.sendMoveOk(exchanger.getCreature(), other.getCreature(), 'O', "-", String.valueOf(idObject), "");
+        else {
+            exchanger.getObjects().put(idObject, newQuantity);
+            this.sendMoveOk(exchanger.getCreature(), other.getCreature(), 'O', "+", idObject + "|" + newQuantity, add);
         }
     }
 
     public void toogleOk(int id) {
-        if (this.first.getCreature().getId() == id) {
-            this.first.setOk(!this.first.isOk());
-            this.sendOk(this.first);
-        } else if (this.second.getCreature().getId() == id) {
-            this.second.setOk(!this.second.isOk());
-            this.sendOk(this.second);
-        } else
-            return;
-
-
-        if (this.first.isOk() && this.second.isOk())
+        Exchanger exchanger = exchangers.get(id);
+        exchanger.setOk(!exchanger.isOk());
+        this.sendOk(exchanger);
+        if (exchanger.isOk() && getOther(exchanger).isOk())
             apply();
     }
 
     public void editKamas(int idPlayer, long kamas) {
-        this.first.setOk(false);
-        this.second.setOk(false);
-
-        this.sendOk(this.first);
-        this.sendOk(this.second);
-
-        if (this.first.getCreature().getId() == idPlayer) {
-            this.first.setKamas(kamas);
-            this.sendMoveOk(this.first.getCreature(), this.second.getCreature(), 'G', "", String.valueOf(kamas), "");
-        } else if (this.second.getCreature().getId() == idPlayer) {
-            this.second.setKamas(kamas);
-            this.sendMoveOk(this.second.getCreature(), this.first.getCreature(), 'G', "", String.valueOf(kamas), "");
-        }
+        exchangers.values().forEach(exchanger -> exchanger.setOk(false));
+        exchangers.values().forEach(exchanger -> this.sendOk(exchanger));
+        Exchanger exchanger = exchangers.get(idPlayer);
+        exchanger.setKamas(kamas);
+        this.sendMoveOk(exchanger.getCreature(), getOther(exchanger).getCreature(), 'G', "", String.valueOf(kamas), "");
     }
 
     private void sendOk(Exchanger exchanger) {
         String packet = "EK" + (exchanger.isOk() ? "1" : "0") + exchanger.getCreature().getId();
-        this.first.send(packet);
-        this.second.send(packet);
+        exchangers.values().forEach(exchanger1 -> exchanger1.send(packet));
     }
 
     private void sendMoveOk(Player player1, Player player2, char type, String signe, String str, String add) {
@@ -211,13 +183,7 @@ public class PlayerExchange {
     }
 
     public int getObjectQuantity(Player creature, int idObject) {
-        Map<Integer, Integer> objects;
-
-        if (first.getCreature().getId() == creature.getId())
-            objects = first.getObjects();
-        else
-            objects = first.getObjects();
-
+        Map<Integer, Integer> objects = exchangers.get(creature.getId()).getObjects();
         return objects.containsKey(idObject) ? objects.get(idObject) : 0;
     }
 }

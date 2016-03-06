@@ -112,8 +112,7 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
                         send("K");
                         return;
                     }
-                    send("Lpvp;pvm;pvp1;vip");
-                    //send(manager.getServerForApplication());
+                    send(manager.getServerForApplication());
                     return;
                 }
                 send("E");

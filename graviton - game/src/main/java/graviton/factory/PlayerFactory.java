@@ -52,9 +52,14 @@ public class PlayerFactory extends Factory<Player> {
     }
 
     public List<Player> load(Account account) {
-        List<Player> players = new CopyOnWriteArrayList<>();
-        players.addAll(database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (configuration.getServerId())).map(record -> new Player(account, record,injector)).collect(Collectors.toList()));
-        return players;
+        try {
+            List<Player> players = new CopyOnWriteArrayList<>();
+            players.addAll(database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (configuration.getServerId())).map(record -> new Player(account, record, injector)).collect(Collectors.toList()));
+            return players;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public int getNextId() {
@@ -171,5 +176,13 @@ public class PlayerFactory extends Factory<Player> {
         } finally {
             locker.unlock();
         }
+    }
+
+    @Override
+    public void save() {
+        log.debug("saving players...");
+        this.players.values().forEach(player -> update(player));
+        log.debug("saving players items...");
+        this.players.values().forEach(player ->  player.getObjects().values().forEach(object -> object.update()));
     }
 }

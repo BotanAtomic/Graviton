@@ -73,7 +73,7 @@ public enum Classe {
             case 11: //Vitalite
                 cost = 1;
                 if (cost <= player.getCapital())
-                    player.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_VITA,  player.getClasse() == Classe.SACRIEUR ? 2 : 1);
+                    player.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_VITA, player.getClasse() == Classe.SACRIEUR ? 2 : 1);
                 break;
             case 12: //Sagesse
                 cost = 3;
@@ -82,19 +82,19 @@ public enum Classe {
                 break;
             case 13: //Chance
                 value = player.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_CHAN);
-                cost =  player.getClasse() == Classe.SACRIEUR ? 3 : getCost(id, value, player.getClasse());
+                cost = player.getClasse() == Classe.SACRIEUR ? 3 : getCost(id, value, player.getClasse());
                 if (cost <= player.getCapital())
                     player.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_CHAN, 1);
                 break;
             case 14: // Agilite
                 value = player.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_AGIL);
-                cost =  player.getClasse() == Classe.SACRIEUR ? 3 : getCost(id, value, player.getClasse());
+                cost = player.getClasse() == Classe.SACRIEUR ? 3 : getCost(id, value, player.getClasse());
                 if (cost <= player.getCapital())
                     player.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_AGIL, 1);
                 break;
             case 15: //Intelligence
                 value = player.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_INTE);
-                cost =  player.getClasse() == Classe.SACRIEUR ? 3 : getCost(id, value, player.getClasse());
+                cost = player.getClasse() == Classe.SACRIEUR ? 3 : getCost(id, value, player.getClasse());
                 if (cost <= player.getCapital())
                     player.getStatistics().get(StatsType.BASE).addEffect(Stats.ADD_INTE, 1);
                 break;
@@ -107,170 +107,123 @@ public enum Classe {
     private int getCost(int stats, int value, Classe classe) {
         switch (stats) {
             case 10://Force
-                switch (classe) {
-                    case OSAMODAS:
-                    case ENIRIPSA:
-                    case FECA:
-                    case XELOR:
-                        if (value < 50) return 2;
-                        if (value < 150) return 3;
-                        if (value < 250) return 4;
-                        return 5;
-
-                    case IOP:
-                    case ECAFLIP:
-                    case SRAM:
-                        if (value < 100) return 1;
-                        if (value < 200) return 2;
-                        if (value < 300) return 3;
-                        if (value < 400) return 4;
-                        return 5;
-
-                    case PANDAWA:
-                        if (value < 50) return 1;
-                        if (value < 200) return 2;
-                        return 3;
-
-                    case SADIDA:
-                        if (value < 50) return 1;
-                        if (value < 250) return 2;
-                        if (value < 300) return 3;
-                        if (value < 400) return 4;
-                        return 5;
-
-                    case CRA:
-                    case ENUTROF:
-                        if (value < 50) return 1;
-                        if (value < 150) return 2;
-                        if (value < 250) return 3;
-                        if (value < 350) return 4;
-                        return 5;
+                if (classe == OSAMODAS || classe == ENIRIPSA || classe == FECA || classe == XELOR) {
+                    if (value < 50) return 2;
+                    if (value < 150) return 3;
+                    if (value < 250) return 4;
+                    return 5;
+                } else if (classe == IOP || classe == ECAFLIP || classe == SRAM) {
+                    if (value < 100) return 1;
+                    if (value < 200) return 2;
+                    if (value < 300) return 3;
+                    if (value < 400) return 4;
+                    return 5;
+                } else if (classe == PANDAWA) {
+                    if (value < 50) return 1;
+                    if (value < 200) return 2;
+                    return 3;
+                } else if (classe == SADIDA) {
+                    if (value < 50) return 1;
+                    if (value < 250) return 2;
+                    if (value < 300) return 3;
+                    if (value < 400) return 4;
+                    return 5;
+                } else if (classe == CRA || classe == ENUTROF) {
+                    if (value < 50) return 1;
+                    if (value < 150) return 2;
+                    if (value < 250) return 3;
+                    if (value < 350) return 4;
+                    return 5;
                 }
-                break;
             case 13://Chance
-                switch (classe) {
-                    case IOP:
-                    case FECA:
-                    case CRA:
-                    case XELOR:
-                    case SRAM:
-                        if (value < 20) return 1;
-                        if (value < 40) return 2;
-                        if (value < 60) return 3;
-                        if (value < 80) return 4;
-                        return 5;
-
-                    case OSAMODAS:
-                    case SADIDA:
-                        if (value < 100) return 1;
-                        if (value < 200) return 2;
-                        if (value < 300) return 3;
-                        if (value < 400) return 4;
-                        return 5;
-
-                    case PANDAWA:
-                        if (value < 50) return 1;
-                        if (value < 200) return 2;
-                        return 3;
-
-                    case ENUTROF:
-                        if (value < 100) return 1;
-                        if (value < 150) return 2;
-                        if (value < 230) return 3;
-                        if (value < 330) return 4;
-                        return 5;
-
-                    case ECAFLIP:
-                    case ENIRIPSA:
-                        if (value < 20) return 1;
-                        if (value < 40) return 2;
-                        if (value < 60) return 3;
-                        if (value < 80) return 4;
-                        return 5;
+                if (classe == IOP || classe == FECA || classe == CRA || classe == XELOR || classe == SRAM) {
+                    if (value < 20) return 1;
+                    if (value < 40) return 2;
+                    if (value < 60) return 3;
+                    if (value < 80) return 4;
+                    return 5;
+                } else if (classe == OSAMODAS || classe == SADIDA) {
+                    if (value < 100) return 1;
+                    if (value < 200) return 2;
+                    if (value < 300) return 3;
+                    if (value < 400) return 4;
+                    return 5;
+                } else if (classe == PANDAWA) {
+                    if (value < 50) return 1;
+                    if (value < 200) return 2;
+                    return 3;
+                } else if (classe == ENUTROF) {
+                    if (value < 100) return 1;
+                    if (value < 150) return 2;
+                    if (value < 230) return 3;
+                    if (value < 330) return 4;
+                    return 5;
+                } else if (classe == ECAFLIP || classe == ENIRIPSA) {
+                    if (value < 20) return 1;
+                    if (value < 40) return 2;
+                    if (value < 60) return 3;
+                    if (value < 80) return 4;
+                    return 5;
                 }
-                break;
             case 14://Agilite
-                switch (classe) {
-                    case SADIDA:
-                    case IOP:
-                    case ENIRIPSA:
-                    case FECA:
-                    case ENUTROF:
-                    case OSAMODAS:
-                    case XELOR:
-                        if (value < 20) return 1;
-                        if (value < 40) return 2;
-                        if (value < 60) return 3;
-                        if (value < 80) return 4;
-                        return 5;
-
-                    case SRAM:
-                        if (value < 100) return 1;
-                        if (value < 200) return 2;
-                        if (value < 300) return 3;
-                        if (value < 400) return 4;
-                        return 5;
-
-                    case PANDAWA:
-                        if (value < 50) return 1;
-                        if (value < 200) return 2;
-                        return 3;
-
-                    case ECAFLIP:
-                    case CRA:
-                        if (value < 50) return 1;
-                        if (value < 100) return 2;
-                        if (value < 150) return 3;
-                        if (value < 200) return 4;
-                        return 5;
-
+                if (classe == IOP || classe == SADIDA || classe == ENIRIPSA || classe == FECA || classe == ENUTROF || classe == OSAMODAS || classe == XELOR) {
+                    if (value < 20) return 1;
+                    if (value < 40) return 2;
+                    if (value < 60) return 3;
+                    if (value < 80) return 4;
+                    return 5;
+                } else if (classe == SRAM) {
+                    if (value < 100) return 1;
+                    if (value < 200) return 2;
+                    if (value < 300) return 3;
+                    if (value < 400) return 4;
+                    return 5;
+                } else if (classe == PANDAWA) {
+                    if (value < 50) return 1;
+                    if (value < 200) return 2;
+                    return 3;
+                } else if (classe == ECAFLIP) {
+                    if (value < 50) return 1;
+                    if (value < 100) return 2;
+                    if (value < 150) return 3;
+                    if (value < 200) return 4;
+                    return 5;
+                } else if (classe == CRA) {
+                    if (value < 50) return 1;
+                    if (value < 100) return 2;
+                    if (value < 150) return 3;
+                    if (value < 200) return 4;
+                    return 5;
                 }
                 break;
             case 15://Intelligence
-                switch (classe) {
-                    case XELOR:
-                    case SADIDA:
-                    case ENIRIPSA:
-                    case OSAMODAS:
-                    case FECA:
-                        if (value < 100) return 1;
-                        if (value < 200) return 2;
-                        if (value < 300) return 3;
-                        if (value < 400) return 4;
-                        return 5;
-
-                    case SRAM:
-                        if (value < 50) return 2;
-                        if (value < 150) return 3;
-                        if (value < 250) return 4;
-                        return 5;
-
-                    case ENUTROF:
-                        if (value < 20) return 1;
-                        if (value < 60) return 2;
-                        if (value < 100) return 3;
-                        if (value < 140) return 4;
-                        return 5;
-
-                    case PANDAWA:
-                        if (value < 50) return 1;
-                        if (value < 200) return 2;
-                        return 3;
-
-                    case CRA:
-                        if (value < 50) return 1;
-                        if (value < 150) return 2;
-                        if (value < 250) return 3;
-                        if (value < 350) return 4;
-                        return 5;
-
-                    case IOP:
-                    case ECAFLIP:
-                        if (value < 20) return 1;
-                        if (value < 40) return 2;
-                        if (value < 60) return 3;
-                        if (value < 80) return 4;
-                        return 5;
+                if (classe == XELOR || classe == SADIDA || classe == ENIRIPSA || classe == FECA || classe == ENUTROF || classe == OSAMODAS) {
+                    if (value < 100) return 1;
+                    if (value < 200) return 2;
+                    if (value < 300) return 3;
+                    if (value < 400) return 4;
+                    return 5;
+                } else if (classe == SRAM) {
+                    if (value < 50) return 2;
+                    if (value < 150) return 3;
+                    if (value < 250) return 4;
+                    return 5;
+                } else if (classe == ENUTROF) {
+                    if (value < 20) return 1;
+                    if (value < 60) return 2;
+                    if (value < 100) return 3;
+                    if (value < 140) return 4;
+                    return 5;
+                } else if (classe == PANDAWA) {
+                    if (value < 50) return 1;
+                    if (value < 200) return 2;
+                    return 3;
+                } else if (classe == CRA) {
+                    if (value < 50) return 1;
+                    if (value < 150) return 2;
+                    if (value < 250) return 3;
+                    if (value < 350) return 4;
+                    return 5;
                 }
                 break;
         }

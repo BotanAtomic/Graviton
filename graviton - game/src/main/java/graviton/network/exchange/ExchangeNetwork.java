@@ -51,6 +51,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
         this.connector.setHandler(this);
         this.configuration = configuration;
         this.gameManager = gameManager;
+        gameManager.setExchangeNetwork(this);
         this.accountFactory = accountFactory;
         this.gameNetwork = gameNetwork;
         this.scanner = scanner;

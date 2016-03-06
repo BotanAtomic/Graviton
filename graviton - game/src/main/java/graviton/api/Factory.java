@@ -40,6 +40,8 @@ public abstract class Factory<T> {
 
     public abstract void configure();
 
+    public abstract void save();
+
     public Object decodeObject(String name) {
         try {
             XMLDecoder decoder = new XMLDecoder(new FileInputStream(new File("data/" + name)));

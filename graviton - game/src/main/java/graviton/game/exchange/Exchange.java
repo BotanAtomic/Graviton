@@ -7,50 +7,20 @@ import graviton.game.client.player.Player;
  * Created by Botan on 25/12/2015.
  */
 
-public abstract class Exchange {
+public interface Exchange {
 
-    private final Exchanger exchanger1;
-    private final Exchanger exchanger2;
+    void cancel();
 
-    public Exchange(Player creature1, Player creature2) {
-        this.exchanger1 = new Exchanger(creature1);
-        this.exchanger2 = new Exchanger(creature2);
-    }
+    void apply();
 
-    public synchronized void cancel() {
-        doCancel();
-    }
+    void toogleOk(int id);
 
-    protected abstract void doCancel();
+    void addObject(int idObject, int quantity, int idPlayer);
 
-    public synchronized void apply() {
-        doApply();
-    }
+    void removeObject(int idObject, int quantity, int idPlayer);
 
-    protected abstract void doApply();
+    void editKamas(int idPlayer, long kamas);
 
-    public synchronized void toogleOk(int id) {
-        doToogleOk(id);
-    }
-
-    protected abstract void doToogleOk(int id);
-
-    public synchronized void addObject(int idObject, int quantity, int idPlayer) {
-        doAddObject(idObject, quantity, idPlayer);
-    }
-
-    protected abstract void doAddObject(int idObject, int quantity, int idPlayer);
-
-    public synchronized void removeObject(int idObject, int quantity, int idPlayer) {
-        doRemoveObject(idObject, quantity, idPlayer);
-    }
-
-    protected abstract void doRemoveObject(int idObject, int quantity, int idPlayer);
-
-    public synchronized void editKamas(int idPlayer, long kamas) {
-        doEditKamas(idPlayer, kamas);
-    }
-
-    protected abstract void doEditKamas(int idPlayer, long kamas);
+    int getObjectQuantity(Player player,int id);
 
 }

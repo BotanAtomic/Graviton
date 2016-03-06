@@ -56,12 +56,19 @@ public class Object {
         this.stringStats = new TreeMap<>();
     }
 
-    public Object getClone(int quantity) {
-        return new Object(objectFactory.getNextId(),template.getId(),quantity,ObjectPosition.NO_EQUIPED,this.statistics,injector);
+    public Object getClone(int quantity,boolean create) {
+        Object object =  new Object(objectFactory.getNextId(),template.getId(),quantity,ObjectPosition.NO_EQUIPED,this.statistics,injector);
+        if(create)
+            objectFactory.create(object);
+        return object;
     }
 
     public void changePlace(ObjectPosition newPlace) {
         this.position = newPlace;
+        objectFactory.update(this);
+    }
+
+    public void update() {
         objectFactory.update(this);
     }
 

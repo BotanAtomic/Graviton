@@ -25,9 +25,12 @@ public class LoginClient implements Client {
     @Inject
     Manager manager;
 
-    private final AccountData accountData;
-    private final PlayerData playerData;
-    private final ServerData serverData;
+    @Inject
+    AccountData accountData;
+    @Inject
+    PlayerData playerData;
+    @Inject
+    ServerData serverData;
 
     private final long id;
     private final String key;
@@ -42,9 +45,6 @@ public class LoginClient implements Client {
         this.session = session;
         this.key = key;
         this.statut = Statut.CONNECTION;
-        this.accountData = (AccountData) manager.getData("account");
-        this.playerData = (PlayerData) manager.getData("player");
-        this.serverData = (ServerData) manager.getData("server");
         this.manager.addClient(this);
     }
 
@@ -71,11 +71,11 @@ public class LoginClient implements Client {
                 statut = Statut.SERVER;
                 break;
             case NICKNAME:
-                String[] forbiden = {"admin", "modo", "moderateur", " ", "&", "é", "\"", "'",
-                        "(", "-", "è", "_", "ç", "à", ")", "=", "~", "#",
-                        "{", "[", "|", "`", "^", "@", "]", "}", "°", "+",
-                        "^", "$", "ù", "*", ",", ";", ":", "!", "<", ">",
-                        "¨", "£", "%", "µ", "?", ".", "/", "§", "\n", account.getName()};
+                String[] forbiden = {"admin", "modo", "moderateur", " ", "&", "ï¿½", "\"", "'",
+                        "(", "-", "ï¿½", "_", "ï¿½", "ï¿½", ")", "=", "~", "#",
+                        "{", "[", "|", "`", "^", "@", "]", "}", "ï¿½", "+",
+                        "^", "$", "ï¿½", "*", ",", ";", ":", "!", "<", ">",
+                        "ï¿½", "ï¿½", "%", "ï¿½", "?", ".", "/", "ï¿½", "\n", account.getName()};
                 for (String forbidenWord : forbiden)
                     if (packet.contains(forbidenWord)) {
                         send("AlEs");
@@ -173,8 +173,7 @@ public class LoginClient implements Client {
         }
         server.send("+" + account.getId());
         StringBuilder sb = new StringBuilder();
-        String ip = session.getLocalAddress().toString().replace("/", "").split(":")[0];
-        sb.append("AYK").append((ip.equals("127.0.0.1") ? "127.0.0.1" : server.getIp()));
+        sb.append("AYK").append(server.getIp());
         sb.append(":").append(server.getPort()).append(";");
         sb.append(account.getId());
         send(sb.toString());

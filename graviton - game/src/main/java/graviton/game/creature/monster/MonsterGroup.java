@@ -14,7 +14,7 @@ import java.util.List;
 public class MonsterGroup implements Creature {
     final private int id;
 
-    private Position position;
+    final private Position position;
 
     private List<MonsterGrade> monsters;
 

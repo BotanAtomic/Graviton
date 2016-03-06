@@ -13,13 +13,8 @@ import graviton.game.creature.npc.Npc;
 import graviton.game.enums.IdType;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -34,22 +29,19 @@ public class Maps {
     @Inject
     GameManager gameManager;
 
-    private final ScheduledExecutorService sheduler = Executors.newScheduledThreadPool(1);
     private final ReentrantLock locker = new ReentrantLock();
 
-    private final int id;
+    private final int id,width, heigth, X, Y,maxGroup;
     private final long date;
-    private final int width, heigth, X, Y;
     private final String places, key, data;
 
+
+    private final String descriptionPacket, loadingPacket;
+
     private final Map<Integer, Cell> cells;
-    private final String descriptionPacket;
-    private final String loadingPacket;
     private Map<Integer, Creature> creatures;
 
-    private final int maxGroup;
-
-    public Maps(int id, String date, int width, int heigth, String places, String key, String data, String position,String monster,int maxGroup,Injector injector) {
+    public Maps(int id, String date, int width, int heigth, String places, String key, String cells,String data, String position, String monster, int maxGroup, Injector injector) {
         injector.injectMembers(this);
         this.id = id;
         this.date = Long.parseLong(date);
@@ -60,64 +52,60 @@ public class Maps {
         this.data = data;
         this.X = Integer.parseInt(position.split(",")[0]);
         this.Y = Integer.parseInt(position.split(",")[1]);
-        this.cells = decompileCells(data, injector);
+        this.cells = decompileCells(data, cells, injector);
         this.loadingPacket = "GA;2;" + this.getId() + ";";
         this.descriptionPacket = "GDM|" + String.valueOf(this.id) + "|0" + this.date + "|" + (!this.key.isEmpty() ? this.key : this.data);
         this.maxGroup = maxGroup;
         npcFactory.getNpcOnMap(this).forEach(this::addCreature);
-        spawnMonster(configureMonster(monster));
+        if(this.cells.size() > 5)
+            spawnMonster(configureMonster(monster));
     }
 
     private List<MonsterGrade> configureMonster(String group) {
         List<MonsterGrade> monsters = new ArrayList<>();
-        int monsterId,level;
-        for(String mob : group.split("\\|")) {
-            if(mob.equals(""))
-                continue;
+        int monsterId, level;
 
-            try	{
+        for (String mob : group.split("\\|")) {
+            if (mob.isEmpty())
+                continue;
+            try {
                 monsterId = Integer.parseInt(mob.split(",")[0]);
                 level = Integer.parseInt(mob.split(",")[1]);
-            } catch(NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 continue;
             }
 
-            if(monsterId == 0 || level == 0)
-                continue;
-
-            if(gameManager.getMonster(monsterId) == null)
-                continue;
-            if(gameManager.getMonster(monsterId).getGrade(level) == null)
+            if (monsterId == 0 || level == 0 || gameManager.getMonster(monsterId).getGrade(level) == null)
                 continue;
             monsters.add(gameManager.getMonster(monsterId).getGrade(level));
         }
-       return monsters;
+        return monsters;
     }
 
     private void spawnMonster(List<MonsterGrade> monsters) {
         int i = 0;
-        for(MonsterGrade grade : monsters) {
+        for (MonsterGrade grade : monsters) {
             i++;
             addCreature(new MonsterGroup(monsters, this));
-            if(i == maxGroup) break;
+            if (i == maxGroup) break;
         }
     }
 
     public int getNextId(IdType type) {
-        int startIndex = type.MAXIMAL_ID-this.id*1000;
-        for(int i = startIndex ; i > startIndex-1000 && i >= type.MINIMAL_ID ;i--)
-            if(!this.creatures.containsKey(i))
+        int startIndex = type.MAXIMAL_ID - this.id * 1000;
+        for (int i = startIndex; i > startIndex - 1000 && i >= type.MINIMAL_ID; i--)
+            if (!this.creatures.containsKey(i))
                 return i;
         return 0;
     }
 
-    public Map<Integer,Creature> getCreatures(IdType type) {
-        Map<Integer,Creature> creatures = new HashMap<>();
+    public Map<Integer, Creature> getCreatures(IdType type) {
+        Map<Integer, Creature> creatures = new HashMap<>();
         switch (type) {
-            case NPC :
+            case NPC:
                 this.creatures.values().stream().filter(creature -> creature instanceof Npc).forEach(creature -> creatures.put(creature.getId(), creature));
                 return creatures;
-            case CREATURE :
+            case CREATURE:
                 this.creatures.values().stream().filter(creature -> creature instanceof Player).forEach(creature -> creatures.put(creature.getId(), creature));
                 return creatures;
             case MONSTER_GROUP:
@@ -180,7 +168,7 @@ public class Maps {
     public Cell getRandomCell() {
         List<Cell> goodCells = new ArrayList<>();
         this.cells.values().stream().filter(Cell::isWalkable).filter(cell1 -> cell1.getCreatures().isEmpty()).forEach(goodCells::add);
-        return goodCells.get(Utils.getRandomValue(0, goodCells.size() - 1));
+        return goodCells.get(new Random().nextInt(goodCells.size()));
     }
 
     public void sendGdf(Player player) {
@@ -188,16 +176,34 @@ public class Maps {
     }
 
     public void refreshCreature(Creature creature) {
+        send("GM|-" + creature.getId());
         send("GM|+" + creature.getGm());
     }
-
 
 
     /**
      * Tools
      **/
-    private Map<Integer, Cell> decompileCells(String data,Injector injector) {
+    private Map<Integer, Cell> decompileCells(String data,String cellsData, Injector injector) {
         Map<Integer, Cell> cells = new ConcurrentHashMap<>();
+
+        if(data.isEmpty()) {
+            String[] infos = cellsData.split("\\|");
+            for(String cellData : infos) {
+                boolean walkable = false;
+                int id = -1, object = -1;
+                String[] cellInfos = cellData.split(",");
+                try	{
+                    walkable = cellInfos[2].equals("1");
+                    id = Integer.parseInt(cellInfos[0]);
+                    if(!cellInfos[3].trim().equals(""))
+                        object = Integer.parseInt(cellInfos[3]);
+                } catch(Exception ignored) {}
+                cells.put(id, new Cell(id, this, walkable,  object,injector));
+            }
+            return cells;
+        }
+
         String cellData;
         List<Byte> cellInfos = new ArrayList<>();
         for (int f = 0; f < data.length(); f += 10) {
@@ -208,7 +214,7 @@ public class Maps {
             int layerObject2 = ((cellInfos.get(0) & 2) << 12) + ((cellInfos.get(7) & 1) << 12) + (cellInfos.get(8) << 6) + cellInfos.get(9);
             boolean layerObject2Interactive = ((cellInfos.get(7) & 2) >> 1) != 0;
             int obj = (layerObject2Interactive ? layerObject2 : -1);
-            Cell cell = new Cell(f / 10, this, walkable, obj,injector);
+            Cell cell = new Cell(f / 10, this, walkable, obj, injector);
             cells.put(f / 10, cell);
             cellInfos.clear();
         }

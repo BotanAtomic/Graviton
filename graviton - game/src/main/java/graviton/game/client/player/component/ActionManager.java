@@ -85,7 +85,7 @@ public class ActionManager {
         }
     }
 
-    private void resetActions() {
+    public void resetActions() {
         currentActions.forEach(Action::cancel);
         currentActions.clear();
         setStatus(Status.WAITING);

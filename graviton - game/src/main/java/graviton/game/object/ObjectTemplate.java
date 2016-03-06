@@ -110,7 +110,7 @@ public class ObjectTemplate {
             int faces = Integer.parseInt(jet.split("d")[1].split("\\+")[0]);
             int add = Integer.parseInt(jet.split("d")[1].split("\\+")[1]);
             for (int a = 0; a < des; a++) {
-                num += Utils.getRandomValue(1, faces);
+                num += (int)(Math.random() * faces + 1);
             }
             num += add;
             return num;

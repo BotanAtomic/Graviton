@@ -2,7 +2,6 @@ package graviton.database.data;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.api.Data;
 import graviton.database.Database;
 import graviton.game.Account;
 import graviton.login.Configuration;
@@ -17,7 +16,7 @@ import static graviton.database.utils.Tables.ACCOUNTS;
  * Created by Botan on 08/07/2015.
  */
 @Slf4j
-public class AccountData extends Data {
+public class AccountData {
     @Inject
     Injector injector;
     @Inject
@@ -27,7 +26,6 @@ public class AccountData extends Data {
 
     private Database database;
 
-    @Override
     public void initialize() {
         this.database = configuration.getDatabase();
     }
@@ -60,12 +58,12 @@ public class AccountData extends Data {
     }
 
     public void updateNickname(Account account) {
-        database.getContext().update(ACCOUNTS).set(ACCOUNTS.PSEUDO, account.getPseudo()).where(ACCOUNTS.ID.equal(account.getId()));
+        System.err.println("Update");
+        database.getContext().update(ACCOUNTS).set(ACCOUNTS.PSEUDO, account.getPseudo()).where(ACCOUNTS.ID.equal(account.getId())).execute();
     }
 
     public boolean isAvaiableNickname(String nickname) {
-        Record record = database.getRecord(ACCOUNTS, ACCOUNTS.PSEUDO.equal(nickname));
-        return record != null;
+        return database.getRecord(ACCOUNTS, ACCOUNTS.PSEUDO.equal(nickname)) == null;
     }
 
     private String encrypt(String pass, String key) {

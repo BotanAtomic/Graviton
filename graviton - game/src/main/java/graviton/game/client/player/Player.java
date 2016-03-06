@@ -17,13 +17,16 @@ import graviton.game.creature.Creature;
 import graviton.game.creature.Position;
 import graviton.game.creature.mount.Mount;
 import graviton.game.creature.npc.Npc;
+import graviton.game.creature.npc.NpcQuestion;
 import graviton.game.enums.Classe;
 import graviton.game.enums.ObjectPosition;
 import graviton.game.enums.StatsType;
+import graviton.game.exchange.Exchange;
 import graviton.game.fight.Fighter;
 import graviton.game.group.Group;
 import graviton.game.guild.Guild;
 import graviton.game.guild.GuildMember;
+import graviton.game.job.Job;
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
 import graviton.game.maps.Zaap;
@@ -68,7 +71,7 @@ public class Player implements Creature, Fighter {
     private Group group;
     private FloodChecker floodCheck;
     private ActionManager actionManager;
-    private PlayerExchange exchange;
+    private Exchange exchange;
 
     private Alignement alignement;
     private int level;
@@ -91,6 +94,8 @@ public class Player implements Creature, Fighter {
     private int inviting;
 
     private Mount mount;
+
+    private Map<Integer,Job> jobs;
 
     public Player(Account account, Record record, Injector injector) {
         injector.injectMembers(this);
@@ -115,13 +120,16 @@ public class Player implements Creature, Fighter {
         this.position = new Position(playerMap, playerMap.getCell(Integer.parseInt(record.getValue(PLAYERS.POSITION).split(";")[1])), -1);
         this.objects = new HashMap<>();
         this.zaaps = new ArrayList<>();
-        this.online = true;
-        this.title = 0;
+        this.title = record.getValue(PLAYERS.TITLE);
         int life = ((this.level - 1) * 5 + 50) + getTotalStatistics().getEffect(Stats.ADD_VITA);
         this.life = new Pair<>(life, life);
+        this.online = false;
         this.configureSpells(record.getValue(PLAYERS.SPELLS));
+        this.configureJob(record.getValue(PLAYERS.JOBS));
         this.zaaps.addAll(gameManager.getZaaps());
-        if (objects != null && !objects.isEmpty())
+        this.actionManager = new ActionManager(this);
+        String items = record.getValue(PLAYERS.ITEMS);
+        if (objects != null && items != null && !items.isEmpty())
             this.setStuff(record.getValue(PLAYERS.ITEMS));
         factory.add(this);
     }
@@ -155,8 +163,22 @@ public class Player implements Creature, Fighter {
         this.spells = classe.getStartSpells(gameManager, level);
         this.spellPlace = classe.getStartPlace(gameManager);
         this.zaaps.addAll(gameManager.getZaaps());
+        this.actionManager = new ActionManager(this);
         if (factory.create(this))
             factory.add(this);
+    }
+
+    private void configureJob(String data) {
+        this.jobs = new HashMap<>();
+        if(data == null) return;
+
+        int id;
+        String[] arguments;
+        for(String job : data.split("\\|")) {
+            arguments = job.split(",");
+            id = Integer.parseInt(arguments[0]);
+            this.jobs.put(id,new Job(id,Long.parseLong(arguments[1]),this));
+        }
     }
 
     private void configureStatisctics(Record record) {
@@ -199,7 +221,7 @@ public class Player implements Creature, Fighter {
         send(getPacket("SL"));
         send("eL7667711|0");
         send("AR6bk");
-        send("Ow0|1000"); //TODO : System for pods
+        refreshPods();
         send("FO+"); //TODO : seeFriends
         send("ILS2000");
         sendText(configuration.getDefaultMessage(), configuration.getDefaultColor());
@@ -279,6 +301,13 @@ public class Player implements Creature, Fighter {
         return true;
     }
 
+    public Object getSameObject(Object object) {
+        for (Object similar : this.objects.values())
+            if (object.getTemplate().getId() == similar.getTemplate().getId() && object.getStatistics().isSameStatistics(similar.getStatistics()))
+                return similar;
+        return null;
+    }
+
     public void setObjectQuantity(Object object, int quantity) {
         send("OQ" + object.getId() + "|" + quantity);
         object.setQuantity(quantity);
@@ -296,8 +325,28 @@ public class Player implements Creature, Fighter {
         send("OR" + id);
     }
 
+    public void removeObject(int id,int quantity) {
+        Object object = this.objects.get(id);
+
+        if(object != null) {
+            if((object.getQuantity() - quantity) <= 0) {
+                removeObject(id,true);
+                return;
+            }
+            object.setQuantity(object.getQuantity() - quantity);
+            refreshQuantity();
+        }
+    }
+
     public boolean hasObject(int id) {
         return objects.containsKey(id);
+    }
+
+    public Object getObjectByTemplate(int id) {
+        for(Object object : objects.values())
+            if (object.getTemplate().getId() == id)
+                return object;
+        return null;
     }
 
     public void moveObject(String packet) {
@@ -311,7 +360,6 @@ public class Player implements Creature, Fighter {
         this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
         send(getPacket("As"));
         getMap().send("Oa" + this.id + "|" + getPacket("GMS"));
-        System.err.println(this.statistics);
     }
 
     public String parseObject() {
@@ -344,6 +392,11 @@ public class Player implements Creature, Fighter {
 
     public void boostStatistics(int id) {
         this.classe.boostStatistics(this, id);
+        refreshPods();
+    }
+
+    public void refreshPods() {
+        send("Ow" + this.getPodsUsed() + "|" + this.getMaxPods());
     }
 
     public Statistics getTotalStatistics() {
@@ -442,25 +495,32 @@ public class Player implements Creature, Fighter {
     }
 
     public void createDialog(Npc npc) {
-        // send("DCK" + npc.getId());
-        npc.speak("Tiens, des items crevard !");
-        this.addObject(gameManager.getObjectTemplate(40).createObject(1, false), true);
-        this.addObject(gameManager.getObjectTemplate(2473).createObject(1, false), true);
-        this.addObject(gameManager.getObjectTemplate(2477).createObject(1, false), true);
-        this.addObject(gameManager.getObjectTemplate(2475).createObject(1, false), true);
-        this.addObject(gameManager.getObjectTemplate(2476).createObject(1, false), true);
-        this.addObject(gameManager.getObjectTemplate(2477).createObject(1, false), true);
-        this.addObject(gameManager.getObjectTemplate(2478).createObject(1, false), true);
-        this.addObject(gameManager.getObjectTemplate(2474).createObject(1, false), true);
+        send("DCK" + npc.getId());
+        NpcQuestion question = gameManager.getNpcQuestion(npc.getTemplate().getInitQuestion());
+        if(question == null) {
+            send("DV");
+            return;
+        }
+        send("DQ" + question.getDQPacket(this));
+        this.inviting = npc.getId();
+        setActionState(ActionManager.Status.DIALOG);
+    }
 
-        this.addObject(gameManager.getObjectTemplate(40).createObject(1, true), true);
-        this.addObject(gameManager.getObjectTemplate(2473).createObject(1, true), true);
-        this.addObject(gameManager.getObjectTemplate(2477).createObject(1, true), true);
-        this.addObject(gameManager.getObjectTemplate(2475).createObject(1, true), true);
-        this.addObject(gameManager.getObjectTemplate(2476).createObject(1, true), true);
-        this.addObject(gameManager.getObjectTemplate(2477).createObject(1, true), true);
-        this.addObject(gameManager.getObjectTemplate(2478).createObject(1, true), true);
-        this.addObject(gameManager.getObjectTemplate(2474).createObject(1, true), true);
+    public void createDialog(int questionId) {
+        NpcQuestion question = gameManager.getNpcQuestion(questionId);
+        if(question == null) {
+            this.inviting = 0;
+            setActionState(ActionManager.Status.WAITING);
+            send("DV");
+            return;
+        }
+        send("DQ" + question.getDQPacket(this));
+    }
+
+    public void quitDialog() {
+        this.inviting = 0;
+        this.send("DV");
+        this.setActionState(ActionManager.Status.WAITING);
     }
 
     public void createGroup(Player player) {
@@ -499,10 +559,8 @@ public class Player implements Creature, Fighter {
                     return;
                 }
                 packet = "ERK" + id + "|" + target.getId() + "|1";
-
                 send(packet);
                 target.send(packet);
-
                 inviting = target.getId();
                 target.setInviting(id);
                 break;
@@ -531,7 +589,7 @@ public class Player implements Creature, Fighter {
 
                     Object object = this.objects.get(id);
 
-                    if (hasObject(id) || (object == null) || (quantity <= 0))
+                    if (!hasObject(id) || (object == null) || (quantity <= 0))
                         return;
 
                     if (quantity > object.getQuantity() - quantityInExchange)
@@ -542,21 +600,11 @@ public class Player implements Creature, Fighter {
                     int id = Integer.parseInt(informations[0]);
                     int quantity = Integer.parseInt(informations[1]);
 
-                    Object object = this.objects.get(id);
-
-                    if (quantity <= 0 || hasObject(id) || object == null || (quantity > exchange.getObjectQuantity(this, id)))
-                        return;
-
-                    exchange.removeObject(id, quantity, id);
+                    exchange.removeObject(id, quantity, this.id);
                 }
                 break;
             case 'G':// Kamas
-                long kamas = Integer.parseInt(packet.substring(1));
-                if (this.kamas < kamas)
-                    kamas = this.kamas;
-                else if (kamas < 0)
-                    return;
-                exchange.editKamas(id, kamas);
+                exchange.editKamas(id, Integer.parseInt(packet.substring(1)));
                 break;
         }
     }
@@ -565,9 +613,11 @@ public class Player implements Creature, Fighter {
         return "<a href='asfunction:onHref,ShowPlayerPopupMenu," + name + "'><b>" + name + "</b></a>";
     }
 
+    public void setActionState(ActionManager.Status state) {
+        this.actionManager.setStatus(state);
+    }
+
     public void createAction(int id, String arguments) {
-        if (this.actionManager == null)
-            this.actionManager = new ActionManager(this);
         this.actionManager.createAction(id, arguments);
     }
 
@@ -615,6 +665,14 @@ public class Player implements Creature, Fighter {
             changePosition(maps.getCell(cell));
     }
 
+    public String getValue(String value) {
+        if(value.equals("name"))
+            return this.getName();
+        if(value.equals("bankCost"))
+            return String.valueOf(account.getBankPrice());
+        return "";
+    }
+
     public void refresh() {
         getMap().refreshCreature(this);
     }
@@ -626,19 +684,47 @@ public class Player implements Creature, Fighter {
     }
 
     public void changePosition(Cell cell) {
-        if (actionManager == null)
-            actionManager = new ActionManager(this);
-
         if (actionManager.getStatus() == ActionManager.Status.MOVING)
             return;
 
-        if (this.getMap() != cell.getMap()) {
+        if (this.getMap().getId() != cell.getMap().getId()) {
             this.getMap().removeCreature(this);
             this.position.setCell(cell);
             cell.getMap().addCreature(this);
             return;
         }
         getMap().changeCell(this, cell);
+    }
+
+    public void changePosition(int map,int cell) {
+        if (actionManager.getStatus() == ActionManager.Status.MOVING)
+            return;
+
+        Maps maps = gameManager.getMap(map);
+
+        if(maps == null)
+            return;
+
+        Cell nextCell = maps.getCell(cell);
+
+        if (this.getMap().getId() != maps.getId()) {
+            this.getMap().removeCreature(this);
+            this.position.setCell(nextCell);
+            nextCell.getMap().addCreature(this);
+            return;
+        }
+        getMap().changeCell(this, nextCell);
+    }
+
+    private int getPodsUsed() {
+        int pod = 0;
+        for(Object object : this.objects.values())
+            pod += (object.getTemplate().getUsedPod() * object.getQuantity());
+        return pod;
+    }
+
+    private int getMaxPods() {
+        return this.getTotalStatistics().getEffect(Stats.ADD_PODS) + this.getTotalStatistics().getEffect(Stats.ADD_FORC) * 5 + 1000;
     }
 
     public Maps getMap() {

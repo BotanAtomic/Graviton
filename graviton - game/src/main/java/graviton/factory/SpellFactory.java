@@ -47,4 +47,10 @@ public class SpellFactory extends Factory<SpellTemplate> {
     public DataType getType() {
         return DataType.SPELL;
     }
+
+    @Override
+    public void save() {
+
+
+    }
 }

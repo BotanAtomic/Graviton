@@ -38,7 +38,8 @@ public class InteractiveObject {
         this.walkable = this.template != null && (this.template.isWalkable() || this.state == State.EMPTY);
         if (template == null) return;
         if (template.getRespawnTime() == -1) return;
-        map.getSheduler().scheduleAtFixedRate(() -> {
+
+        gameManager.getScheduler().scheduleAtFixedRate(() -> {
             if (state == State.FULL) return;
             state = State.FULLING;
             interactive = true;

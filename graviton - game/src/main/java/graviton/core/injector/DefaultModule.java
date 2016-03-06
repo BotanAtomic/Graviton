@@ -12,11 +12,11 @@ import graviton.network.NetworkManager;
 import graviton.network.exchange.ExchangeNetwork;
 import graviton.network.game.GameNetwork;
 
-
 /**
  * Created by Botan on 16/06/2015.
  */
 public class DefaultModule extends AbstractModule {
+
     @Override
     protected void configure() {
         bind(Configuration.class).asEagerSingleton();
@@ -39,4 +39,6 @@ public class DefaultModule extends AbstractModule {
         bind(NpcFactory.class).asEagerSingleton();
         bind(MonsterFactory.class).asEagerSingleton();
     }
+
+
 }

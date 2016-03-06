@@ -9,15 +9,19 @@ import graviton.game.admin.Admin;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
 import graviton.game.creature.monster.MonsterTemplate;
+import graviton.game.creature.npc.NpcAnswer;
+import graviton.game.creature.npc.NpcQuestion;
 import graviton.game.creature.npc.NpcTemplate;
 import graviton.game.enums.Classe;
 import graviton.game.experience.Experience;
 import graviton.game.maps.Maps;
+import graviton.game.trunks.Trunk;
 import graviton.game.maps.Zaap;
 import graviton.game.maps.object.InteractiveObjectTemplate;
 import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
 import graviton.game.spells.SpellTemplate;
+import graviton.network.exchange.ExchangeNetwork;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,6 +29,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -33,16 +40,28 @@ import java.util.concurrent.locks.ReentrantLock;
 @Data
 @Slf4j
 public class GameManager implements Manager {
-    private final ReentrantLock locker = new ReentrantLock(); //For syncronization
 
-    @Inject PlayerFactory playerFactory;
-    @Inject MapFactory mapFactory;
-    @Inject AccountFactory accountFactory;
-    @Inject ObjectFactory objectFactory;
-    @Inject SpellFactory spellFactory;
-    @Inject NpcFactory npcFactory;
-    @Inject GuildFactory guildFactory;
-    @Inject MonsterFactory monsterFactory;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ReentrantLock locker = new ReentrantLock();
+
+    @Inject
+    PlayerFactory playerFactory;
+    @Inject
+    MapFactory mapFactory;
+    @Inject
+    AccountFactory accountFactory;
+    @Inject
+    ObjectFactory objectFactory;
+    @Inject
+    SpellFactory spellFactory;
+    @Inject
+    NpcFactory npcFactory;
+    @Inject
+    GuildFactory guildFactory;
+    @Inject
+    MonsterFactory monsterFactory;
+
+    private ExchangeNetwork exchangeNetwork;
 
     private Experience experience;
 
@@ -55,13 +74,14 @@ public class GameManager implements Manager {
     @Inject
     public GameManager() {
         this.admins = new ArrayList<>();
- }
+    }
 
     @Override
     public void load() {
-        this.factorys = getFactorys(playerFactory, mapFactory, accountFactory, objectFactory, spellFactory,npcFactory,guildFactory,monsterFactory);
+        this.factorys = getFactorys(playerFactory, mapFactory, accountFactory, objectFactory, spellFactory, npcFactory, guildFactory, monsterFactory);
         this.factorys.values().forEach(Factory::configure);
-        this.experience = new Experience(mapFactory.decodeObject("experience/player"),mapFactory.decodeObject("experience/job"),mapFactory.decodeObject("experience/mount"),mapFactory.decodeObject("experience/pvp"));
+        this.experience = new Experience(mapFactory.decodeObject("experience/player"), mapFactory.decodeObject("experience/job"), mapFactory.decodeObject("experience/mount"), mapFactory.decodeObject("experience/pvp"));
+        this.scheduleActions();
     }
 
     public Map<Integer, ?> getElements(DataType type) {
@@ -85,12 +105,13 @@ public class GameManager implements Manager {
     }
 
     public ObjectTemplate getObjectTemplate(int id) {
-        return objectFactory.get((java.lang.Object)id);
+        return objectFactory.get((java.lang.Object) id);
     }
 
     public InteractiveObjectTemplate getInteractiveObjectTemplates(int id) {
         return objectFactory.get(id);
     }
+
     public Object getObject(int id) {
         return objectFactory.load(id);
     }
@@ -109,6 +130,14 @@ public class GameManager implements Manager {
 
     public NpcTemplate getNpcTemplate(int id) {
         return npcFactory.get(id);
+    }
+
+    public NpcQuestion getNpcQuestion(int id) {
+        return npcFactory.getQuestion(id);
+    }
+
+    public NpcAnswer getNpcAnswer(int id) {
+        return npcFactory.getAnswer(id);
     }
 
     public Map<Classe, Map<Integer, Integer>> getClassData() {
@@ -131,6 +160,10 @@ public class GameManager implements Manager {
         return monsterFactory.get(id);
     }
 
+    public void updateTrunk(Trunk trunk) {
+        mapFactory.updateTrunk(trunk);
+    }
+
     public long getPlayerExperience(int level) {
         if (level > 200) level = 200;
         return experience.getData().get(DataType.PLAYER).get(level);
@@ -147,7 +180,16 @@ public class GameManager implements Manager {
     }
 
     public void save() {
-
+        try {
+            locker.lock();
+            exchangeNetwork.send("C2");
+            getOnlinePlayers().forEach(player -> player.send("Im1164"));
+            this.factorys.forEach((dataType, factory) -> factory.save());
+            exchangeNetwork.send("C1");
+            getOnlinePlayers().forEach(player -> player.send("Im1165"));
+        } finally {
+            locker.unlock();
+        }
     }
 
     public void send(String packet) {
@@ -192,17 +234,17 @@ public class GameManager implements Manager {
 
     private Map<DataType, Factory<?>> getFactorys(Factory... a) {
         Map<DataType, Factory<?>> factorys = new ConcurrentHashMap<>();
-        for (Factory factory : a) {
-            if(factory.getType() == null) {
-                System.err.println("NULL");
-            }
+        for (Factory factory : a)
             factorys.put(factory.getType(), factory);
-        }
-       return factorys;
+        return factorys;
     }
 
     @Override
     public void unload() {
 
+    }
+
+    private void scheduleActions() {
+        this.scheduler.scheduleAtFixedRate(() -> save(), 1, 1, TimeUnit.HOURS);
     }
 }

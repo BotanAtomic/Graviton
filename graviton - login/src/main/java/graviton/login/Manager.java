@@ -35,13 +35,16 @@ public class Manager {
     NetworkManager manager;
     @Inject
     Scanner scanner;
+    @Inject
+    AccountData accountData;
+    @Inject
+    PlayerData playerData;
+    @Inject
+    ServerData serverData;
 
     private Map<Long, Client> clients;
-    private Map<String, graviton.api.Data> datas;
     private Map<Integer, Integer> connected;
-    /**
-     * ID -> Object
-     **/
+
     private Map<Integer, Account> accounts;
     private Map<Integer, Player> players;
     private Map<Integer, Server> servers;
@@ -53,7 +56,6 @@ public class Manager {
         this.players = new ConcurrentHashMap<>();
         this.servers = new ConcurrentHashMap<>();
         this.clients = new ConcurrentHashMap<>();
-        this.datas = new ConcurrentHashMap<>();
         this.connected = new ConcurrentHashMap<>();
         dateOfStart = new java.util.Date();
     }
@@ -66,24 +68,15 @@ public class Manager {
     }
 
     public void stop() {
-        System.out.println("<> Closing manager server <>");
         scanner.interrupt();
         manager.stop();
         configuration.getDatabase().stop();
     }
 
     private void initialize() {
-        AccountData accountData = new AccountData();
-        injector.injectMembers(accountData);
-        PlayerData playerData = new PlayerData();
-        injector.injectMembers(playerData);
-        ServerData serverData = new ServerData();
-        injector.injectMembers(serverData);
-
-        datas.put("account", accountData);
-        datas.put("player", playerData);
-        datas.put("server", serverData);
-        datas.values().forEach(graviton.api.Data::initialize);
+        accountData.initialize();
+        playerData.initialize();
+        serverData.initialize();
     }
 
     public void addClient(Client client) {
@@ -103,8 +96,7 @@ public class Manager {
     }
 
     public String getHostList() {
-        ServerData data = (ServerData) getData("server");
-        return data.getHostList();
+        return serverData.getHostList();
     }
 
     public final String getServerName(boolean connected) {
@@ -156,10 +148,4 @@ public class Manager {
             connected.remove(id);
         }
     }
-
-    public graviton.api.Data getData(String name) {
-        return datas.get(name);
-    }
-
-
 }
