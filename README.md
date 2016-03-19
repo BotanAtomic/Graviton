@@ -126,4 +126,5 @@ See the <a href = 'https://github.com/Babouche-/Graviton/blob/master/graviton%20
 [Application]
 
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
+</p>
 See the <a href = 'https://github.com/Babouche-/Graviton-Manager/'>project</a>
