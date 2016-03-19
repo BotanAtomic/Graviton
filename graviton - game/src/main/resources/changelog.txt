@@ -1,0 +1,25 @@
+Changelog (game) 19/03/2016
+
+Maps / Cells 100%
+Deplacement for player 100%
+Chat with flood checker for mute 80%
+Command by chat 100%
+Command by console for admin 100%
+Items 60%
+Emotes 100%
+Guild 60%
+Alignement 90%
+Map actions 100%
+Player group 100%
+Experience (Job/Player/Mount/Guild) 100%
+Job 1%
+Zone/SubZone 80%
+Creature 10%
+Spells 10% (place and level only)
+Boost of statisctics 100%
+Monster on map
+Fight 1%
+Friends & Ennemies 90%
+System for pods 100%
+Exchange with other player 100%
+Bank & Trunk 100%
