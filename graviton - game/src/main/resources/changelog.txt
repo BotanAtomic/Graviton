@@ -23,3 +23,4 @@ Friends & Ennemies 90%
 System for pods 100%
 Exchange with other player 100%
 Bank & Trunk 100%
+
