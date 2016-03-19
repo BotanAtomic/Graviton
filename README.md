@@ -119,6 +119,8 @@ public Database(String ip, String name, String user, String pass) {
 
 &#9989; Boost of statisctics
 
+&#9989; Monster on map
+
 [Application]
 
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
