@@ -67,7 +67,7 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
             manager.getClient(session.getId()).send("PONG");
             return;
         }
-        manager.getClient(session).parsePacket(packet);
+        manager.getClient(session.getId()).parsePacket(packet);
         log.info("[(E)Session {}] recev < {}", session.getId(), packet);
     }
 

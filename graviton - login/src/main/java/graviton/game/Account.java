@@ -18,10 +18,9 @@ import java.util.List;
 @Data
 public class Account {
     private final int id, rank;
-    private final String pseudo;
     @Inject
     Manager manager;
-    private String name, password, question;
+    private String name, password, question, pseudo;
     private LoginClient client;
     private List<Player> players;
 

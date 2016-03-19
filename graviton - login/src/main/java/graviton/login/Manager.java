@@ -72,7 +72,7 @@ public class Manager {
             clients.remove(client.getId());
     }
 
-    public Client getClient(int id) {
+    public Client getClient(long id) {
         for (Client client : clients.values())
             if (client.getSession().getId() == id)
                 return client;
