@@ -84,6 +84,8 @@ public Database(String ip, String name, String user, String pass) {
 
 [Login]
 
+-> new system for configuration (Injection)
+
 -> cleaner
 
 -> faster
