@@ -121,29 +121,7 @@ public Database(String ip, String name, String user, String pass) {
 
 [Game]
 
-&#9989; Deplacement for player
-
-&#9989; Chat with flood checker for mute
-
-&#9989; Command by chat
-
-&#9989; Items 
-
-&#9989; Emotes
-
-&#9989; Guild (60%)
-
-&#9989; Alignement
-
-&#9989; Map actions
-
-&#9989; Player group 
-
-&#9989; Spells (place and level only)
-
-&#9989; Boost of statisctics
-
-&#9989; Monster on map
+See the <a href = 'https://github.com/Babouche-/Graviton/blob/master/graviton%20-%20game/src/main/resources/changelog.txt'>changelog</a>
 
 [Application]
 
