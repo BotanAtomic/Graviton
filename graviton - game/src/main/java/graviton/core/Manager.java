@@ -5,6 +5,7 @@ import graviton.common.Scanner;
 import graviton.game.GameManager;
 import graviton.game.PacketManager;
 import graviton.game.client.player.component.CommandManager;
+import graviton.game.fight.type.FightManager;
 import graviton.network.NetworkManager;
 import lombok.Getter;
 
@@ -23,9 +24,9 @@ public class Manager {
     final private Date dateOfStart;
 
     @Inject
-    public Manager(NetworkManager networkManager,GameManager gameManager,PacketManager packetManager,CommandManager commandManager, Scanner scanner) {
+    public Manager(NetworkManager networkManager, GameManager gameManager, PacketManager packetManager, CommandManager commandManager, FightManager fightManager, Scanner scanner) {
         this.dateOfStart = new Date();
-        managers = Arrays.asList(gameManager, packetManager, commandManager, scanner, networkManager);
+        managers = Arrays.asList(gameManager, packetManager, commandManager, scanner, networkManager, fightManager);
     }
 
     public void start() {

@@ -3,10 +3,8 @@ package graviton.game.common;
 import graviton.game.client.player.Player;
 import graviton.game.client.player.component.ActionManager;
 import graviton.game.client.player.exchange.TrunkExchange;
-import graviton.game.creature.npc.NpcQuestion;
 import graviton.game.enums.ActionType;
 import graviton.game.maps.Maps;
-import graviton.game.object.*;
 import lombok.Data;
 
 /**
@@ -39,6 +37,11 @@ public class Action {
 
                 player.send("DV");
                 player.setExchange(new TrunkExchange(player,player.getAccount().getBank()));
+                break;
+            }
+
+            case RESET_STATS: {
+                player.resetStatistics();
                 break;
             }
 

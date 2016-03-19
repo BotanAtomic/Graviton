@@ -15,12 +15,12 @@ import graviton.game.creature.npc.NpcTemplate;
 import graviton.game.enums.Classe;
 import graviton.game.experience.Experience;
 import graviton.game.maps.Maps;
-import graviton.game.trunks.Trunk;
 import graviton.game.maps.Zaap;
 import graviton.game.maps.object.InteractiveObjectTemplate;
 import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
 import graviton.game.spells.SpellTemplate;
+import graviton.game.trunks.Trunk;
 import graviton.network.exchange.ExchangeNetwork;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +78,7 @@ public class GameManager implements Manager {
 
     @Override
     public void load() {
-        this.factorys = getFactorys(playerFactory, mapFactory, accountFactory, objectFactory, spellFactory, npcFactory, guildFactory, monsterFactory);
+        this.factorys = getFactorys(playerFactory, npcFactory, accountFactory, objectFactory, spellFactory, mapFactory, guildFactory, monsterFactory);
         this.factorys.values().forEach(Factory::configure);
         this.experience = new Experience(mapFactory.decodeObject("experience/player"), mapFactory.decodeObject("experience/job"), mapFactory.decodeObject("experience/mount"), mapFactory.decodeObject("experience/pvp"));
         this.scheduleActions();

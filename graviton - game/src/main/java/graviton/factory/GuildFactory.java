@@ -1,8 +1,11 @@
 package graviton.factory;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import graviton.api.Factory;
+import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.enums.DatabaseType;
+import graviton.game.GameManager;
 import graviton.game.guild.Guild;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
@@ -13,11 +16,14 @@ import static graviton.database.utils.game.Tables.GUILD;
 
 @Slf4j
 public class GuildFactory extends Factory<Guild> {
+    @Inject
+    GameManager gameManager;
 
     private Map<Integer, Guild> guilds;
 
-    public GuildFactory() {
-        super(DatabaseType.GAME);
+    @Inject
+    public GuildFactory(@Named("database.game") Database database) {
+        super(database);
     }
 
     public boolean check(String arguments, boolean name) {
@@ -43,7 +49,6 @@ public class GuildFactory extends Factory<Guild> {
 
     @Override
     public void configure() {
-        super.configureDatabase();
     }
 
     @Override

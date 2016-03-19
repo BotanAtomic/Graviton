@@ -1,7 +1,5 @@
 package graviton.game.client;
 
-import static graviton.database.utils.login.Tables.ACCOUNTS;
-
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Pair;
@@ -23,11 +21,18 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static graviton.database.utils.login.Tables.ACCOUNTS;
+
 /**
  * Created by Botan on 19/06/2015.
  */
 @Data
 public class Account {
+    private final Injector injector;
+    private final int id;
+    private final String answer;
+    private final Rank rank;
+    private final String pseudo;
     @Inject
     GameManager manager;
     @Inject
@@ -36,14 +41,6 @@ public class Account {
     AccountFactory accountFactory;
     @Inject
     CommandManager commandManager;
-
-    private final Injector injector;
-
-    private final int id;
-    private final String answer;
-    private final Rank rank;
-    private final String pseudo;
-
     private String ipAdress;
 
     private GameClient client;
@@ -63,9 +60,9 @@ public class Account {
         injector.injectMembers(this);
         this.injector = injector;
         this.id = record.getValue(ACCOUNTS.ID);
+        this.accountFactory.getElements().put(id, this);
         this.answer = record.getValue(ACCOUNTS.ANSWER);
         this.pseudo = record.getValue(ACCOUNTS.PSEUDO);
-        this.accountFactory.getElements().put(id, this);
         this.players = playerFactory.load(this);
         this.friends = convertToList(record.getValue(ACCOUNTS.FRIENDS));
         this.enemies = convertToList(record.getValue(ACCOUNTS.ENEMIES));
@@ -73,6 +70,7 @@ public class Account {
         this.bank = new Trunk(record.getValue(ACCOUNTS.BANK),injector);
         if (rank != Rank.PLAYER)
             new Admin(this.rank, this, injector);
+
     }
 
     private List<Integer> convertToList(String data) {
@@ -129,7 +127,7 @@ public class Account {
             Account account = accountFactory.getElements().get(i);
             if (account == null) return;
 
-            if (account.isOnline())
+            if (account.isOnline() && account.getFriends().contains(id))
                 account.send("Im0143;" + this.pseudo + " (" + currentPlayer.getPacketName() + ")");
         }
     }
@@ -166,7 +164,7 @@ public class Account {
     }
 
     public void removeFriend(String friend) {
-        Account account = accountFactory.load(friend.substring(1));
+        Account account = accountFactory.getByName(friend.substring(1));
         if (account != null)
             friends.remove((java.lang.Object) account.getId());
         send("FD" + account.getId());

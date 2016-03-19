@@ -2,15 +2,15 @@ package graviton.factory;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.name.Named;
 import graviton.api.Factory;
+import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.enums.DatabaseType;
 import graviton.game.maps.object.InteractiveObjectTemplate;
 import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
-import org.jooq.Result;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,15 +23,14 @@ import static graviton.database.utils.game.Tables.*;
 
 @Slf4j
 public class ObjectFactory extends Factory<ObjectTemplate> {
+    private final Map<Integer, ObjectTemplate> objectsTemplate;
+    private final Map<Integer, InteractiveObjectTemplate> interactiveObjectTemplate;
     @Inject
     Injector injector;
 
-    private final Map<Integer, ObjectTemplate> objectsTemplate;
-    private final Map<Integer, InteractiveObjectTemplate> interactiveObjectTemplate;
-
-
-    public ObjectFactory() {
-        super(DatabaseType.GAME);
+    @Inject
+    public ObjectFactory(@Named("database.game") Database database) {
+        super(database);
         this.objectsTemplate = new ConcurrentHashMap<>();
         this.interactiveObjectTemplate = new ConcurrentHashMap<>();
     }
@@ -100,11 +99,7 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
 
     @Override
     public void configure() {
-        super.configureDatabase();
-
-        Result<Record> result = database.getResult(INTERACTIVE_TEMPLATE);
-
-        for (Record record : result)
+        for (Record record : database.getResult(INTERACTIVE_TEMPLATE))
             this.interactiveObjectTemplate.put(record.getValue(INTERACTIVE_TEMPLATE.ID), new InteractiveObjectTemplate(record.getValue(INTERACTIVE_TEMPLATE.ID),
                     record.getValue(INTERACTIVE_TEMPLATE.RESPAWN), record.getValue(INTERACTIVE_TEMPLATE.DURATION),
                     record.getValue(INTERACTIVE_TEMPLATE.UNKNOW), record.getValue(INTERACTIVE_TEMPLATE.WALKABLE) == 1));

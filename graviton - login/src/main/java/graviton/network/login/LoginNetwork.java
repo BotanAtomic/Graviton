@@ -2,7 +2,7 @@ package graviton.network.login;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.name.Named;
+import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
 import graviton.login.Manager;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +28,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
     private final Manager manager;
     @Inject
     Injector injector;
-    @Inject
-    @Named("login.port")
+    @InjectSetting("login.port")
     private int port;
 
     @Inject
@@ -52,7 +51,6 @@ public class LoginNetwork implements NetworkService, IoHandler {
     @Override
     public void sessionClosed(IoSession session) throws Exception {
         log.info("[Session {}] closed", session.getId());
-        manager.getClient(session.getId()).kick();
     }
 
     @Override

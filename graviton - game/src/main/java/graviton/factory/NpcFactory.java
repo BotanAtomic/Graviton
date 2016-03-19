@@ -2,9 +2,11 @@ package graviton.factory;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.name.Named;
 import graviton.api.Factory;
+import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.enums.DatabaseType;
+import graviton.game.GameManager;
 import graviton.game.common.Action;
 import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcAnswer;
@@ -21,25 +23,25 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static graviton.database.utils.game.Tables.NPC_TEMPLATE;
-import static graviton.database.utils.game.Tables.NPCS;
-import static graviton.database.utils.game.Tables.NPC_QUESTIONS;
-import static graviton.database.utils.game.Tables.NPC_REPONSES_ACTIONS;
+import static graviton.database.utils.game.Tables.*;
 
 /**
  * Created by Botan on 17/01/2016.
  */
 @Slf4j
 public class NpcFactory extends Factory<NpcTemplate> {
-    @Inject
-    Injector injector;
-
     private final Map<Integer, NpcTemplate> templates;
     private final Map<Integer, NpcQuestion> questions;
     private final Map<Integer, NpcAnswer> answers;
+    @Inject
+    Injector injector;
+    @Inject
+    GameManager gameManager;
 
-    public NpcFactory() {
-        super(DatabaseType.GAME);
+
+    @Inject
+    public NpcFactory(@Named("database.game") Database database) {
+        super(database);
         this.templates = new ConcurrentHashMap<>();
         this.answers = new ConcurrentHashMap<>();
         this.questions = new ConcurrentHashMap<>();
@@ -105,7 +107,7 @@ public class NpcFactory extends Factory<NpcTemplate> {
 
     @Override
     public void configure() {
-        super.configureDatabase();
+
     }
 
     @Override

@@ -1,9 +1,9 @@
 package graviton.network.exchange;
 
 import com.google.inject.Inject;
+import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
 import graviton.common.Scanner;
-import graviton.core.Configuration;
 import graviton.factory.AccountFactory;
 import graviton.game.GameManager;
 import graviton.network.game.GameNetwork;
@@ -27,15 +27,23 @@ import java.nio.charset.CharsetDecoder;
 @Slf4j
 public class ExchangeNetwork implements IoHandler, NetworkService {
     private final GameManager gameManager;
-    private final Configuration configuration;
     private final IoConnector connector;
     private final GameNetwork gameNetwork;
     private final Scanner scanner;
-
-    private final String IP;
-    private final int PORT;
-
     private final AccountFactory accountFactory;
+
+    @InjectSetting("exchange.ip")
+    public String ip;
+    @InjectSetting("exchange.port")
+    public int port;
+    @InjectSetting("server.ip")
+    public String serverIp;
+    @InjectSetting("server.port")
+    public int serverPort;
+    @InjectSetting("server.id")
+    public int serverId;
+    @InjectSetting("server.key")
+    public String serverKey;
 
     private IoSession session;
 
@@ -44,12 +52,9 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
     private long responseTime;
 
     @Inject
-    public ExchangeNetwork(Configuration configuration, AccountFactory accountFactory, GameNetwork gameNetwork,GameManager gameManager,Scanner scanner) {
-        this.IP = configuration.getExchangeIp();
-        this.PORT = configuration.getExchangePort();
+    public ExchangeNetwork(AccountFactory accountFactory, GameNetwork gameNetwork, GameManager gameManager, Scanner scanner) {
         this.connector = new NioSocketConnector();
         this.connector.setHandler(this);
-        this.configuration = configuration;
         this.gameManager = gameManager;
         gameManager.setExchangeNetwork(this);
         this.accountFactory = accountFactory;
@@ -59,7 +64,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
 
     @Override
     public void start() {
-        connector.connect(new InetSocketAddress(IP, PORT));
+        connector.connect(new InetSocketAddress(ip, port));
      }
 
     @Override
@@ -130,7 +135,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
     private void parse(String packet) {
         switch (packet.charAt(0)) {
             case '?':
-                send("S" + configuration.getServerId() + "@" + configuration.getServerKey());
+                send("S" + serverId + "@" + serverKey);
                 break;
             case 'E':
                 System.exit(0);
@@ -139,7 +144,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
                 System.exit(0);
                 break;
             case 'I':
-                send("I" + configuration.getIp() + "@" + configuration.getGamePort());
+                send("I" + serverIp + "@" + serverPort);
                 break;
             case 'S':
                 gameManager.save();
@@ -157,7 +162,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
                 send("R" + scanner.launch(packet.substring(1)));
                 break;
             default:
-                if (packet.equals("PONG") && packet.length() == 4) {
+                if (packet.equals("PONG")) {
                     responseTime = (System.currentTimeMillis() - time);
                     return;
                 }

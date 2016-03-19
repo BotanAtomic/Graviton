@@ -5,4 +5,10 @@ package graviton.game.fight;
  */
 public interface Fight {
 
+    enum FightType {
+
+    }
+
 }
+
+

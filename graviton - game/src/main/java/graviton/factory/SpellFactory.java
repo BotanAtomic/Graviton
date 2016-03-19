@@ -1,8 +1,10 @@
 package graviton.factory;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import graviton.api.Factory;
+import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.enums.DatabaseType;
 import graviton.game.spells.SpellTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
@@ -17,11 +19,12 @@ import static graviton.database.utils.game.Tables.SPELLS;
  */
 @Slf4j
 public class SpellFactory extends Factory<SpellTemplate> {
+    private final Map<Integer, SpellTemplate> spells;
 
-    private Map<Integer, SpellTemplate> spells;
-
-    public SpellFactory() {
-        super(DatabaseType.GAME);
+    @Inject
+    public SpellFactory(@Named("database.game") Database database) {
+        super(database);
+        this.spells = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -35,12 +38,8 @@ public class SpellFactory extends Factory<SpellTemplate> {
     }
 
     public void configure() {
-        super.configureDatabase();
-
-        this.spells = new ConcurrentHashMap<>();
-
         for(Record record : database.getResult(SPELLS))
-            spells.put(record.getValue(SPELLS.ID),  new SpellTemplate(record.getValue(SPELLS.ID), record.getValue(SPELLS.SPRITE), record.getValue(SPELLS.SPRITEINFOS), record));
+            this.spells.put(record.getValue(SPELLS.ID), new SpellTemplate(record.getValue(SPELLS.ID), record.getValue(SPELLS.SPRITE), record.getValue(SPELLS.SPRITEINFOS), record));
     }
 
     @Override

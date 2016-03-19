@@ -55,6 +55,7 @@ public class LoginClient implements Client {
                     return;
                 }
                 this.account = database.loadAccount(args[0]);
+
                 if (account != null)
                     this.account.setClient(this);
                 else

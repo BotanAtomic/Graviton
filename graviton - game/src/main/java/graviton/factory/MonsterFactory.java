@@ -1,16 +1,17 @@
 package graviton.factory;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import graviton.api.Factory;
-
-import static graviton.database.utils.game.Tables.MONSTERS;
-
+import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.enums.DatabaseType;
 import graviton.game.creature.monster.MonsterTemplate;
 import org.jooq.Record;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static graviton.database.utils.game.Tables.MONSTERS;
 
 /**
  * Created by Botan on 17/01/2016.
@@ -18,8 +19,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MonsterFactory extends Factory<MonsterTemplate> {
     private final Map<Integer, MonsterTemplate> monsters;
 
-    public MonsterFactory() {
-        super(DatabaseType.GAME);
+    @Inject
+    public MonsterFactory(@Named("database.game") Database database) {
+        super(database);
         this.monsters = new ConcurrentHashMap<>();
     }
 
@@ -50,7 +52,7 @@ public class MonsterFactory extends Factory<MonsterTemplate> {
 
     @Override
     public void configure() {
-        configureDatabase();
+
     }
 
     @Override

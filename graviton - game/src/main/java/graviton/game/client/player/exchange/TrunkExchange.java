@@ -4,7 +4,6 @@ import graviton.game.GameManager;
 import graviton.game.client.player.Player;
 import graviton.game.client.player.component.ActionManager;
 import graviton.game.exchange.Exchange;
-import graviton.game.object.*;
 import graviton.game.object.Object;
 import graviton.game.trunks.Trunk;
 
@@ -26,7 +25,7 @@ public class TrunkExchange implements Exchange {
 
         trunk.open(player);
         player.getActionManager().resetActions();
-
+        player.getActionManager().setStatus(ActionManager.Status.EXCHANGING);
     }
 
     @Override

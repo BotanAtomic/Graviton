@@ -4,14 +4,13 @@ import com.google.inject.Inject;
 import graviton.api.Manager;
 import graviton.game.GameManager;
 import graviton.game.alignement.Alignement;
-import graviton.game.client.Account;
 import graviton.game.client.player.Player;
 import graviton.game.common.Command;
 import graviton.game.object.ObjectTemplate;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -19,17 +18,13 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by Botan on 18/10/2015 [Game]
  */
 public class CommandManager implements Manager {
+    private final ReentrantLock locker;
     @Inject
     GameManager gameManager;
-
-    private final Map<String, Command> playerCommands;
-    private final Map<String, Command> adminCommand;
-
-    private final ReentrantLock locker;
+    private Map<String, Command> playerCommands;
+    private Map<String, Command> adminCommand;
 
     public CommandManager() {
-        this.playerCommands = new HashMap<>();
-        this.adminCommand = new HashMap<>();
         this.locker = new ReentrantLock();
     }
 
@@ -63,11 +58,16 @@ public class CommandManager implements Manager {
 
     @Override
     public void load() {
-        this.playerCommands.put("guilde", (player, arguments) -> player.send("gn"));
-        this.playerCommands.put("ange", (player, arguments) -> player.getAlignement().setType(Alignement.Type.BONTARIEN));
-        this.playerCommands.put("grade10", (player, arguments) -> player.getAlignement().setHonor(17500));
+        Map<String, Command> playerCommands = new HashMap<>();
+        Map<String, Command> adminCommand = new HashMap<>();
 
-        this.adminCommand.put("teleport", (player, arguments) -> {
+        playerCommands.put("guilde", (player, arguments) -> player.send("gn"));
+        playerCommands.put("ange", (player, arguments) -> player.getAlignement().setType(Alignement.Type.BONTARIEN));
+        playerCommands.put("grade10", (player, arguments) -> player.getAlignement().setHonor(17500));
+
+        this.playerCommands = Collections.unmodifiableMap(playerCommands);
+
+        adminCommand.put("teleport", (player, arguments) -> {
             try {
                 player.changePosition(Integer.parseInt(arguments[1]), Integer.parseInt(arguments[2]));
             } catch (Exception e) {
@@ -75,7 +75,7 @@ public class CommandManager implements Manager {
             }
         });
 
-        this.adminCommand.put("item", (player, arguments) -> {
+        adminCommand.put("item", (player, arguments) -> {
             try {
                 int quantity = 1;
                 ObjectTemplate template = gameManager.getObjectTemplate(Integer.parseInt(arguments[1]));
@@ -88,6 +88,7 @@ public class CommandManager implements Manager {
 
             }
         });
+        this.adminCommand = Collections.unmodifiableMap(adminCommand);
     }
 
     @Override

@@ -10,6 +10,7 @@ import sun.misc.BASE64Decoder;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.sql.SQLException;
+import java.util.Properties;
 
 import static org.jooq.impl.DSL.max;
 
@@ -23,15 +24,15 @@ public class Database {
 
     private DSLContext dslContext;
 
-    public Database(String host, String name, String user, String password) {
+    public Database(Properties propreties, String prefix) {
         HikariConfig dataConfig = new HikariConfig() {
             {
                 setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
-                addDataSourceProperty("serverName", decrypt(host));
+                addDataSourceProperty("serverName", decrypt(propreties.getProperty(prefix + "ip")));
                 addDataSourceProperty("port", 3306);
-                addDataSourceProperty("databaseName", decrypt(name));
-                addDataSourceProperty("user", decrypt(user));
-                addDataSourceProperty("password", decrypt(password));
+                addDataSourceProperty("databaseName", decrypt(propreties.getProperty(prefix + "name")));
+                addDataSourceProperty("user", decrypt(propreties.getProperty(prefix + "user")));
+                addDataSourceProperty("password", decrypt(propreties.getProperty(prefix + "password")));
             }
         };
 
@@ -65,7 +66,7 @@ public class Database {
         return null;
     }
 
-    public int getNextId(Table<?> table,Field<?> field) {
+    public int getNextId(Table<?> table, Field<?> field) {
         try {
             return (int) dslContext.select(max(field).add(1)).from(table).fetchOne().getValue(0);
         } catch (Exception e) {
@@ -77,7 +78,7 @@ public class Database {
         return this.dslContext;
     }
 
-    public void remove(Table<?> table,Condition condition) {
+    public void remove(Table<?> table, Condition condition) {
         dslContext.delete(table).where(condition).execute();
     }
 

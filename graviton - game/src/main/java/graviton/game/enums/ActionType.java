@@ -7,6 +7,7 @@ public enum ActionType {
     BANK(-1),
     TELEPORT(0),
     DIALOG(1),
+    RESET_STATS(13),
     DONJON(15),
     DEFAULT(999);
 

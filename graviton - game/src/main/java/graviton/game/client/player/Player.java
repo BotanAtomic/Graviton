@@ -3,7 +3,6 @@ package graviton.game.client.player;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Pair;
-import graviton.core.Configuration;
 import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.alignement.Alignement;
@@ -22,6 +21,7 @@ import graviton.game.enums.Classe;
 import graviton.game.enums.ObjectPosition;
 import graviton.game.enums.StatsType;
 import graviton.game.exchange.Exchange;
+import graviton.game.fight.Fight;
 import graviton.game.fight.Fighter;
 import graviton.game.group.Group;
 import graviton.game.guild.Guild;
@@ -49,19 +49,15 @@ import static graviton.database.utils.login.Tables.PLAYERS;
  */
 @Data
 public class Player implements Creature, Fighter {
-    @Inject
-    Configuration configuration;
+    private final int id;
+    private final Account account;
+    private final Classe classe;
     @Inject
     GameManager gameManager;
     @Inject
     CommandManager commandManager;
     @Inject
     PlayerFactory factory;
-
-    private final int id;
-    private final Account account;
-    private final Classe classe;
-
     private String name;
     private int sex;
 
@@ -72,6 +68,7 @@ public class Player implements Creature, Fighter {
     private FloodChecker floodCheck;
     private ActionManager actionManager;
     private Exchange exchange;
+    private Fight fight;
 
     private Alignement alignement;
     private int level;
@@ -142,17 +139,17 @@ public class Player implements Creature, Fighter {
         this.sex = sex;
         this.classe = Classe.values()[classeId - 1];
         this.alignement = new Alignement(this);
-        this.level = configuration.getStartlevel();
+        this.level = factory.getStartLevel();
         this.gfx = classeId * 10 + sex;
         this.colors = colors;
         this.experience = gameManager.getPlayerExperience(level);
         this.size = 100;
         this.configureStatisctics(null);
-        this.kamas = configuration.getStartKamas();
+        this.kamas = factory.getStartKamas();
         this.capital = (level - 1) * 5;
         this.spellPoints = level - 1;
-        final Maps maps = gameManager.getMap(configuration.getStartMap());
-        final Cell cell = maps.getCell(configuration.getStartCell());
+        final Maps maps = gameManager.getMap(factory.getStartMap());
+        final Cell cell = maps.getCell(factory.getStartCell());
         this.position = new Position(maps, cell, -1);
         this.objects = new HashMap<>();
         this.zaaps = new ArrayList<>();
@@ -224,7 +221,7 @@ public class Player implements Creature, Fighter {
         refreshPods();
         send("FO+"); //TODO : seeFriends
         send("ILS2000");
-        sendText(configuration.getDefaultMessage(), configuration.getDefaultColor());
+        sendText("Bienvenue sur Horus", "000000");
         this.account.setOnline();
     }
 
@@ -399,6 +396,14 @@ public class Player implements Creature, Fighter {
         send("Ow" + this.getPodsUsed() + "|" + this.getMaxPods());
     }
 
+    public void resetStatistics() {
+        this.statistics.get(StatsType.BASE).getEffects().clear();
+        capital = (level - 1) * 5;
+        send(getPacket("As"));
+        send("Im023;" + capital);
+        factory.update(this);
+    }
+
     public Statistics getTotalStatistics() {
         return new Statistics().cumulStatistics(this.statistics.values());
     }
@@ -454,6 +459,10 @@ public class Player implements Creature, Fighter {
                         gameManager.getGuildExperience(level) + "|" + guild.getExperience() + "|" + gameManager.getGuildExperience(level + 1));
                 break;
         }
+    }
+
+    public void startFight(Fight fight) {
+
     }
 
     public void createGuild(String parameters) {
@@ -550,17 +559,22 @@ public class Player implements Creature, Fighter {
         save();
     }
 
+    public boolean isBusy() {
+        return !isOnline() || actionManager.getStatus() != ActionManager.Status.WAITING;
+    }
+
     public void askExchange(String packet) {
         switch (packet.charAt(0)) {
             case '1':
                 Player target = factory.get(Integer.parseInt(packet.substring(2)));
-                if (target == null || target.getMap() != this.getMap() || !target.isOnline()) {
+                if (target == null || target.getMap() != this.getMap() || !target.isOnline() || target.isBusy()) {
                     send("EREE");
                     return;
                 }
                 packet = "ERK" + id + "|" + target.getId() + "|1";
                 send(packet);
                 target.send(packet);
+                new PlayerExchange(this, target);
                 inviting = target.getId();
                 target.setInviting(id);
                 break;
@@ -574,8 +588,6 @@ public class Player implements Creature, Fighter {
 
         send("ECK1");
         target.send("ECK1");
-
-        new PlayerExchange(this, target);
     }
 
     public void doExchangeAction(String packet) {
@@ -627,7 +639,7 @@ public class Player implements Creature, Fighter {
         try {
             color = arguments[1];
         } catch (ArrayIndexOutOfBoundsException e) {
-            color = configuration.getDefaultColor();
+            color = "000000";
         }
         send("cs<font color='#" + color + "'>" + message + "</font>");
     }
@@ -694,26 +706,14 @@ public class Player implements Creature, Fighter {
             return;
         }
         getMap().changeCell(this, cell);
+        factory.update(this);
     }
 
     public void changePosition(int map,int cell) {
-        if (actionManager.getStatus() == ActionManager.Status.MOVING)
-            return;
-
         Maps maps = gameManager.getMap(map);
-
         if(maps == null)
             return;
-
-        Cell nextCell = maps.getCell(cell);
-
-        if (this.getMap().getId() != maps.getId()) {
-            this.getMap().removeCreature(this);
-            this.position.setCell(nextCell);
-            nextCell.getMap().addCreature(this);
-            return;
-        }
-        getMap().changeCell(this, nextCell);
+        changePosition(maps.getCell(cell));
     }
 
     private int getPodsUsed() {

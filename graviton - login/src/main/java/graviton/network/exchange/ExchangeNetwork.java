@@ -2,7 +2,7 @@ package graviton.network.exchange;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.name.Named;
+import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
 import graviton.login.Manager;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +23,7 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
     private final Manager manager;
     @Inject
     Injector injector;
-    @Inject
-    @Named("exchange.port")
+    @InjectSetting("exchange.port")
     private int port;
 
     @Inject

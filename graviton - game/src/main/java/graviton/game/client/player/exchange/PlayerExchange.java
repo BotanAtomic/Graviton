@@ -2,10 +2,12 @@ package graviton.game.client.player.exchange;
 
 import graviton.game.GameManager;
 import graviton.game.client.player.Player;
+import graviton.game.client.player.component.ActionManager;
 import graviton.game.exchange.Exchange;
 import graviton.game.exchange.Exchanger;
 import graviton.game.object.Object;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,11 +31,14 @@ public class PlayerExchange implements Exchange {
 
         player1.setExchange(this);
         player2.setExchange(this);
+
+        Arrays.asList(player1, player2).forEach(exchanger -> exchanger.getActionManager().setStatus(ActionManager.Status.EXCHANGING));
     }
 
     public void cancel() {
         exchangers.values().forEach(exchanger -> exchanger.send("EV"));
         exchangers.values().forEach(exchanger -> exchanger.quit());
+        exchangers.values().forEach(exchanger -> exchanger.getCreature().getActionManager().resetActions());
     }
 
     public void apply() {

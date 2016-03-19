@@ -12,18 +12,16 @@ import org.apache.mina.core.session.IoSession;
  */
 @Data
 public class GameClient {
-    @Inject
-    GameNetwork gameNetwork;
-
     private final long id;
     private final IoSession session;
-
+    @Inject
+    GameNetwork gameNetwork;
     private Account account;
     private Player currentPlayer;
 
     public GameClient(IoSession session,Injector injector) {
-        injector.injectMembers(this);
         session.write("HG");
+        injector.injectMembers(this);
         this.id = session.getId();
         this.session = session;
         gameNetwork.addClient(this);

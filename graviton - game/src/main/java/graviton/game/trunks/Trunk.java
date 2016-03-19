@@ -21,13 +21,13 @@ public class Trunk {
     @Inject
     GameManager gameManager;
 
-    private final int id;
-    private final Map<Integer, Object> objects;
+    private int id;
+    private Map<Integer, Object> objects;
 
-    private final Maps maps;
-    private final Cell cell;
+    private Maps maps;
+    private Cell cell;
 
-    private long kamas;
+    private long kamas = 0;
 
     private boolean inUse = false;
     private boolean isBank = false;
@@ -53,7 +53,12 @@ public class Trunk {
             return;
         }
         long kamas = Long.parseLong(data.split(";")[0]);
-        this.objects = getObjectList(data.split(";")[1]);
+
+        try {
+            this.objects = getObjectList(data.split(";")[1]);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            this.objects = new HashMap<>();
+        }
         this.kamas = kamas;
     }
 
@@ -66,7 +71,6 @@ public class Trunk {
             player.send("Im120");
             return;
         }
-
         player.send("ECK5");
         player.send("EL" + getPacket());
         this.inUse = true;
@@ -77,6 +81,7 @@ public class Trunk {
 
         Map<Integer, Object> objectsList = new HashMap<>();
         for (String data : objects.split(",")) {
+            if (data.isEmpty()) continue;
             Object object = gameManager.getObject(Integer.parseInt(data));
             if (object != null)
                 objectsList.put(object.getId(), object);

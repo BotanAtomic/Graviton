@@ -2,16 +2,17 @@ package graviton.factory;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.name.Named;
 import graviton.api.Factory;
-import graviton.core.Configuration;
+import graviton.api.InjectSetting;
 import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.enums.DatabaseType;
+import graviton.game.GameManager;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
 import graviton.game.enums.Classe;
 import graviton.game.object.Object;
-import lombok.Getter;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.UpdateSetFirstStep;
 
@@ -31,35 +32,43 @@ import static graviton.database.utils.login.Tables.PLAYERS;
 /**
  * Created by Botan on 24/12/2015.
  */
+@Data
 @Slf4j
 public class PlayerFactory extends Factory<Player> {
+    private final Map<Integer, Player> players;
+    private final Lock locker;
     @Inject
     Injector injector;
-    @Inject
-    Configuration configuration;
-
-    @Getter
+    private GameManager gameManager;
     private Map<Classe, Map<Integer, Integer>> classData;
 
-    private final Map<Integer, Player> players;
+    @InjectSetting("server.id")
+    private int serverId;
+    @InjectSetting("game.map")
+    private int startMap;
+    @InjectSetting("game.cell")
+    private int startCell;
+    @InjectSetting("game.kamas")
+    private int startKamas;
+    @InjectSetting("game.level")
+    private int startLevel;
 
-    private final Lock locker;
+    @Inject
+    @Named("database.game")
+    private Database gameDatabase;
 
-    public PlayerFactory() {
-        super(DatabaseType.LOGIN);
+    @Inject
+    public PlayerFactory(GameManager gameManager, @Named("database.login") Database database) {
+        super(database);
+        this.gameManager = gameManager;
         this.players = new ConcurrentHashMap<>();
         this.locker = new ReentrantLock();
     }
 
     public List<Player> load(Account account) {
-        try {
-            List<Player> players = new CopyOnWriteArrayList<>();
-            players.addAll(database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (configuration.getServerId())).map(record -> new Player(account, record, injector)).collect(Collectors.toList()));
-            return players;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        List<Player> players = new CopyOnWriteArrayList<>();
+        players.addAll(database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (serverId)).map(record -> new Player(account, record, injector)).collect(Collectors.toList()));
+        return players;
     }
 
     public int getNextId() {
@@ -76,7 +85,7 @@ public class PlayerFactory extends Factory<Player> {
     }
 
     private void deleteObject(Collection<Object> objects) {
-        objects.forEach(object1 -> getGameDatabase().remove(ITEMS, ITEMS.ID.equal(object1.getId())));
+        objects.forEach(object1 -> gameDatabase.remove(ITEMS, ITEMS.ID.equal(object1.getId())));
     }
 
     public boolean create(Player player) {
@@ -95,7 +104,7 @@ public class PlayerFactory extends Factory<Player> {
                         , player.getLevel(),
                         player.getExperience(),
                         player.getMap().getId() + ";" + player.getPosition().getCell().getId(),
-                        configuration.getServerId()).execute();
+                        serverId).execute();
         return id > 0;
     }
 
@@ -131,7 +140,6 @@ public class PlayerFactory extends Factory<Player> {
     @Override
     public void configure() {
         this.classData = (Map<Classe, Map<Integer, Integer>>) decodeObject("classData");
-        super.configureDatabase();
     }
 
     public void add(Player player) {
@@ -165,10 +173,6 @@ public class PlayerFactory extends Factory<Player> {
         return player[0];
     }
 
-    private Database getGameDatabase() {
-        return configuration.getGameDatabase();
-    }
-
     public void send(String packet) {
         try {
             locker.lock();
@@ -183,6 +187,6 @@ public class PlayerFactory extends Factory<Player> {
         log.debug("saving players...");
         this.players.values().forEach(player -> update(player));
         log.debug("saving players items...");
-        this.players.values().forEach(player ->  player.getObjects().values().forEach(object -> object.update()));
+        this.players.values().forEach(player -> player.getObjects().values().forEach(object -> object.update()));
     }
 }

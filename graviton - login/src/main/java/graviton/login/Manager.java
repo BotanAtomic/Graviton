@@ -125,7 +125,7 @@ public class Manager {
     public void checkAccount(int id) {
         if (accounts.get(id) != null) {
             accounts.get(id).getClient().send("AlEa");
-            accounts.get(id).getClient().getSession().close(true);
+            accounts.get(id).getClient().kick();
         }
         if (connected.get(id) != null) {
             servers.get(connected.get(id)).send("-" + id);

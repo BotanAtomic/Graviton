@@ -26,7 +26,6 @@ public class Database {
 
     private DSLContext dslContext;
 
-    @Inject
     public Database(DSLContext context) {
         this.dslContext = context;
     }

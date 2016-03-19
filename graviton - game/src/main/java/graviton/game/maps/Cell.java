@@ -76,6 +76,10 @@ public class Cell {
                 map.send(packet);
                 map.send(interactiveObject.getGDF());
                 break;
+            case 104: //House trunk
+                if (trunk != null)
+                    player.setExchange(new TrunkExchange(player, trunk));
+                break;
             case 114: //use Zaap
                 player.openZaap();
                 player.send("GA" + gameAction + ";" + 501 + ";" + player.getId() + ",0,0");

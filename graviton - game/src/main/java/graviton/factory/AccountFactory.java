@@ -2,10 +2,11 @@ package graviton.factory;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.name.Named;
 import graviton.api.Factory;
-import graviton.core.Configuration;
+import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.enums.DatabaseType;
+import graviton.game.GameManager;
 import graviton.game.client.Account;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
@@ -21,13 +22,15 @@ import static graviton.database.utils.login.Tables.ACCOUNTS;
  */
 @Slf4j
 public class AccountFactory extends Factory<Account> {
+    private final Map<Integer, Account> accounts;
     @Inject
     Injector injector;
+    @Inject
+    GameManager gameManager;
 
-    private final Map<Integer, Account> accounts;
-
-    public AccountFactory() {
-        super(DatabaseType.LOGIN);
+    @Inject
+    public AccountFactory(@Named("database.login") Database database) {
+        super(database);
         this.accounts = new ConcurrentHashMap<>();
     }
 
@@ -36,7 +39,7 @@ public class AccountFactory extends Factory<Account> {
         return record == null ? null : new Account(record, injector);
     }
 
-    public Account load(String name) {
+    private Account load(String name) {
         Record record = database.getRecord(ACCOUNTS, ACCOUNTS.PSEUDO.equal(name));
         return record == null ? null : new Account(record, injector);
     }
@@ -62,6 +65,13 @@ public class AccountFactory extends Factory<Account> {
         return this.accounts.get(object);
     }
 
+    public Account getByName(String name) {
+        for (Account account : this.accounts.values())
+            if (account.getPseudo().equals(name))
+                return account;
+        return this.load(name);
+    }
+
     @Override
     public DataType getType() {
         return DataType.ACCOUNT;
@@ -69,7 +79,6 @@ public class AccountFactory extends Factory<Account> {
 
     @Override
     public void configure() {
-        super.configureDatabase();
     }
 
     @Override

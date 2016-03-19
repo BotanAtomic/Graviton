@@ -2,8 +2,8 @@ package graviton.network.game;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
-import graviton.core.Configuration;
 import graviton.game.PacketManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -26,20 +26,18 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class GameNetwork implements IoHandler, NetworkService {
+    private final NioSocketAcceptor acceptor;
+    @Getter
+    private final Map<Long, GameClient> clients;
+    @InjectSetting("server.port")
+    private int port;
     @Inject
     private Injector injector;
     @Inject
     private PacketManager packetManager;
 
-    private final NioSocketAcceptor acceptor;
-    private final int PORT;
-    @Getter
-    private final Map<Long, GameClient> clients;
-
-    @Inject
-    public GameNetwork(Configuration configuration) {
+    public GameNetwork() {
         this.acceptor = new NioSocketAcceptor();
-        this.PORT = configuration.getGamePort();
         this.acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new TextLineCodecFactory(Charset.forName("UTF-8"), LineDelimiter.NUL, new LineDelimiter("\n\0"))));
         this.acceptor.setHandler(this);
         this.clients = new ConcurrentHashMap<>();
@@ -105,7 +103,7 @@ public class GameNetwork implements IoHandler, NetworkService {
     @Override
     public void start() {
         try {
-            acceptor.bind(new InetSocketAddress(PORT));
+            acceptor.bind(new InetSocketAddress(port));
         } catch (IOException e) {
             e.printStackTrace();
         }

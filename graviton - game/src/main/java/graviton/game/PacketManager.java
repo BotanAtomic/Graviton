@@ -18,7 +18,6 @@ import graviton.network.game.GameClient;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -26,11 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class PacketManager implements Manager {
-    @Inject
-    GameManager gameManager;
-    @Inject
-    PlayerFactory playerFactory;
-
     private final String[] dictionary = {"ae", "au", "ao", "ap", "ka", "ha", "ah",
             "na", "hi", "he", "eh", "an", "ma", "wa", "we", "wh", "sk", "sa",
             "se", "ne", "ra", "re", "ru", "ri", "ro", "za", "zu", "ta", "te",
@@ -48,19 +42,22 @@ public class PacketManager implements Manager {
             "yes", "eays", "skha", "rock", "stone", "fefe", "sadi", "sacri",
             "osa", "panda", "xel", "rox", "stuff", "spoon", "days", "mouarf",
             "beau", "sexe", "koli", "master", "pro", "puissant"};
-
     private final String[] forbiden = {"admin", "modo", "mj", "-"};
     private final Calendar calendar;
-
-    private final Map<String, PacketParser> packets;
+    @Inject
+    GameManager gameManager;
+    @Inject
+    PlayerFactory playerFactory;
+    private Map<String, PacketParser> packets;
 
     public PacketManager() {
-        this.packets = new HashMap<>();
         this.calendar = GregorianCalendar.getInstance();
     }
 
     @Override
     public void load() {
+        Map<String, PacketParser> packets = new HashMap<>();
+
         packets.put("BA", (client, packet) -> client.getAccount().launchCommand(packet));
 
         packets.put("EK", (client, packet) -> client.getCurrentPlayer().getExchange().toogleOk(client.getCurrentPlayer().getId()));
@@ -171,6 +168,7 @@ public class PacketManager implements Manager {
                 client.send("PIEn" + packet);
                 return;
             }
+
 
             if (target.getGroup() != null) {
                 client.send("PIEa" + packet);
@@ -305,6 +303,8 @@ public class PacketManager implements Manager {
             client.getCurrentPlayer().setInviting(0);
             player2.setInviting(0);
         });
+
+        this.packets = Collections.unmodifiableMap(packets);
     }
 
     public void parse(GameClient client, String packet) {
@@ -316,6 +316,6 @@ public class PacketManager implements Manager {
 
     @Override
     public void unload() {
-        this.packets.clear();
+        //Usuless
     }
 }
