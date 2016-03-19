@@ -36,6 +36,28 @@ JOOQ : for typesafe SQL query construction and execution.
 
 #Exemple 
 
+_Inject setting with configuration file : @InjectSetting(value)_
+```xml
+#File config.propreties
+server.key = graviton
+```
+
+```xml
+package graviton;
+
+import graviton.api.InjectSetting;
+
+public class Exemple {
+   @InjectSetting("server.key")
+   String key;
+   
+   public Exemple() {
+      log.info(key);
+      //Write "graviton" in the Console
+   }
+}
+```
+
 _Get a logger whith annotation in class : @Slf4j_
 ```xml
 package graviton;
@@ -83,6 +105,8 @@ public Database(String ip, String name, String user, String pass) {
 #Last update 
 
 [Login]
+
+-> new system for configuration (Injection)
 
 -> cleaner
 
