@@ -2,8 +2,8 @@ package graviton.network.login;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.name.Named;
 import graviton.api.NetworkService;
-import graviton.login.Configuration;
 import graviton.login.Manager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
@@ -24,17 +24,17 @@ import java.util.Random;
  */
 @Slf4j
 public class LoginNetwork implements NetworkService, IoHandler {
-    @Inject
-    Injector injector;
-
-    private final int port;
     private final NioSocketAcceptor acceptor;
     private final Manager manager;
+    @Inject
+    Injector injector;
+    @Inject
+    @Named("login.port")
+    private int port;
 
     @Inject
-    public LoginNetwork(Configuration configuration, Manager manager) {
+    public LoginNetwork(Manager manager) {
         this.acceptor = new NioSocketAcceptor();
-        this.port = configuration.getLoginPort();
         this.manager = manager;
     }
 
@@ -52,7 +52,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
     @Override
     public void sessionClosed(IoSession session) throws Exception {
         log.info("[Session {}] closed", session.getId());
-        manager.getClient(session).kick();
+        manager.getClient(session.getId()).kick();
     }
 
     @Override
@@ -68,7 +68,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        LoginClient client = (LoginClient) manager.getClient(session);
+        LoginClient client = (LoginClient) manager.getClient(session.getId());
         String packet = (message.toString().contains("\n") ? message.toString().replace("\n", "@") : message.toString());
         if (packet.isEmpty() || packet.equals("1.29.2") || packet.equals("1.29.1"))
             return;

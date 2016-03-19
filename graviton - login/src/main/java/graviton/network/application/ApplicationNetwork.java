@@ -3,7 +3,7 @@ package graviton.network.application;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
 import graviton.api.NetworkService;
-import graviton.database.data.AccountData;
+import graviton.database.Database;
 import graviton.game.Account;
 import graviton.game.Server;
 import graviton.login.Manager;
@@ -26,17 +26,16 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
 
     private final NioSocketAcceptor acceptor;
     private final Manager manager;
-    private final AccountData data;
-
+    @Inject
+    Database database;
     private IoSession client;
     private String remoteIP = null;
     private Server server;
 
     @Inject
-    public ApplicationNetwork(Manager manager, AccountData data) {
+    public ApplicationNetwork(Manager manager) {
         this.acceptor = new NioSocketAcceptor();
         this.manager = manager;
-        this.data = data;
     }
 
     @Override
@@ -106,7 +105,7 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
                 break;
             case 'C':
                 String[] args = finalPacket.split(";");
-                Account account = data.load(args[0], args[1]);
+                Account account = database.loadAccount(args[0], args[1]);
                 if (account != null) {
                     if (account.getRank() < 4) {
                         send("K");

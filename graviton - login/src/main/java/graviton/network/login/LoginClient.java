@@ -3,9 +3,7 @@ package graviton.network.login;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.Client;
-import graviton.database.data.AccountData;
-import graviton.database.data.PlayerData;
-import graviton.database.data.ServerData;
+import graviton.database.Database;
 import graviton.game.Account;
 import graviton.game.Player;
 import graviton.game.Server;
@@ -22,20 +20,13 @@ import java.util.List;
 @Data
 @Slf4j
 public class LoginClient implements Client {
-    @Inject
-    Manager manager;
-
-    @Inject
-    AccountData accountData;
-    @Inject
-    PlayerData playerData;
-    @Inject
-    ServerData serverData;
-
     private final long id;
     private final String key;
     private final IoSession session;
-
+    @Inject
+    Manager manager;
+    @Inject
+    Database database;
     private Statut statut;
     private Account account;
 
@@ -58,12 +49,12 @@ public class LoginClient implements Client {
                 }
                 String[] args = packet.split("@");
                 log.info("[Session {}] checking username [{}] & password [{}]", id, args[0], args[1]);
-                if (!accountData.isGood(args[0], args[1], this)) {
+                if (!database.isGoodAccount(args[0], args[1], this)) {
                     send("AlEf");
                     session.close(true);
                     return;
                 }
-                this.account = accountData.load(args[0]);
+                this.account = database.loadAccount(args[0]);
                 if (account != null)
                     this.account.setClient(this);
                 else
@@ -71,22 +62,22 @@ public class LoginClient implements Client {
                 statut = Statut.SERVER;
                 break;
             case NICKNAME:
-                String[] forbiden = {"admin", "modo", "moderateur", " ", "&", "�", "\"", "'",
-                        "(", "-", "�", "_", "�", "�", ")", "=", "~", "#",
-                        "{", "[", "|", "`", "^", "@", "]", "}", "�", "+",
-                        "^", "$", "�", "*", ",", ";", ":", "!", "<", ">",
-                        "�", "�", "%", "�", "?", ".", "/", "�", "\n", account.getName()};
+                String[] forbiden = {"admin", "modo", "moderateur", " ", "&", "é", "\"", "'",
+                        "(", "-", "è", "_", "ç", "à", ")", "=", "~", "#",
+                        "{", "[", "|", "`", "^", "@", "]", "}", "°", "+",
+                        "^", "$", "ù", "*", ",", ";", ":", "!", "<", ">",
+                        "¨", "£", "%", "µ", "?", ".", "/", "§", "\n", account.getName()};
                 for (String forbidenWord : forbiden)
                     if (packet.contains(forbidenWord)) {
                         send("AlEs");
                         return;
                     }
-                if (!accountData.isAvaiableNickname(packet)) {
+                if (!database.isAvaiableNickname(packet)) {
                     send("AlEs");
                     return;
                 }
                 account.setPseudo(packet);
-                accountData.updateNickname(account);
+                database.updateNickname(account);
                 statut = Statut.SERVER;
                 sendInformations();
                 break;
@@ -112,7 +103,7 @@ public class LoginClient implements Client {
     }
 
     private void sendFriendListPacket(String name) {
-        List<Player> players = playerData.getPlayers(name);
+        List<Player> players = database.getPlayers(name);
         send((players.isEmpty() ? "AF" : getList(players)));
     }
 
@@ -137,11 +128,11 @@ public class LoginClient implements Client {
             statut = Statut.NICKNAME;
             return;
         }
-        playerData.loadAll(account);
+        database.loadPlayers(account);
         send("Af0|0|0|1|-1");
         send("Ad" + account.getPseudo());
         send("Ac0");
-        send(serverData.getHostList());
+        send(database.getHostList());
         send("AlK" + (account.getRank() != 0 ? 1 : 0));
         send("AQ" + account.getQuestion());
     }

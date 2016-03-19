@@ -1,84 +1,140 @@
 package graviton.database;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import graviton.game.Account;
+import graviton.game.Player;
+import graviton.game.Server;
+import graviton.login.Manager;
+import graviton.network.login.LoginClient;
 import org.jooq.*;
-import org.jooq.impl.DSL;
-import sun.misc.BASE64Decoder;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
-import java.sql.SQLException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static graviton.database.utils.Tables.*;
 
 /**
  * Created by Botan on 06/07/2015.
  */
 public class Database {
+    @Inject
+    Injector injector;
 
-    private final HikariDataSource dataSource;
+    @Inject
+    Manager manager;
 
     private DSLContext dslContext;
 
-    public Database(String host, String user, String name, String password) {
-        HikariConfig dataConfig = new HikariConfig() {
-            {
-                setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
-                addDataSourceProperty("serverName", decrypt(host));
-                addDataSourceProperty("port", 3306);
-                addDataSourceProperty("databaseName", decrypt(name));
-                addDataSourceProperty("user", decrypt(user));
-                addDataSourceProperty("password", decrypt(password));
-            }
-        };
-
-        this.dataSource = new HikariDataSource(dataConfig);
-
-        try {
-            this.dslContext = DSL.using(dataSource.getConnection(), SQLDialect.MYSQL);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    @Inject
+    public Database(DSLContext context) {
+        this.dslContext = context;
     }
 
-    public DSLContext getContext() {
-        return dslContext;
-    }
-
-    public Result<Record> getResult(Table<?> table) {
+    private Result<Record> getResult(Table<?> table) {
         return dslContext.select().from(table).fetch();
     }
 
-    public Result<Record> getResult(Table<?> table,Condition condition) {
+    private Result<Record> getResult(Table<?> table, Condition condition) {
         return dslContext.select().from(table).where(condition).fetch();
     }
 
-    public Record getRecord(Table<?> table,Condition condition,Condition condition2) {
+    private Record getRecord(Table<?> table, Condition condition, Condition condition2) {
         return dslContext.select().from(table).where(condition).and(condition2).fetchOne();
     }
 
-    public Record getRecord(Table<?> table,Condition condition) {
+    private Record getRecord(Table<?> table, Condition condition) {
         return dslContext.select().from(table).where(condition).fetchOne();
     }
 
     public void stop() {
-        try {
-            this.dataSource.getConnection().close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+
     }
 
-    private String decrypt(String value) {
-        try {
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec("1Hbfh667adfDEJ78".getBytes(), "AES"));
-            byte[] decryptedValue64 = new BASE64Decoder().decodeBuffer(value);
-            byte[] decryptedByteValue = cipher.doFinal(decryptedValue64);
-            return new String(decryptedByteValue, "utf-8");
-        } catch (Exception e) {
-            e.printStackTrace();
+    /**
+     * Data
+     **/
+
+    public boolean isGoodAccount(String username, String password, LoginClient client) {
+        Record record = getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(username));
+        if (record != null)
+            if (encrypt(record.getValue(ACCOUNTS.PASSWORD), client.getKey()).equals(password))
+                return true;
+        return false;
+    }
+
+    public final Account loadAccount(String arguments) {
+        Record record = getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(arguments));
+
+        if (record != null) {
+            manager.checkAccount(record.getValue(ACCOUNTS.ID));
+            return new Account(record.getValue(ACCOUNTS.ID),
+                    record.getValue(ACCOUNTS.ACCOUNT), record.getValue(ACCOUNTS.PASSWORD),
+                    record.getValue(ACCOUNTS.PSEUDO), record.getValue(ACCOUNTS.QUESTION), record.getValue(ACCOUNTS.RANK), injector);
         }
         return null;
     }
 
+    public final Account loadAccount(String account, String password) {
+        Record record = getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(account), ACCOUNTS.PASSWORD.equal(password));
+        if (record != null)
+            return new Account(record.getValue(ACCOUNTS.ACCOUNT), record.getValue(ACCOUNTS.RANK), injector);
+        return null;
+    }
+
+    public void updateNickname(Account account) {
+        this.dslContext.update(ACCOUNTS).set(ACCOUNTS.PSEUDO, account.getPseudo()).where(ACCOUNTS.ID.equal(account.getId())).execute();
+    }
+
+    public boolean isAvaiableNickname(String nickname) {
+        return getRecord(ACCOUNTS, ACCOUNTS.PSEUDO.equal(nickname)) == null;
+    }
+
+    private String encrypt(String pass, String key) {
+        final char[] HASH = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+                'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A',
+                'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
+                'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4',
+                '5', '6', '7', '8', '9', '-', '_'};
+
+        int i = HASH.length;
+        StringBuilder crypted = new StringBuilder("#1");
+        for (int y = 0; y < pass.length(); y++) {
+            char c1 = pass.charAt(y);
+            char c2 = key.charAt(y);
+            double d = Math.floor(c1 / 16);
+            int j = c1 % 16;
+            crypted.append(HASH[(int) ((d + c2 % i) % i)]).append(HASH[(j + c2 % i) % i]);
+        }
+        return crypted.toString();
+    }
+
+    public void loadPlayers(Account account) {
+        Result<Record> result = getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId()));
+        for (Record record : result)
+            account.getPlayers().add(new Player(record.getValue(PLAYERS.ID), record.getValue(PLAYERS.NAME), record.getValue(PLAYERS.SERVER), injector));
+    }
+
+    public List<Player> getPlayers(String nickname) {
+        List<Player> players = new ArrayList<>();
+        Result<Record> result = getResult(PLAYERS, PLAYERS.ACCOUNT.equal(dslContext.select(ACCOUNTS.ID).where(ACCOUNTS.PSEUDO.equal(nickname)).fetchOne().getValue(ACCOUNTS.ID)));
+        players.addAll(result.stream().map(record -> new Player(record.getValue(PLAYERS.SERVER))).collect(Collectors.toList()));
+        return players;
+    }
+
+    public void loadServers() {
+        Map<Integer, Server> servers = new HashMap<>();
+        Result<Record> result = getResult(SERVERS);
+        for (Record record : result)
+            servers.put(record.getValue(SERVERS.ID), new Server(record.getValue(SERVERS.ID), record.getValue(SERVERS.KEY), injector));
+        manager.setServers(Collections.unmodifiableMap(servers));
+    }
+
+    public String getHostList() {
+        StringBuilder sb = new StringBuilder("AH");
+        List<Server> list = new ArrayList<>();
+        list.addAll(manager.getServers().values());
+        list.forEach((server) -> sb.append(server.getId()).append(";").append(server.getState().id).append(";110;1|"));
+        return sb.toString();
+    }
 }

@@ -17,13 +17,11 @@ import java.util.List;
 @Slf4j
 @Data
 public class Account {
+    private final int id, rank;
+    private final String pseudo;
     @Inject
     Manager manager;
-
-    private final int id;
     private String name, password, question;
-    private String pseudo;
-    private int rank;
     private LoginClient client;
     private List<Player> players;
 

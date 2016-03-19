@@ -4,9 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.Client;
 import graviton.common.Scanner;
-import graviton.database.data.AccountData;
-import graviton.database.data.PlayerData;
-import graviton.database.data.ServerData;
+import graviton.database.Database;
 import graviton.game.Account;
 import graviton.game.Player;
 import graviton.game.Server;
@@ -14,7 +12,6 @@ import graviton.network.NetworkManager;
 import graviton.network.exchange.ExchangeClient;
 import graviton.network.login.LoginClient;
 import lombok.Data;
-import org.apache.mina.core.session.IoSession;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,17 +27,11 @@ public class Manager {
     @Inject
     Injector injector;
     @Inject
-    Configuration configuration;
-    @Inject
-    NetworkManager manager;
+    NetworkManager networkManager;
     @Inject
     Scanner scanner;
     @Inject
-    AccountData accountData;
-    @Inject
-    PlayerData playerData;
-    @Inject
-    ServerData serverData;
+    Database database;
 
     private Map<Long, Client> clients;
     private Map<Integer, Integer> connected;
@@ -54,29 +45,22 @@ public class Manager {
     public Manager() {
         this.accounts = new ConcurrentHashMap<>();
         this.players = new ConcurrentHashMap<>();
-        this.servers = new ConcurrentHashMap<>();
         this.clients = new ConcurrentHashMap<>();
         this.connected = new ConcurrentHashMap<>();
-        dateOfStart = new java.util.Date();
+        this.dateOfStart = new java.util.Date();
     }
 
     public Manager start() {
-        initialize();
-        manager.start();
+        networkManager.start();
         scanner.start(this);
+        database.loadServers();
         return this;
     }
 
     public void stop() {
         scanner.interrupt();
-        manager.stop();
-        configuration.getDatabase().stop();
-    }
-
-    private void initialize() {
-        accountData.initialize();
-        playerData.initialize();
-        serverData.initialize();
+        networkManager.stop();
+        database.stop();
     }
 
     public void addClient(Client client) {
@@ -88,15 +72,15 @@ public class Manager {
             clients.remove(client.getId());
     }
 
-    public Client getClient(IoSession session) {
+    public Client getClient(int id) {
         for (Client client : clients.values())
-            if (client.getSession().getId() == session.getId())
+            if (client.getSession().getId() == id)
                 return client;
         return null;
     }
 
     public String getHostList() {
-        return serverData.getHostList();
+        return database.getHostList();
     }
 
     public final String getServerName(boolean connected) {

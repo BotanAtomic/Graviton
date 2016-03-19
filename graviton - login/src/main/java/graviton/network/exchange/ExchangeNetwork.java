@@ -2,8 +2,8 @@ package graviton.network.exchange;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.name.Named;
 import graviton.api.NetworkService;
-import graviton.login.Configuration;
 import graviton.login.Manager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
@@ -19,18 +19,17 @@ import java.net.InetSocketAddress;
  */
 @Slf4j
 public class ExchangeNetwork implements NetworkService, IoHandler {
+    private final NioSocketAcceptor acceptor;
+    private final Manager manager;
     @Inject
     Injector injector;
-
-    private final NioSocketAcceptor acceptor;
-    private final int port;
-
-    private final Manager manager;
+    @Inject
+    @Named("exchange.port")
+    private int port;
 
     @Inject
-    public ExchangeNetwork(Configuration configuration, Manager manager) {
+    public ExchangeNetwork(Manager manager) {
         this.acceptor = new NioSocketAcceptor();
-        this.port = configuration.getExchangePort();
         this.manager = manager;
     }
 
@@ -47,7 +46,7 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
-        manager.getClient(session).kick();
+        manager.getClient(session.getId()).kick();
         log.info("[(E)Session {}] closed", session.getId());
     }
 
@@ -65,7 +64,7 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
     public void messageReceived(IoSession session, Object message) throws Exception {
         String packet = decryptPacket(message);
         if (packet.equals("PING") && packet.length() == 4) {
-            manager.getClient(session).send("PONG");
+            manager.getClient(session.getId()).send("PONG");
             return;
         }
         manager.getClient(session).parsePacket(packet);
