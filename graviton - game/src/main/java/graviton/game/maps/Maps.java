@@ -12,10 +12,13 @@ import graviton.game.creature.monster.MonsterGroup;
 import graviton.game.creature.npc.Npc;
 import graviton.game.enums.IdType;
 import lombok.Data;
+import org.jooq.Record;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static graviton.database.utils.game.Tables.MAPS;
 
 
 /**
@@ -24,41 +27,37 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @Data
 public class Maps {
+    private final ReentrantLock locker = new ReentrantLock();
+    private final int id, width, heigth, X, Y, maxGroup;
+    private final long date;
+    private final String places, key, data;
+    private final String descriptionPacket, loadingPacket;
+    private final Map<Integer, Cell> cells;
     @Inject
     NpcFactory npcFactory;
     @Inject
     GameManager gameManager;
-
-    private final ReentrantLock locker = new ReentrantLock();
-
-    private final int id,width, heigth, X, Y,maxGroup;
-    private final long date;
-    private final String places, key, data;
-
-
-    private final String descriptionPacket, loadingPacket;
-
-    private final Map<Integer, Cell> cells;
     private Map<Integer, Creature> creatures;
 
-    public Maps(int id, String date, int width, int heigth, String places, String key, String cells,String data, String position, String monster, int maxGroup, Injector injector) {
+    public Maps(int id, Record record, Injector injector) {
         injector.injectMembers(this);
         this.id = id;
-        this.date = Long.parseLong(date);
-        this.width = width;
-        this.heigth = heigth;
-        this.places = places;
-        this.key = key;
-        this.data = data;
+        this.date = Long.parseLong(record.getValue(MAPS.DATE));
+        this.width = record.getValue(MAPS.WIDTH);
+        this.heigth = record.getValue(MAPS.HEIGTH);
+        this.places = record.getValue(MAPS.PLACES);
+        this.key = record.getValue(MAPS.KEY);
+        this.data = record.getValue(MAPS.DATE);
+        String position = record.getValue(MAPS.MAPPOS);
         this.X = Integer.parseInt(position.split(",")[0]);
         this.Y = Integer.parseInt(position.split(",")[1]);
-        this.cells = decompileCells(data, cells, injector);
+        this.cells = decompileCells(record.getValue(MAPS.MAPDATA), record.getValue(MAPS.CELLS), injector);
         this.loadingPacket = "GA;2;" + this.getId() + ";";
-        this.descriptionPacket = "GDM|" + String.valueOf(this.id) + "|0" + this.date + "|" + (!this.key.isEmpty() ? this.key : this.data);
-        this.maxGroup = maxGroup;
+        this.descriptionPacket = "GDM|" + id + "|0" + this.date + "|" + (!this.key.isEmpty() ? this.key : this.data);
+        this.maxGroup = record.getValue(MAPS.NUMGROUP);
         npcFactory.getNpcOnMap(this).forEach(this::addCreature);
-        if(this.cells.size() > 5)
-            spawnMonster(configureMonster(monster));
+        if (this.cells.size() > 5)
+            spawnMonster(configureMonster(record.getValue(MAPS.MONSTERS)));
     }
 
     private List<MonsterGrade> configureMonster(String group) {
@@ -112,7 +111,7 @@ public class Maps {
                 this.creatures.values().stream().filter(creature -> creature instanceof MonsterGroup).forEach(creature -> creatures.put(creature.getId(), creature));
                 return creatures;
         }
-        return null;
+        return creatures;
     }
 
     public Cell getCell(int id) {
@@ -184,22 +183,23 @@ public class Maps {
     /**
      * Tools
      **/
-    private Map<Integer, Cell> decompileCells(String data,String cellsData, Injector injector) {
+    private Map<Integer, Cell> decompileCells(String data, String cellsData, Injector injector) {
         Map<Integer, Cell> cells = new ConcurrentHashMap<>();
 
-        if(data.isEmpty()) {
+        if (data.isEmpty()) {
             String[] infos = cellsData.split("\\|");
-            for(String cellData : infos) {
+            for (String cellData : infos) {
                 boolean walkable = false;
                 int id = -1, object = -1;
                 String[] cellInfos = cellData.split(",");
-                try	{
+                try {
                     walkable = cellInfos[2].equals("1");
                     id = Integer.parseInt(cellInfos[0]);
-                    if(!cellInfos[3].trim().equals(""))
+                    if (!cellInfos[3].trim().equals(""))
                         object = Integer.parseInt(cellInfos[3]);
-                } catch(Exception ignored) {}
-                cells.put(id, new Cell(id, this, walkable,  object,injector));
+                } catch (Exception ignored) {
+                }
+                cells.put(id, new Cell(id, this, walkable, object, injector));
             }
             return cells;
         }

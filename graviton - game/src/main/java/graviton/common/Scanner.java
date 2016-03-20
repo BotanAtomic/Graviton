@@ -1,7 +1,6 @@
 package graviton.common;
 
 import com.google.inject.Inject;
-import graviton.core.Manager;
 import graviton.enums.DataType;
 import graviton.game.GameManager;
 import graviton.network.exchange.ExchangeNetwork;
@@ -17,14 +16,12 @@ import java.util.Date;
  */
 @Slf4j
 public class Scanner extends Thread implements graviton.api.Manager {
+    private final java.util.Scanner scanner;
+    private final Date startTime = new Date();
     @Inject
     ExchangeNetwork exchangeNetwork;
     @Inject
     GameManager gameManager;
-    @Inject
-    Manager manager;
-
-    private final java.util.Scanner scanner;
 
     public Scanner() {
         this.scanner = new java.util.Scanner(System.in);
@@ -32,7 +29,7 @@ public class Scanner extends Thread implements graviton.api.Manager {
 
     @Override
     public void load() {
-        AnsiConsole.out.println("                 _____                     _  _                \n                / ____|                   (_)| |               \n               | |  __  _ __  __ _ __   __ _ | |_  ___   _ __  \n               | | |_ || '__|/ _` |\\ \\ / /| || __|/ _ \\ | '_ \\ \n               | |__| || |  | (_| | \\ V / | || |_| (_) || | | |\n                \\_____||_|   \\__,_|  \\_/  |_| \\__|\\___/ |_| |_|\n");
+        System.out.println("                 _____                     _  _                \n                / ____|                   (_)| |               \n               | |  __  _ __  __ _ __   __ _ | |_  ___   _ __  \n               | | |_ || '__|/ _` |\\ \\ / /| || __|/ _ \\ | '_ \\ \n               | |__| || |  | (_| | \\ V / | || |_| (_) || | | |\n                \\_____||_|   \\__,_|  \\_/  |_| \\__|\\___/ |_| |_|\n");
         AnsiConsole.out.append("\033]0;").append("Graviton - Game").append("\007");
         super.setDaemon(true);
         super.start();
@@ -60,7 +57,7 @@ public class Scanner extends Thread implements graviton.api.Manager {
                 break;
             case "infos":
                 StringBuilder builder = new StringBuilder();
-                Period period = new Interval(manager.getDateOfStart().getTime(), new Date().getTime()).toPeriod();
+                Period period = new Interval(startTime.getTime(), new Date().getTime()).toPeriod();
                 double currentMemory = (((double) (Runtime.getRuntime().totalMemory() / 1024) / 1024)) - (((double) (Runtime.getRuntime().freeMemory() / 1024) / 1024));
                 builder.append("Number of accounts : ").append(gameManager.getElements(DataType.ACCOUNT).size());
                 builder.append(";Number of players : ").append(gameManager.getPlayerFactory().getElements().size());
@@ -84,7 +81,7 @@ public class Scanner extends Thread implements graviton.api.Manager {
                 break;
             case "infos":
                 ExchangeNetwork network = exchangeNetwork.launchPing();
-                Period period = new Interval(manager.getDateOfStart().getTime(), new Date().getTime()).toPeriod();
+                Period period = new Interval(startTime.getTime(), new Date().getTime()).toPeriod();
                 double currentMemory = (((double) (Runtime.getRuntime().totalMemory() / 1024) / 1024)) - (((double) (Runtime.getRuntime().freeMemory() / 1024) / 1024));
                 System.out.println(" _________________________________________");
                 System.out.println("| Number of accounts : " + (gameManager.getElements(DataType.ACCOUNT).size()));

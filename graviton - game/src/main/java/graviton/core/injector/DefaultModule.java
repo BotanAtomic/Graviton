@@ -15,7 +15,7 @@ import graviton.factory.*;
 import graviton.game.GameManager;
 import graviton.game.PacketManager;
 import graviton.game.client.player.component.CommandManager;
-import graviton.game.fight.type.FightManager;
+import graviton.game.fight.FightManager;
 import graviton.network.NetworkManager;
 import graviton.network.exchange.ExchangeNetwork;
 import graviton.network.game.GameNetwork;
@@ -90,11 +90,11 @@ public class DefaultModule extends AbstractModule {
 
     }
 
-    TypeListener listener(BiConsumer<TypeLiteral<?>, TypeEncounter<?>> consumer) {
+    private TypeListener listener(BiConsumer<TypeLiteral<?>, TypeEncounter<?>> consumer) {
         return consumer::accept;
     }
 
-    MembersInjector<Object> injector(Consumer<Object> consumer) {
+    private MembersInjector<Object> injector(Consumer<Object> consumer) {
         return consumer::accept;
     }
 

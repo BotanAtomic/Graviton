@@ -39,13 +39,6 @@ public class ActionManager {
         return status != Status.WAITING ? status : Status.AWAY;
     }
 
-    public Action getAction(int actionId) {
-        for (Action action : currentActions)
-            if (action.getAction() == actionId)
-                return action;
-        return null;
-    }
-
     public void createAction(int actionId, String args) {
         locker.lock();
         Action gameAction;

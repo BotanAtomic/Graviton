@@ -2,7 +2,6 @@ package graviton.game.client.player;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.common.Pair;
 import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.alignement.Alignement;
@@ -31,16 +30,14 @@ import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
 import graviton.game.maps.Zaap;
 import graviton.game.object.Object;
+import graviton.game.spells.Animation;
 import graviton.game.spells.Spell;
 import graviton.game.spells.SpellTemplate;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 import org.jooq.Record;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static graviton.database.utils.login.Tables.PLAYERS;
 
@@ -81,7 +78,7 @@ public class Player implements Creature, Fighter {
     private int capital;
     private int spellPoints;
     private int title;
-    private Pair<Integer, Integer> life; //current & max
+    private int[] life = {0, 0}; //current & max
 
     private Position position;
     private Map<Integer, Object> objects;
@@ -119,7 +116,8 @@ public class Player implements Creature, Fighter {
         this.zaaps = new ArrayList<>();
         this.title = record.getValue(PLAYERS.TITLE);
         int life = ((this.level - 1) * 5 + 50) + getTotalStatistics().getEffect(Stats.ADD_VITA);
-        this.life = new Pair<>(life, life);
+        this.life[0] = life;
+        this.life[1] = life;
         this.online = false;
         this.configureSpells(record.getValue(PLAYERS.SPELLS));
         this.configureJob(record.getValue(PLAYERS.JOBS));
@@ -156,7 +154,8 @@ public class Player implements Creature, Fighter {
         this.online = false;
         this.title = 0;
         int life = ((this.level - 1) * 5 + 50) + getTotalStatistics().getEffect(Stats.ADD_VITA);
-        this.life = new Pair<>(life, life);
+        this.life[0] = life;
+        this.life[1] = life;
         this.spells = classe.getStartSpells(gameManager, level);
         this.spellPlace = classe.getStartPlace(gameManager);
         this.zaaps.addAll(gameManager.getZaaps());
@@ -419,16 +418,16 @@ public class Player implements Creature, Fighter {
     }
 
     public int getInitiative() {
-        int maxLife = this.life.getValue() - 50;
-        double coef = maxLife / (classe == Classe.SACRIEUR ? 8 : 4);
-        coef += statistics.get(StatsType.STUFF).getEffect(Stats.ADD_INIT);
-        coef += getTotalStatistics().getEffect(Stats.ADD_AGIL);
-        coef += getTotalStatistics().getEffect(Stats.ADD_CHAN);
-        coef += getTotalStatistics().getEffect(Stats.ADD_INTE);
-        coef += getTotalStatistics().getEffect(Stats.ADD_FORC);
+        int maxLife = this.life[1] - 50;
+        double coefficient = maxLife / (classe == Classe.SACRIEUR ? 8 : 4);
+        coefficient += statistics.get(StatsType.STUFF).getEffect(Stats.ADD_INIT);
+        coefficient += getTotalStatistics().getEffect(Stats.ADD_AGIL);
+        coefficient += getTotalStatistics().getEffect(Stats.ADD_CHAN);
+        coefficient += getTotalStatistics().getEffect(Stats.ADD_INTE);
+        coefficient += getTotalStatistics().getEffect(Stats.ADD_FORC);
         int initiative = 1;
         if (maxLife != 0)
-            initiative = (int) (coef * ((double) (this.life.getKey() - 50) / (double) maxLife));
+            initiative = (int) (coefficient * ((double) (this.life[0] - 50) / (double) maxLife));
         if (initiative < 0)
             initiative = 0;
 
@@ -494,13 +493,18 @@ public class Player implements Creature, Fighter {
             commandManager.launchCommand(this, message.substring(2).split(" "));
             return;
         }
-
         floodCheck.speak(packet, canal);
+    }
+
+    public void launchAnimation() {
+        int[] aleatories = {345, 53, 319, 380, 381, 210, 342, 337, 334, 330, 294, 293, 281, 372};
+        Animation animation = gameManager.getAnimation(aleatories[new Random().nextInt(aleatories.length)]);
+        send("GA;" + 228 + ";" + id + ";" + getCell().getId() + "," + animation.getGA());
     }
 
     @Override
     public void speak(String message) {
-        speak(message, "*");
+        speak("*|" + message, "*");
     }
 
     public void createDialog(Npc npc) {
@@ -749,161 +753,11 @@ public class Player implements Creature, Fighter {
         factory.update(this);
     }
 
-    public String getPacket(String packet) {
-        StringBuilder builder = new StringBuilder();
-        switch (packet) {
-            case "ALK":
-                builder.append("|");
-                builder.append(this.id).append(";");
-                builder.append(this.name).append(";");
-                builder.append(this.level).append(";");
-                builder.append(getGfx()).append(";");
-                builder.append((getColor(1) != -1 ? Integer.toHexString(getColor(1)) : "-1")).append(";");
-                builder.append((getColor(2) != -1 ? Integer.toHexString(getColor(2)) : "-1")).append(";");
-                builder.append((getColor(3) != -1 ? Integer.toHexString(getColor(3)) : "-1")).append(";");
-                builder.append(getPacket("GMS")).append(";");
-                builder.append(0).append(";");
-                builder.append("1;");
-                builder.append(";");
-                builder.append(";");
-                return builder.toString();
-            case "PM":
-                builder.append(this.id).append(";");
-                builder.append(this.name).append(";");
-                builder.append(getGfx()).append(";");
-                builder.append(getColor(1)).append(";");
-                builder.append(getColor(2)).append(";");
-                builder.append(getColor(3)).append(";");
-                builder.append(this.getPacket("GMS")).append(";");
-                builder.append(getLife().getKey()).append(",").append(getLife().getValue()).append(";");
-                builder.append(this.level).append(";");
-                builder.append(getInitiative()).append(";");
-                builder.append(getTotalStatistics().getEffect(Stats.ADD_PROS)).append(";");
-                builder.append("0");
-                return builder.toString();
-            case "GM":
-                builder.append(getCell().getId());
-                builder.append(";").append(getOrientation()).append(";");
-                builder.append("0").append(";");
-                builder.append(this.id).append(";");
-                builder.append(this.name).append(";");
-                builder.append(getClasse().getId());
-                builder.append((getTitle() > 0 ? ("," + getTitle()) : ""));
-                builder.append(";").append(getGfx()).append("^");
-                builder.append(getSize());
-                builder.append(";");
-                builder.append(getSex()).append(";");
-                builder.append(getAlignement().getType().getId()).append(",");
-                builder.append("0").append(",");
-                builder.append((getAlignement().isShowWings() ? getAlignement().getGrade() : "0")).append(",");
-                builder.append(this.level + this.id);
-                if (getAlignement().isShowWings() && getAlignement().getDeshonnor() > 0)
-                    builder.append(",").append(1).append(';');
-                else
-                    builder.append(";");
-                builder.append(getColor(1) == -1 ? "-1" : Integer.toHexString(getColor(1))).append(";");
-                builder.append(getColor(2) == -1 ? "-1" : Integer.toHexString(getColor(2))).append(";");
-                builder.append(getColor(3) == -1 ? "-1" : Integer.toHexString(getColor(3))).append(";");
-                builder.append(this.getPacket("GMS")).append(";");
-                builder.append(this.level > 99 ? (this.level > 199 ? (2) : (1)) : (0)).append(";");
-                builder.append(";");
-                builder.append(";");
-                if (getGuild() != null)
-                    builder.append(getGuild().getName()).append(";").append(getGuild().getEmblem()).append(";");
-                else
-                    builder.append(";;");
-                builder.append(0).append(";");//Rebuilderiction
-                builder.append(";");
-                builder.append(";");
-                return builder.toString();
-            case "GMS": //Stuff
-                ObjectPosition[] positions = {ObjectPosition.ARME, ObjectPosition.COIFFE, ObjectPosition.CAPE, ObjectPosition.FAMILIER, ObjectPosition.BOUCLIER};
-                for (ObjectPosition position : positions) {
-                    if (getObjectByPosition(position) != null)
-                        builder.append(Integer.toHexString(getObjectByPosition(position).getTemplate().getId()));
-                    builder.append(",");
-                }
-                return builder.toString().substring(0, builder.length() - 1);
-            case "WC":
-                builder.append("WC").append(getMap().getId());
-                getZaaps().forEach(zaap -> builder.append("|").append(gameManager.getMap(zaap.getMap().getId()).getId()).append(";").append(zaap.getCost(getMap())));
-                return builder.toString();
-            case "ASK":
-                builder.append("ASK|");
-                builder.append(this.id).append("|").append(this.name).append("|");
-                builder.append(this.level).append("|");
-                builder.append(getClasse().getId()).append("|");
-                builder.append(getSex()).append("|");
-                builder.append(getGfx()).append("|");
-                builder.append((getColor(1)) == -1 ? "-1" : Integer.toHexString(getColor(1))).append("|");
-                builder.append((getColor(2)) == -1 ? "-1" : Integer.toHexString(getColor(2))).append("|");
-                builder.append((getColor(3)) == -1 ? "-1" : Integer.toHexString(getColor(3))).append("|");
-                builder.append(getPacket("ASKI"));
-                return builder.toString();
-            case "ASKI":
-                if (getObjects().isEmpty()) return "";
-                getObjects().values().forEach(object -> builder.append(object.parseItem()));
-                return builder.toString();
-            case "As":
-                builder.append("As");
-                builder.append(getExperience()).append(",").append(getGameManager().getPlayerExperience(this.level)).append(",").append(gameManager.getPlayerExperience(this.level + 1)).append("|");
-                builder.append(getKamas()).append("|").append(getCapital()).append("|").append(getSpellPoints()).append("|");
-                builder.append(getAlignement().getType().getId()).append("~");
-                builder.append(getAlignement().getType().getId()).append(",").append(getAlignement().getGrade()).append(",").append(getAlignement().getGrade()).append(",").append(getAlignement().getHonor()).append(",").append(getAlignement().getDeshonnor()).append(",").append(getAlignement().isShowWings() ? "1" : "0").append("|");
-                builder.append(getLife().getKey()).append(",").append(getLife().getValue()).append("|");
-                builder.append(10000).append(",10000|");
-                builder.append(getInitiative()).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_PROS) + statistics.get(StatsType.STUFF).getEffect(Stats.ADD_PROS) + ((int) Math.ceil(statistics.get(StatsType.BASE).getEffect(Stats.ADD_CHAN) / 10)) + statistics.get(StatsType.BUFF).getEffect(Stats.ADD_PROS)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_PA)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_PA)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_PA)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_PA)).append(",").append(getTotalStatistics().getEffect(Stats.ADD_PA)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_PM)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_PM)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_PM)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_PM)).append(",").append(getTotalStatistics().getEffect(Stats.ADD_PM)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_FORC)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_FORC)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_FORC)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_FORC)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_VITA)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_VITA)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_VITA)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_VITA)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_SAGE)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_SAGE)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_SAGE)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_SAGE)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_CHAN)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_CHAN)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_CHAN)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_CHAN)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_AGIL)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_AGIL)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_AGIL)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_AGIL)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_INTE)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_INTE)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_INTE)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_INTE)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_PO)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_PO)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_PO)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_PO)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.CREATURE)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.CREATURE)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.CREATURE)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.CREATURE)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_DOMA)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_DOMA)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_DOMA)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_DOMA)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_PDOM)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_PDOM)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_PDOM)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_PDOM)).append("|");
-                builder.append("0,0,0,0|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_PERDOM)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_PERDOM)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_PERDOM)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_PERDOM)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_SOIN)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_SOIN)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_SOIN)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_SOIN)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.TRAPDOM)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.TRAPDOM)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.TRAPDOM)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.TRAPDOM)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.TRAPPER)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.TRAPPER)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.TRAPPER)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.TRAPPER)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.RETDOM)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.RETDOM)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.RETDOM)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.RETDOM)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_CC)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_CC)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_CC)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_CC)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_EC)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_EC)).append(",").append(statistics.get(StatsType.GIFT).getEffect(Stats.ADD_EC)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_EC)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_AFLEE)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_AFLEE)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_AFLEE)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_AFLEE)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_MFLEE)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_MFLEE)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_MFLEE)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_MFLEE)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_NEU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_NEU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_NEU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_NEU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_NEU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_NEU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_NEU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_NEU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_PVP_NEU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_PVP_NEU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_NEU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_NEU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_PVP_NEU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_PVP_NEU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_NEU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_NEU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_TER)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_TER)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_TER)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_TER)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_TER)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_TER)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_TER)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_TER)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_PVP_TER)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_PVP_TER)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_TER)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_TER)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_PVP_TER)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_PVP_TER)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_TER)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_TER)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_EAU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_EAU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_EAU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_EAU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_EAU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_EAU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_EAU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_EAU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_PVP_EAU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_PVP_EAU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_EAU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_EAU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_PVP_EAU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_PVP_EAU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_EAU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_EAU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_AIR)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_AIR)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_AIR)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_AIR)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_AIR)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_AIR)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_AIR)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_AIR)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_PVP_AIR)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_PVP_AIR)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_AIR)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_AIR)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_PVP_AIR)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_PVP_AIR)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_AIR)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_AIR)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_FEU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_FEU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_FEU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_FEU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_FEU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_FEU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_FEU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_FEU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_R_PVP_FEU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_R_PVP_FEU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_FEU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_R_PVP_FEU)).append("|");
-                builder.append(statistics.get(StatsType.BASE).getEffect(Stats.ADD_RP_PVP_FEU)).append(",").append(statistics.get(StatsType.STUFF).getEffect(Stats.ADD_RP_PVP_FEU)).append(",").append(0).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_FEU)).append(",").append(statistics.get(StatsType.BUFF).getEffect(Stats.ADD_RP_PVP_FEU)).append("|");
-                return builder.toString();
-            case "SL":
-                builder.append("SL");
-                for (Spell spell : getSpells().values())
-                    builder.append(spell.getTemplate()).append("~").append(spell.getLevel()).append("~").append(getSpellPlace().get(spell.getTemplate())).append(";");
+    public int getLife(boolean max) {
+        return life[max ? 1 : 0];
+    }
 
-                return builder.toString();
-        }
-        return null;
+    public String getPacket(String packet) {
+        return factory.getPackets().get(packet).get(this);
     }
 }

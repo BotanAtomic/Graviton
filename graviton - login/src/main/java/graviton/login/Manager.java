@@ -14,7 +14,6 @@ import graviton.network.login.LoginClient;
 import lombok.Data;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,14 +39,11 @@ public class Manager {
     private Map<Integer, Player> players;
     private Map<Integer, Server> servers;
 
-    private Date dateOfStart;
-
     public Manager() {
         this.accounts = new ConcurrentHashMap<>();
         this.players = new ConcurrentHashMap<>();
         this.clients = new ConcurrentHashMap<>();
         this.connected = new ConcurrentHashMap<>();
-        this.dateOfStart = new java.util.Date();
     }
 
     public Manager start() {

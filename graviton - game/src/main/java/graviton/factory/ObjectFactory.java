@@ -15,7 +15,8 @@ import org.jooq.Record;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static graviton.database.utils.game.Tables.*;
+import static graviton.database.utils.game.Tables.ITEMS;
+import static graviton.database.utils.game.Tables.ITEM_TEMPLATE;
 
 /**
  * Created by Botan on 28/12/2015.
@@ -99,10 +100,10 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
 
     @Override
     public void configure() {
-        for (Record record : database.getResult(INTERACTIVE_TEMPLATE))
-            this.interactiveObjectTemplate.put(record.getValue(INTERACTIVE_TEMPLATE.ID), new InteractiveObjectTemplate(record.getValue(INTERACTIVE_TEMPLATE.ID),
-                    record.getValue(INTERACTIVE_TEMPLATE.RESPAWN), record.getValue(INTERACTIVE_TEMPLATE.DURATION),
-                    record.getValue(INTERACTIVE_TEMPLATE.UNKNOW), record.getValue(INTERACTIVE_TEMPLATE.WALKABLE) == 1));
+        for (java.lang.Object object : decodeObjects("objects/interactive")) {
+            InteractiveObjectTemplate template = (InteractiveObjectTemplate) object;
+            this.interactiveObjectTemplate.put(template.getId(), template);
+        }
     }
 
     @Override

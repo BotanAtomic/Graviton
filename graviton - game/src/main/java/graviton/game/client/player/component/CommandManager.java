@@ -53,7 +53,7 @@ public class CommandManager implements Manager {
                 player.send("BAT1La commande <b>" + arguments[0] + "</b> n'existe pas");
         } finally {
             locker.unlock();
-        }
+    }
     }
 
     @Override
@@ -71,7 +71,7 @@ public class CommandManager implements Manager {
             try {
                 player.changePosition(Integer.parseInt(arguments[1]), Integer.parseInt(arguments[2]));
             } catch (Exception e) {
-
+                player.send("BAT1La map est inconnue");
             }
         });
 
@@ -85,7 +85,7 @@ public class CommandManager implements Manager {
                 player.addObject(template.createObject(quantity, true),true);
                 player.send("BAT2L'objet " + template.getName() + " à bien ete cree " + quantity + " fois");
             } catch (Exception e) {
-
+                player.send("BAT1L'objet n'existe pas");
             }
         });
         this.adminCommand = Collections.unmodifiableMap(adminCommand);

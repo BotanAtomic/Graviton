@@ -6,7 +6,6 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.game.GameManager;
 import graviton.game.client.Account;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
@@ -25,8 +24,6 @@ public class AccountFactory extends Factory<Account> {
     private final Map<Integer, Account> accounts;
     @Inject
     Injector injector;
-    @Inject
-    GameManager gameManager;
 
     @Inject
     public AccountFactory(@Named("database.login") Database database) {

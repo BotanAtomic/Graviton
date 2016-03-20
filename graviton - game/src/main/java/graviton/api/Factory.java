@@ -8,6 +8,8 @@ import java.beans.XMLDecoder;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,5 +41,13 @@ public abstract class Factory<T> {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public List<Object> decodeObjects(String directory) {
+        List<Object> objects = new ArrayList<>();
+        File folder = new File("data/" + directory);
+        for (File file : folder.listFiles())
+            objects.add(decodeObject(directory + "/" + file.getName()));
+        return objects;
     }
 }

@@ -24,7 +24,6 @@ public class Alignement {
         this.type = id == -1 ? Type.NEUTRE : Type.values()[id];
     }
 
-
     public Alignement(Player player) {
         this.player = player;
         this.gameManager = player.getGameManager();
@@ -50,9 +49,9 @@ public class Alignement {
             return 0;
         if (this.getHonor() >= 17500)
             return 10;
-        for (int n = 1; n <= 10; n++)
-            if (this.getHonor() < gameManager.getExperience().getData().get(DataType.PVP).get(n))
-                return n - 1;
+        for (int i = 1; i <= 10; i++)
+            if (this.getHonor() < gameManager.getExperience().getData().get(DataType.PVP).get(i))
+                return i - 1;
         return 0;
     }
 
@@ -68,7 +67,7 @@ public class Alignement {
         this.honor -= honor;
         if (grade != getGradeByHonor()) {
             grade = getGradeByHonor();
-            player.send("Im00;" + "Tu viens de descendre grade " + grade + ".");
+            player.send("Im00;" + "Tu viens de descendre grade " + grade);
         }
     }
 

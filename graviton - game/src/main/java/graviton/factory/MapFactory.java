@@ -6,7 +6,6 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.game.GameManager;
 import graviton.game.common.Action;
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
@@ -32,8 +31,6 @@ public class MapFactory extends Factory<Maps> {
     private final List<Zaap> zaaps;
     @Inject
     Injector injector;
-    @Inject
-    GameManager gameManager;
 
     @Inject
     public MapFactory(@Named("database.game") Database database) {
@@ -56,11 +53,15 @@ public class MapFactory extends Factory<Maps> {
     public Maps get(Object object) {
         if (maps.containsKey(object))
             return maps.get(object);
-        Record record = database.getRecord(MAPS, MAPS.ID.equal((int) object));
+        return load((int) object);
+    }
+
+    private Maps load(int id) {
+        Record record = database.getRecord(MAPS, MAPS.ID.equal(id));
         if (record != null) {
-            final Maps finalMap = new Maps(record.getValue(MAPS.ID), record.getValue(MAPS.DATE), record.getValue(MAPS.WIDTH), record.getValue(MAPS.HEIGTH), record.getValue(MAPS.PLACES), record.getValue(MAPS.KEY), record.getValue(MAPS.CELLS), record.getValue(MAPS.MAPDATA), record.getValue(MAPS.MAPPOS), record.getValue(MAPS.MONSTERS), record.getValue(MAPS.NUMGROUP), injector);
+            final Maps finalMap = new Maps(id, record, injector);
             database.getResult(CELLS, CELLS.MAP.equal(finalMap.getId())).forEach(record1 -> finalMap.getCells().get(record1.getValue(CELLS.CELL)).addAction(new Action(record1.getValue(CELLS.ACTION), record1.getValue(CELLS.ARGS))));
-            this.maps.put((int) object, finalMap);
+            this.maps.put(id, finalMap);
             loadTrunks(finalMap);
             return finalMap;
         }

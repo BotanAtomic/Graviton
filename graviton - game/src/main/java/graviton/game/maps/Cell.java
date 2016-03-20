@@ -51,7 +51,7 @@ public class Cell {
     public void applyAction(Player player) {
         if (action != null)
             action.forEach(action1 -> action1.apply(player));
-        map.getCreatures(IdType.MONSTER_GROUP).values().stream().filter(group -> group.getPosition().getCell().getId() == this.id).forEach(group -> player.speak("Combat lancé !"));
+        map.getCreatures(IdType.MONSTER_GROUP).values().stream().filter(group -> group.getPosition().getCell().getId() == this.id).forEach(group -> player.launchAnimation());
     }
 
     public boolean isWalkable() {

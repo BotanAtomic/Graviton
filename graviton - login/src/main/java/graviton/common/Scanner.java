@@ -16,10 +16,10 @@ import java.util.Date;
  */
 @Slf4j
 public class Scanner extends Thread {
+    private final java.util.Scanner scanner;
+    private final Date startTime = new Date();
     @Inject
     ApplicationNetwork network;
-
-    private final java.util.Scanner scanner;
     private Manager manager;
 
     public Scanner() {
@@ -49,7 +49,7 @@ public class Scanner extends Thread {
                 System.exit(0);
                 break;
             case "infos":
-                Period period = new Interval(manager.getDateOfStart().getTime(), new Date().getTime()).toPeriod();
+                Period period = new Interval(startTime.getTime(), new Date().getTime()).toPeriod();
                 double currentMemory = (((double) (Runtime.getRuntime().totalMemory() / 1024) / 1024)) - (((double) (Runtime.getRuntime().freeMemory() / 1024) / 1024));
                 System.out.println(" ______________________________________________");
                 System.out.println("| Total server : " + (manager.getServers().size()) + manager.getServerName(false));

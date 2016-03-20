@@ -19,6 +19,7 @@ import graviton.game.maps.Zaap;
 import graviton.game.maps.object.InteractiveObjectTemplate;
 import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
+import graviton.game.spells.Animation;
 import graviton.game.spells.SpellTemplate;
 import graviton.game.trunks.Trunk;
 import graviton.network.exchange.ExchangeNetwork;
@@ -80,7 +81,6 @@ public class GameManager implements Manager {
     public void load() {
         this.factorys = getFactorys(playerFactory, npcFactory, accountFactory, objectFactory, spellFactory, mapFactory, guildFactory, monsterFactory);
         this.factorys.values().forEach(Factory::configure);
-        this.experience = new Experience(mapFactory.decodeObject("experience/player"), mapFactory.decodeObject("experience/job"), mapFactory.decodeObject("experience/mount"), mapFactory.decodeObject("experience/pvp"));
         this.scheduleActions();
     }
 
@@ -172,6 +172,10 @@ public class GameManager implements Manager {
     public long getGuildExperience(int level) {
         if (level > 200) return -1;
         return experience.getData().get(DataType.MOUNT).get(level);
+    }
+
+    public Animation getAnimation(int id) {
+        return spellFactory.getAnimations().get(id);
     }
 
     public long getMountExperience(int level) {

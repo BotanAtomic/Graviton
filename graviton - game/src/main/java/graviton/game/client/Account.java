@@ -56,6 +56,8 @@ public class Account {
 
     private Trunk bank;
 
+    private Admin admin;
+
     public Account(Record record, Injector injector) {
         injector.injectMembers(this);
         this.injector = injector;
@@ -69,7 +71,7 @@ public class Account {
         this.rank = Rank.values()[record.getValue(ACCOUNTS.RANK)];
         this.bank = new Trunk(record.getValue(ACCOUNTS.BANK),injector);
         if (rank != Rank.PLAYER)
-            new Admin(this.rank, this, injector);
+            this.admin = new Admin(this.rank, this, injector);
 
     }
 
@@ -118,6 +120,9 @@ public class Account {
             playerFactory.delete(currentPlayer.getId());
         }
         accountFactory.getElements().remove(this.id);
+
+        if (admin != null)
+            admin.remove();
     }
 
     public void setOnline() {

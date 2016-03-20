@@ -11,11 +11,10 @@ import graviton.game.enums.Rank;
  * Created by Botan on 01/10/2015.
  */
 public class Admin {
-    @Inject
-    private GameManager gameManager;
-
     private final Rank rank;
     private final Account account;
+    @Inject
+    private GameManager gameManager;
 
     public Admin(Rank rank, Account account,Injector injector) {
         injector.injectMembers(this);
@@ -36,6 +35,10 @@ public class Admin {
 
     public void launchCommand(String command) {
 
+    }
+
+    public void remove() {
+        gameManager.getAdmins().remove(this);
     }
 
     public Rank getRank() {

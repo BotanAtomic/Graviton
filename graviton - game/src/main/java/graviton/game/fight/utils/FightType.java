@@ -1,4 +1,4 @@
-package graviton.game.fight.type;
+package graviton.game.fight.utils;
 
 /**
  * Created by Botan on 06/03/2016.

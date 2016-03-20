@@ -6,7 +6,6 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.game.GameManager;
 import graviton.game.common.Action;
 import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcAnswer;
@@ -35,9 +34,6 @@ public class NpcFactory extends Factory<NpcTemplate> {
     private final Map<Integer, NpcAnswer> answers;
     @Inject
     Injector injector;
-    @Inject
-    GameManager gameManager;
-
 
     @Inject
     public NpcFactory(@Named("database.game") Database database) {

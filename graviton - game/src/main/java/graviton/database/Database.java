@@ -25,7 +25,7 @@ public class Database {
     private DSLContext dslContext;
 
     public Database(Properties propreties, String prefix) {
-        HikariConfig dataConfig = new HikariConfig() {
+        this.dataSource = new HikariDataSource(new HikariConfig() {
             {
                 setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
                 addDataSourceProperty("serverName", decrypt(propreties.getProperty(prefix + "ip")));
@@ -34,9 +34,7 @@ public class Database {
                 addDataSourceProperty("user", decrypt(propreties.getProperty(prefix + "user")));
                 addDataSourceProperty("password", decrypt(propreties.getProperty(prefix + "password")));
             }
-        };
-
-        this.dataSource = new HikariDataSource(dataConfig);
+        });
 
         try {
             this.dslContext = DSL.using(dataSource.getConnection(), SQLDialect.MYSQL);
