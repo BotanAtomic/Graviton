@@ -14,7 +14,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="graviton - login" />
     <orderEntry type="library" scope="PROVIDED" name="Gradle: org.projectlombok:lombok:1.16.4" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.google.inject:guice:4.0" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.google.inject.extensions:guice-multibindings:4.0" level="project" />
@@ -53,8 +52,8 @@
     <orderEntry type="library" exported="" name="Gradle: io.netty:netty-common:4.1.0.Beta5" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.yaml:snakeyaml:1.12" level="project" />
     <orderEntry type="library" exported="" name="Gradle: io.netty:netty-resolver:4.1.0.Beta5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.jooq:jooq:3.7.3" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.google.guava:guava:18.0" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.fasterxml.jackson.core:jackson-annotations:2.5.0" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: org.jooq:jooq:3.7.3" level="project" />
   </component>
 </module>

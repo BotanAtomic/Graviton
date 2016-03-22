@@ -84,6 +84,13 @@ public class GameManager implements Manager {
         this.scheduleActions();
     }
 
+    public Zaap getZaap(int map) {
+        for (Zaap zaap : getZaaps())
+            if (zaap.getMap().getId() == map)
+                return zaap;
+        return null;
+    }
+
     public Map<Integer, ?> getElements(DataType type) {
         return this.factorys.get(type).getElements();
     }

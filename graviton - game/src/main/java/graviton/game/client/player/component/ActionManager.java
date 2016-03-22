@@ -2,8 +2,8 @@ package graviton.game.client.player.component;
 
 import graviton.api.Action;
 import graviton.game.client.player.Player;
-import graviton.game.creature.action.MapAction;
-import graviton.game.creature.action.Movement;
+import graviton.game.client.player.component.action.MapAction;
+import graviton.game.client.player.component.action.Movement;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

@@ -46,15 +46,17 @@ import static graviton.database.utils.login.Tables.PLAYERS;
  */
 @Data
 public class Player implements Creature, Fighter {
-    private final int id;
-    private final Account account;
-    private final Classe classe;
     @Inject
     GameManager gameManager;
     @Inject
     CommandManager commandManager;
     @Inject
     PlayerFactory factory;
+
+    private final int id;
+    private final Account account;
+    private final Classe classe;
+
     private String name;
     private int sex;
 
@@ -89,7 +91,7 @@ public class Player implements Creature, Fighter {
 
     private Mount mount;
 
-    private Map<Integer,Job> jobs;
+    private Map<Integer, Job> jobs;
 
     public Player(Account account, Record record, Injector injector) {
         injector.injectMembers(this);
@@ -164,17 +166,13 @@ public class Player implements Creature, Fighter {
             factory.add(this);
     }
 
+    /**
+     * Configuation
+     **/
+
     private void configureJob(String data) {
         this.jobs = new HashMap<>();
-        if(data == null) return;
-
-        int id;
-        String[] arguments;
-        for(String job : data.split("\\|")) {
-            arguments = job.split(",");
-            id = Integer.parseInt(arguments[0]);
-            this.jobs.put(id,new Job(id,Long.parseLong(arguments[1]),this));
-        }
+        if (data == null || data.isEmpty()) return;
     }
 
     private void configureStatisctics(Record record) {
@@ -230,11 +228,6 @@ public class Player implements Creature, Fighter {
         this.position.getMap().addCreature(this);
     }
 
-    @Override
-    public String getGm() {
-        return getPacket("GM");
-    }
-
     private void configureSpells(String data) {
         this.spells = new HashMap<>();
         this.spellPlace = new HashMap<>();
@@ -249,25 +242,7 @@ public class Player implements Creature, Fighter {
 
     }
 
-    public String parseSpells() {
-        StringBuilder builder = new StringBuilder();
-        for (int key : this.spells.keySet()) {
-            Spell spell = this.spells.get(key);
-            builder.append(spell.getTemplate()).append(";").append(spell.getLevel()).append(";");
-            if (this.spellPlace.get(key) != null)
-                builder.append(this.spellPlace.get(key));
-            else
-                builder.append("_");
-            builder.append(",");
-        }
-        return builder.toString();
-    }
-
-
-    public void learnSpell(int spell, int level) {
-
-    }
-
+    /** Objects **/
     private void setStuff(String objects) {
         if (objects.charAt(objects.length() - 1) == ',')
             objects = objects.substring(0, objects.length() - 1);
@@ -321,12 +296,12 @@ public class Player implements Creature, Fighter {
         send("OR" + id);
     }
 
-    public void removeObject(int id,int quantity) {
+    public void removeObject(int id, int quantity) {
         Object object = this.objects.get(id);
 
-        if(object != null) {
-            if((object.getQuantity() - quantity) <= 0) {
-                removeObject(id,true);
+        if (object != null) {
+            if ((object.getQuantity() - quantity) <= 0) {
+                removeObject(id, true);
                 return;
             }
             object.setQuantity(object.getQuantity() - quantity);
@@ -339,7 +314,7 @@ public class Player implements Creature, Fighter {
     }
 
     public Object getObjectByTemplate(int id) {
-        for(Object object : objects.values())
+        for (Object object : objects.values())
             if (object.getTemplate().getId() == id)
                 return object;
         return null;
@@ -364,6 +339,7 @@ public class Player implements Creature, Fighter {
         return builder.toString();
     }
 
+    /** Spell **/
     public boolean boostSpell(int id) {
         if (!spells.containsKey(id))
             return false;
@@ -386,6 +362,24 @@ public class Player implements Creature, Fighter {
         save();
     }
 
+    public String parseSpells() {
+        StringBuilder builder = new StringBuilder();
+        for (int key : this.spells.keySet()) {
+            Spell spell = this.spells.get(key);
+            builder.append(spell.getTemplate()).append(";").append(spell.getLevel()).append(";");
+            if (this.spellPlace.get(key) != null)
+                builder.append(this.spellPlace.get(key));
+            else
+                builder.append("_");
+            builder.append(",");
+        }
+        return builder.toString();
+    }
+
+    public void learnSpell(int spell, int level) {
+
+    }
+
     public void boostStatistics(int id) {
         this.classe.boostStatistics(this, id);
         refreshPods();
@@ -400,7 +394,7 @@ public class Player implements Creature, Fighter {
         capital = (level - 1) * 5;
         send(getPacket("As"));
         send("Im023;" + capital);
-        factory.update(this);
+        save();
     }
 
     public Statistics getTotalStatistics() {
@@ -510,7 +504,7 @@ public class Player implements Creature, Fighter {
     public void createDialog(Npc npc) {
         send("DCK" + npc.getId());
         NpcQuestion question = gameManager.getNpcQuestion(npc.getTemplate().getInitQuestion());
-        if(question == null) {
+        if (question == null) {
             send("DV");
             return;
         }
@@ -521,7 +515,7 @@ public class Player implements Creature, Fighter {
 
     public void createDialog(int questionId) {
         NpcQuestion question = gameManager.getNpcQuestion(questionId);
-        if(question == null) {
+        if (question == null) {
             this.inviting = 0;
             setActionState(ActionManager.Status.WAITING);
             send("DV");
@@ -563,10 +557,6 @@ public class Player implements Creature, Fighter {
         save();
     }
 
-    public boolean isBusy() {
-        return !isOnline() || actionManager.getStatus() != ActionManager.Status.WAITING;
-    }
-
     public void askExchange(String packet) {
         switch (packet.charAt(0)) {
             case '1':
@@ -587,9 +577,7 @@ public class Player implements Creature, Fighter {
 
     public void startExchange() {
         Player target = factory.get(inviting);
-
         if (target == null) return;
-
         send("ECK1");
         target.send("ECK1");
     }
@@ -625,10 +613,6 @@ public class Player implements Creature, Fighter {
         }
     }
 
-    public String getPacketName() {
-        return "<a href='asfunction:onHref,ShowPlayerPopupMenu," + name + "'><b>" + name + "</b></a>";
-    }
-
     public void setActionState(ActionManager.Status state) {
         this.actionManager.setStatus(state);
     }
@@ -637,60 +621,24 @@ public class Player implements Creature, Fighter {
         this.actionManager.createAction(id, arguments);
     }
 
-    public void sendText(String... arguments) {
-        String message = arguments[0];
-        String color;
-        try {
-            color = arguments[1];
-        } catch (ArrayIndexOutOfBoundsException e) {
-            color = "000000";
-        }
-        send("cs<font color='#" + color + "'>" + message + "</font>");
-    }
-
-    public final void send(String packet) {
-        if (packet.isEmpty()) return;
-        this.account.getClient().send(packet);
-    }
-
     public void openZaap() {
         send(getPacket("WC"));
     }
 
     public void useZaap(int id) {
         Maps maps = gameManager.getMap(id);
-        int cell = -1;
-        int cost = 0;
-        for (Zaap zaap : gameManager.getZaaps())
-            if (zaap.getMap().getId() == maps.getId()) {
-                cell = zaap.getCell();
-                cost = zaap.getCost(getMap());
-            }
+        Zaap zaap = gameManager.getZaap(maps.getId());
 
+        int cost = zaap.getCost(getMap());
         send("WV");
-        if (this.kamas < cost) {
+
+        if (this.kamas >= cost) {
+            changePosition(maps.getCell(zaap.getCell()));
+            this.kamas -= cost;
+            send("Im046;" + cost);
+            send(getPacket("As"));
+        } else
             send("Im01;" + "Il te faut " + (cost - kamas) + " kamas en plus pour pouvoir utiliser ce zaap.");
-            return;
-        }
-        this.kamas -= cost;
-        send("Im046;" + cost);
-        send(getPacket("As"));
-        System.err.println(cell);
-        System.err.println(cost);
-        if (cell != -1)
-            changePosition(maps.getCell(cell));
-    }
-
-    public String getValue(String value) {
-        if(value.equals("name"))
-            return this.getName();
-        if(value.equals("bankCost"))
-            return String.valueOf(account.getBankPrice());
-        return "";
-    }
-
-    public void refresh() {
-        getMap().refreshCreature(this);
     }
 
     public void changeOrientation(int orientation, boolean send) {
@@ -707,22 +655,37 @@ public class Player implements Creature, Fighter {
             this.getMap().removeCreature(this);
             this.position.setCell(cell);
             cell.getMap().addCreature(this);
-            return;
-        }
-        getMap().changeCell(this, cell);
-        factory.update(this);
+        } else
+            getMap().changeCell(this, cell);
+        save();
     }
 
-    public void changePosition(int map,int cell) {
+    public void changePosition(int map, int cell) {
         Maps maps = gameManager.getMap(map);
-        if(maps == null)
+        if (maps == null)
             return;
         changePosition(maps.getCell(cell));
     }
 
+    public boolean isBusy() {
+        return !isOnline() || actionManager.getStatus() != ActionManager.Status.WAITING;
+    }
+
+    public String getPacketName() {
+        return "<a href='asfunction:onHref,ShowPlayerPopupMenu," + name + "'><b>" + name + "</b></a>";
+    }
+
+    public String getValue(String value) {
+        if (value.equals("name"))
+            return this.getName();
+        if (value.equals("bankCost"))
+            return String.valueOf(account.getBankPrice());
+        return "";
+    }
+
     private int getPodsUsed() {
         int pod = 0;
-        for(Object object : this.objects.values())
+        for (Object object : this.objects.values())
             pod += (object.getTemplate().getUsedPod() * object.getQuantity());
         return pod;
     }
@@ -743,6 +706,38 @@ public class Player implements Creature, Fighter {
         return this.position.getOrientation();
     }
 
+    public int getLife(boolean max) {
+        return life[max ? 1 : 0];
+    }
+
+    public String getPacket(String packet) {
+        return factory.getPackets().get(packet).get(this);
+    }
+
+    @Override
+    public String getGm() {
+        return getPacket("GM");
+    }
+
+    public void refresh() {
+        getMap().refreshCreature(this);
+    }
+
+    public void send(String packet) {
+        this.account.getClient().send(packet);
+    }
+
+    public void sendText(String... arguments) {
+        String message = arguments[0];
+        String color;
+        try {
+            color = arguments[1];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            color = "000000";
+        }
+        send("cs<font color='#" + color + "'>" + message + "</font>");
+    }
+
     public void delete() {
         account.getPlayers().remove(this);
         factory.remove(this);
@@ -753,11 +748,4 @@ public class Player implements Creature, Fighter {
         factory.update(this);
     }
 
-    public int getLife(boolean max) {
-        return life[max ? 1 : 0];
-    }
-
-    public String getPacket(String packet) {
-        return factory.getPackets().get(packet).get(this);
-    }
 }

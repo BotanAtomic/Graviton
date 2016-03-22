@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Graviton.iml" filepath="$PROJECT_DIR$/Graviton.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Project.iml" filepath="$PROJECT_DIR$/.idea/Project.iml" />
       <module fileurl="file://$PROJECT_DIR$/graviton - game/graviton - game.iml" filepath="$PROJECT_DIR$/graviton - game/graviton - game.iml" />
       <module fileurl="file://$PROJECT_DIR$/graviton - login/graviton - login.iml" filepath="$PROJECT_DIR$/graviton - login/graviton - login.iml" />
     </modules>

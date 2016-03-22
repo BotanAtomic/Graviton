@@ -1,4 +1,4 @@
-package graviton.game.client.player.component.packet;
+package graviton.game.client.player.packet;
 
 import graviton.game.client.player.Player;
 

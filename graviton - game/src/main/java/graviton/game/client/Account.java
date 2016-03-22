@@ -28,11 +28,6 @@ import static graviton.database.utils.login.Tables.ACCOUNTS;
  */
 @Data
 public class Account {
-    private final Injector injector;
-    private final int id;
-    private final String answer;
-    private final Rank rank;
-    private final String pseudo;
     @Inject
     GameManager manager;
     @Inject
@@ -41,6 +36,12 @@ public class Account {
     AccountFactory accountFactory;
     @Inject
     CommandManager commandManager;
+
+    private final Injector injector;
+    private final int id;
+    private final String answer;
+    private final Rank rank;
+    private final String pseudo;
     private String ipAdress;
 
     private GameClient client;
@@ -69,7 +70,7 @@ public class Account {
         this.friends = convertToList(record.getValue(ACCOUNTS.FRIENDS));
         this.enemies = convertToList(record.getValue(ACCOUNTS.ENEMIES));
         this.rank = Rank.values()[record.getValue(ACCOUNTS.RANK)];
-        this.bank = new Trunk(record.getValue(ACCOUNTS.BANK),injector);
+        this.bank = new Trunk(record.getValue(ACCOUNTS.BANK), injector);
         if (rank != Rank.PLAYER)
             this.admin = new Admin(this.rank, this, injector);
 

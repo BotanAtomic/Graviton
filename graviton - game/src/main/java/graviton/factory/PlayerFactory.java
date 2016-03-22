@@ -10,7 +10,7 @@ import graviton.enums.DataType;
 import graviton.game.GameManager;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
-import graviton.game.client.player.component.packet.Packet;
+import graviton.game.client.player.packet.Packet;
 import graviton.game.common.Stats;
 import graviton.game.enums.Classe;
 import graviton.game.enums.ObjectPosition;
@@ -199,8 +199,6 @@ public class PlayerFactory extends Factory<Player> {
 
     private void initPackets() {
         Map<String, Packet> packets = new HashMap<>();
-
-
         packets.put("ALK", player -> {
             StringBuilder builder = new StringBuilder();
             builder.append("|").append(player.getId()).append(";").append(player.getName()).append(";").append(player.getLevel()).append(";");

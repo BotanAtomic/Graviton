@@ -49,7 +49,6 @@ public class Scanner extends Thread implements graviton.api.Manager {
     }
 
     public String launch(String line) {
-        String message = "";
         switch (line.toLowerCase()) {
             case "restart":
                 exchangeNetwork.send("RRestarting server...");
@@ -65,12 +64,11 @@ public class Scanner extends Thread implements graviton.api.Manager {
                 builder.append(";Number of connected admin : ").append(gameManager.getAdmins().size()).append(gameManager.getAdminsName());
                 builder.append(";Current memory usage: " + Double.toString(currentMemory).substring(0, 4) + " Mb / " + Double.toString(currentMemory / 8).substring(0, 4) + " Mo");
                 builder.append(";Uptime : ").append(period.getDays()).append("d ").append(period.getHours()).append("h ").append(period.getMinutes()).append("m ").append(period.getSeconds()).append("s");
-                message = builder.toString();
-                break;
+                return builder.toString();
             default:
-                message = ("Command not found");
+                return ("Command not found");
         }
-        return message;
+        return "Command not found";
     }
 
     private void execute(String line) {
