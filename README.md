@@ -152,9 +152,9 @@ public Database(String ip, String name, String user, String pass) {
 - Speak 100%
 </details>
 </p>
-</p>
-[Application]
 
+[Application]
+</p>
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
 </p>
 See the <a href = 'https://github.com/Babouche-/Graviton-Manager/'>project</a>
