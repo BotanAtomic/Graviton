@@ -119,11 +119,11 @@ public Database(String ip, String name, String user, String pass) {
 - decryption of the received packets
 
 [Game]
-
 <details> 
   <summary>Click here for see the changelog</summary>
-   Changelog (game) 19/03/2016
-
+  Changelog (game) 
+  last update : 28/03/2016
+  
 - Maps / Cells 100%
 - Deplacement for player 100%
 - Chat with flood checker for mute 80%
@@ -151,7 +151,8 @@ public Database(String ip, String name, String user, String pass) {
 - Channel 80%
 - Speak 100%
 </details>
-
+</p>
+</p>
 [Application]
 
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
