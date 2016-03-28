@@ -36,7 +36,7 @@ JOOQ : for typesafe SQL query construction and execution.
 
 #Exemple 
 
-_Inject setting with configuration file : @InjectSetting(value)_
+_Inject setting with configuration file : @InjectSetting(value)_ (Thank's Return)
 ```xml
 #File config.propreties
 server.key = graviton
@@ -52,8 +52,7 @@ public class Exemple {
    String key;
    
    public Exemple() {
-      log.info(key);
-      //Write "graviton" in the Console
+      System.err.println(key); //Write "graviton" in the Console
    }
 }
 ```
