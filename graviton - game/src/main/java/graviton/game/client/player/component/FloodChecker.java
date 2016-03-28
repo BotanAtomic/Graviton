@@ -119,7 +119,8 @@ public class FloodChecker {
                     String finalMessage = "|" + packet.split("\\|")[1];
                     target.send("cMKF|" + player.getId() + "|" + player.getName() + finalMessage);
                     player.send("cMKT|" + target.getId() + "|" + target.getName() + finalMessage);
-                }
+                } else
+                    player.send("cMEf" + packet.split("\\|")[0]);
         }
     }
 

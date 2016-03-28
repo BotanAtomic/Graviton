@@ -15,11 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+
 /**
  * Created by Botan on 22/06/2015.
  */
 public class Cell {
-
     @Getter
     private final int id;
     @Getter
@@ -67,7 +67,7 @@ public class Cell {
                 player.send("GA" + gameAction + ";" + 501 + ";" + player.getId() + ",0,0");
                 player.send("Im06");
                 break;
-            case 102: //get water
+            case 102: //perform water
                 if (!interactiveObject.isInteractive() || interactiveObject.getState() == InteractiveObject.State.EMPTYING)
                     return;
                 interactiveObject.setState(InteractiveObject.State.EMPTYING);

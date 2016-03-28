@@ -46,6 +46,7 @@ public class AccountFactory extends Factory<Account> {
         firstStep.set(ACCOUNTS.FRIENDS, account.parseFriends());
         firstStep.set(ACCOUNTS.ENEMIES, account.parseEnemies());
         firstStep.set(ACCOUNTS.RANK, account.getRank().id);
+        firstStep.set(ACCOUNTS.INFORMATIONS, account.getNewInformations());
         firstStep.set(ACCOUNTS.BANK, account.getBank().getKamas() + ";" + account.getBank().parseToDatabase());
         firstStep.set(ACCOUNTS.MUTE, account.parseMute()).where(ACCOUNTS.ID.equal(account.getId())).execute();
     }

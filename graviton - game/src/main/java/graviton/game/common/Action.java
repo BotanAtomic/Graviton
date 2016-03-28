@@ -3,6 +3,7 @@ package graviton.game.common;
 import graviton.game.client.player.Player;
 import graviton.game.client.player.component.ActionManager;
 import graviton.game.client.player.exchange.TrunkExchange;
+import graviton.game.client.player.packet.Packets;
 import graviton.game.enums.ActionType;
 import graviton.game.maps.Maps;
 import lombok.Data;
@@ -33,7 +34,7 @@ public class Action {
 
                 player.setKamas(player.getKamas() - cost);
                 player.send("Im020;" + cost);
-                player.send(player.getPacket("As"));
+                player.send(player.getPacket(Packets.As));
 
                 player.send("DV");
                 player.setExchange(new TrunkExchange(player,player.getAccount().getBank()));
@@ -49,7 +50,7 @@ public class Action {
                 Maps map = player.getGameManager().getMap(Integer.parseInt(split[0]));
                 if (map != null)
                     player.changePosition(map.getCell(Integer.parseInt(split[1])));
-                if (player.getInviting() != 0)
+                if (player.getAskedCreature() != 0)
                     player.quitDialog();
                 break;
             }
@@ -57,7 +58,7 @@ public class Action {
             case DIALOG: {
                 if (arguments.equalsIgnoreCase("DV")) {
                     player.send("DV");
-                    player.setInviting(0);
+                    player.setAskedCreature(0);
                     player.getActionManager().setStatus(ActionManager.Status.WAITING);
                 } else
                     player.createDialog(Integer.parseInt(arguments));

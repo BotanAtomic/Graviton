@@ -1,0 +1,13 @@
+Game :
+ - Fight
+ - Jobs
+ - Spells
+ - Guilds
+ - Items (Panoplie)
+ - Change static class for statistics
+ - Defy
+ - Change class "Scanner.java"
+
+Optional :
+ - Migrate to Netty (optional)
+ - Scripts

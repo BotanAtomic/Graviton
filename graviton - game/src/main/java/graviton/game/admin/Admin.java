@@ -16,9 +16,9 @@ public class Admin {
     @Inject
     private GameManager gameManager;
 
-    public Admin(Rank rank, Account account,Injector injector) {
+    public Admin(Account account,Injector injector) {
         injector.injectMembers(this);
-        this.rank = rank;
+        this.rank = account.getRank();
         this.account = account;
         gameManager.getAdmins().add(this);
     }

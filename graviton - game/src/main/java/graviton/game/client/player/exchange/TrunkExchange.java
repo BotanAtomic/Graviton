@@ -3,6 +3,7 @@ package graviton.game.client.player.exchange;
 import graviton.game.GameManager;
 import graviton.game.client.player.Player;
 import graviton.game.client.player.component.ActionManager;
+import graviton.game.client.player.packet.Packets;
 import graviton.game.exchange.Exchange;
 import graviton.game.object.Object;
 import graviton.game.trunks.Trunk;
@@ -138,7 +139,7 @@ public class TrunkExchange implements Exchange {
     public void editKamas(int idPlayer, long kamas) {
         trunk.changeKamas(kamas);
         exchanger.setKamas(exchanger.getKamas() - kamas);
-        exchanger.send(exchanger.getPacket("As"));
+        exchanger.send(exchanger.getPacket(Packets.As));
         exchanger.send("EsKG" + trunk.getKamas());
 
         exchanger.save();

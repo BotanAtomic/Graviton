@@ -7,7 +7,7 @@ import graviton.database.Database;
 import graviton.game.Account;
 import graviton.game.Player;
 import graviton.game.Server;
-import graviton.login.Manager;
+import graviton.core.Manager;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.session.IoSession;

@@ -1,6 +1,6 @@
 package graviton.game.fight.type;
 
-import graviton.game.Player;
+import graviton.game.client.player.Player;
 import graviton.game.creature.monster.MonsterGroup;
 import graviton.game.fight.Fight;
 

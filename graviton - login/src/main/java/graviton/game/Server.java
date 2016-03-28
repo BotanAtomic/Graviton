@@ -2,7 +2,7 @@ package graviton.game;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.login.Manager;
+import graviton.core.Manager;
 import graviton.network.exchange.ExchangeClient;
 import lombok.Data;
 
@@ -26,23 +26,9 @@ public class Server {
         this.state = State.OFFLINE;
     }
 
-    public static State getState(int id) {
-        switch (id) {
-            case 0:
-                return State.OFFLINE;
-            case 1:
-                return State.ONLINE;
-            case 2:
-                return State.SAVING;
-            default:
-                return null;
-        }
-    }
-
     public void setState(State state) {
         this.state = state;
-        String hostList = manager.getHostList();
-        manager.getLoginClients().forEach(client -> client.send(hostList));
+        manager.getLoginClients().forEach(client -> client.send(manager.getHostList()));
     }
 
     public final void send(String packet) {

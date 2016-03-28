@@ -16,7 +16,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 public class ActionManager {
-    private final ReentrantLock locker;
     @Getter
     private final ArrayList<Action> currentActions;
     private final Player player;
@@ -28,7 +27,6 @@ public class ActionManager {
     public ActionManager(Player player) {
         this.player = player;
         this.currentActions = new ArrayList<>();
-        this.locker = new ReentrantLock();
         this.status = Status.WAITING;
         this.isAway = false;
     }
@@ -40,7 +38,6 @@ public class ActionManager {
     }
 
     public void createAction(int actionId, String args) {
-        locker.lock();
         Action gameAction;
         int id = nextActionId();
         switch (actionId) {
@@ -50,12 +47,14 @@ public class ActionManager {
             case 500:
                 gameAction = new MapAction(id, player, args);
                 break;
+            case 900:
+                player.askDefy(args);
+                return;
             default:
                 log.error("Can't find action {} for the player [{}]", actionId, player.getName());
                 return;
         }
         addAction(gameAction);
-        locker.unlock();
     }
 
     private void startAction(Action gameActions) {

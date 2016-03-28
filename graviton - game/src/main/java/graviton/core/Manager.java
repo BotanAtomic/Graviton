@@ -3,7 +3,7 @@ package graviton.core;
 import com.google.inject.Inject;
 import graviton.common.Scanner;
 import graviton.game.GameManager;
-import graviton.game.PacketManager;
+import graviton.network.PacketManager;
 import graviton.game.client.player.component.CommandManager;
 import graviton.network.NetworkManager;
 import lombok.Getter;

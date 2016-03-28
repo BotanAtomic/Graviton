@@ -1,8 +1,8 @@
-package graviton.login;
+package graviton.core;
 
 
 import com.google.inject.Guice;
-import graviton.login.modules.DefaultModule;
+import graviton.core.modules.DefaultModule;
 
 /**
  * Created by Botan on 05/06/2015.

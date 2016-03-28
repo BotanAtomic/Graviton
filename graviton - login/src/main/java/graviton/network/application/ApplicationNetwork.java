@@ -6,7 +6,7 @@ import graviton.api.NetworkService;
 import graviton.database.Database;
 import graviton.game.Account;
 import graviton.game.Server;
-import graviton.login.Manager;
+import graviton.core.Manager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoHandler;

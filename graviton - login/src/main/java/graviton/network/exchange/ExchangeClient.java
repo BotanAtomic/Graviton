@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.Client;
 import graviton.game.Server;
-import graviton.login.Manager;
+import graviton.core.Manager;
 import graviton.network.application.ApplicationNetwork;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +58,7 @@ public class ExchangeClient implements Client {
                 log.info("[(E)Session {}] server {} is ready to connect", session.getId(), server.getId());
                 break;
             case 'C':
-                server.setState(Server.getState(Integer.parseInt(finalPacket[0])));
+                server.setState(getState(Integer.parseInt(finalPacket[0])));
             case 'R' :
                 network.send(packet);
                 break;
@@ -77,5 +77,18 @@ public class ExchangeClient implements Client {
     @Override
     public void send(String packet) {
         session.write(cryptPacket(packet));
+    }
+
+    private Server.State getState(int id) {
+        switch (id) {
+            case 0:
+                return Server.State.OFFLINE;
+            case 1:
+                return Server.State.ONLINE;
+            case 2:
+                return Server.State.SAVING;
+            default:
+                return null;
+        }
     }
 }

@@ -13,7 +13,7 @@ import graviton.core.Manager;
 import graviton.database.Database;
 import graviton.factory.*;
 import graviton.game.GameManager;
-import graviton.game.PacketManager;
+import graviton.network.PacketManager;
 import graviton.game.client.player.component.CommandManager;
 import graviton.game.fight.FightManager;
 import graviton.network.NetworkManager;
@@ -41,7 +41,6 @@ public class DefaultModule extends AbstractModule {
         bind(GameManager.class).asEagerSingleton();
         bind(CommandManager.class).asEagerSingleton();
         bind(NetworkManager.class).asEagerSingleton();
-        bind(PacketManager.class).asEagerSingleton();
         bind(FightManager.class).asEagerSingleton();
         bind(Manager.class).asEagerSingleton();
 
@@ -88,6 +87,24 @@ public class DefaultModule extends AbstractModule {
         bind(Database.class).annotatedWith(Names.named("database.login")).toInstance(new Database(properties, "database.login."));
         bind(Database.class).annotatedWith(Names.named("database.game")).toInstance(new Database(properties, "database.game."));
 
+        String[] dictionnary = null;
+        String[] forbiden = null;
+
+        int i = 0;
+        for(String string : properties.getProperty("word.dictionnary").split(",")) {
+            dictionnary = new String[properties.getProperty("word.dictionnary").split(",").length];
+            dictionnary[i] = string;
+            i++;
+        }
+
+        i = 0;
+        for(String string : properties.getProperty("word.forbiden").split(",")) {
+            forbiden = new String[properties.getProperty("word.forbiden").split(",").length];
+            forbiden[i] = string;
+            i++;
+        }
+
+        bind(PacketManager.class).toInstance(new PacketManager(dictionnary, forbiden));
     }
 
     private TypeListener listener(BiConsumer<TypeLiteral<?>, TypeEncounter<?>> consumer) {

@@ -1,6 +1,7 @@
 package graviton.game.group;
 
 import graviton.game.client.player.Player;
+import graviton.game.client.player.packet.Packets;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +26,7 @@ public class Group {
     }
 
     public void addMember(Player player) {
-        this.send("PM+" + player.getPacket("PM"));
+        this.send("PM+" + player.getPacket(Packets.PM));
         this.players.add(player);
         player.setGroup(this);
         sendPackets(player);
@@ -81,7 +82,7 @@ public class Group {
         this.send("PCK"+ chief.getName());
         this.send("PL"+chief.getId());
         final String[] packet = {""};
-        this.players.stream().forEach(player -> packet[0] += ("|" + player.getPacket("PM")));
+        this.players.stream().forEach(player -> packet[0] += ("|" + player.getPacket(Packets.PM)));
         this.send("PM+" + packet[0].substring(1));
     }
 
@@ -89,7 +90,7 @@ public class Group {
         newPlayer.send("PCK" + chief.getName());
         newPlayer.send("PL" + chief.getId());
         final String[] packet = {""};
-        this.players.stream().forEach(player -> packet[0] += ("|" + player.getPacket("PM")));
+        this.players.stream().forEach(player -> packet[0] += ("|" + player.getPacket(Packets.PM)));
         newPlayer.send("PM+" + packet[0].substring(1));
     }
 

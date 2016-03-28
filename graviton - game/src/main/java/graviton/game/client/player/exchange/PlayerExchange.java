@@ -3,6 +3,7 @@ package graviton.game.client.player.exchange;
 import graviton.game.GameManager;
 import graviton.game.client.player.Player;
 import graviton.game.client.player.component.ActionManager;
+import graviton.game.client.player.packet.Packets;
 import graviton.game.exchange.Exchange;
 import graviton.game.exchange.Exchanger;
 import graviton.game.object.Object;
@@ -89,7 +90,7 @@ public class PlayerExchange implements Exchange {
 
         for (Exchanger exchangers : this.exchangers.values()) {
             exchangers.quit();
-            exchangers.send(exchangers.getCreature().getPacket("As"));
+            exchangers.send(exchangers.getCreature().getPacket(Packets.As));
             exchangers.send("EVa");
             exchangers.getCreature().refreshQuantity();
             exchangers.getCreature().save();

@@ -1,10 +1,11 @@
-package graviton.game;
+package graviton.network;
 
 import com.google.inject.Inject;
 import graviton.api.Manager;
 import graviton.api.PacketParser;
 import graviton.common.Utils;
 import graviton.factory.PlayerFactory;
+import graviton.game.GameManager;
 import graviton.game.client.player.Player;
 import graviton.game.client.player.component.ActionManager;
 import graviton.game.creature.Creature;
@@ -25,38 +26,30 @@ import java.util.*;
  */
 @Slf4j
 public class PacketManager implements Manager {
-    private final String[] dictionary = {"ae", "au", "ao", "ap", "ka", "ha", "ah",
-            "na", "hi", "he", "eh", "an", "ma", "wa", "we", "wh", "sk", "sa",
-            "se", "ne", "ra", "re", "ru", "ri", "ro", "za", "zu", "ta", "te",
-            "ty", "tu", "ti", "to", "pa", "pe", "py", "pu", "pi", "po", "da",
-            "de", "du", "di", "do", "fa", "fe", "fu", "fi", "fo", "ga", "gu",
-            "ja", "je", "ju", "ji", "jo", "la", "le", "lu", "ma", "me", "mu",
-            "mo", "radio", "kill", "explode", "craft", "fight", "shadow",
-            "bouftou", "bouf", "piou", "piaf", "champ", "abra", "grobe",
-            "krala", "sasa", "nianne", "miaou", "was", "killed", "born",
-            "storm", "lier", "arm", "hand", "mind", "create", "random", "nick",
-            "error", "end", "life", "die", "cut", "make", "spawn", "respawn",
-            "zaap", "zaapis", "mobs", "google", "firefox", "rapta", "ewplorer",
-            "men", "women", "dark", "eau", "get", "set", "geek", "nolife",
-            "spell", "boost", "gift", "leave", "smiley", "blood", "jean",
-            "yes", "eays", "skha", "rock", "stone", "fefe", "sadi", "sacri",
-            "osa", "panda", "xel", "rox", "stuff", "spoon", "days", "mouarf",
-            "beau", "sexe", "koli", "master", "pro", "puissant"};
-    private final String[] forbiden = {"admin", "modo", "mj", "-"};
-    private final Calendar calendar;
     @Inject
     GameManager gameManager;
     @Inject
     PlayerFactory playerFactory;
+
+    private final String[] dictionary;
+
+    private final String[] forbiden;
+
+    private final Calendar calendar;
     private Map<String, PacketParser> packets;
 
-    public PacketManager() {
+    public PacketManager(String[] dictionnary, String[] forbiden) {
         this.calendar = GregorianCalendar.getInstance();
+
+        this.dictionary = dictionnary;
+        this.forbiden = forbiden;
     }
 
     @Override
     public void load() {
         Map<String, PacketParser> packets = new HashMap<>();
+
+        packets.put("cC", (client, packet) -> client.send("cC" + packet));
 
         packets.put("BA", (client, packet) -> client.getAccount().launchCommand(packet));
 
@@ -74,7 +67,7 @@ public class PacketManager implements Manager {
 
         packets.put("DV", (client, packet) -> {
             client.send("DV");
-            client.getCurrentPlayer().setInviting(0);
+            client.getCurrentPlayer().setAskedCreature(0);
             client.getCurrentPlayer().getActionManager().setStatus(ActionManager.Status.WAITING);
         });
 
@@ -93,7 +86,7 @@ public class PacketManager implements Manager {
                 if(client.getCurrentPlayer().getActionManager().getStatus() != ActionManager.Status.DIALOG)
                     return;
 
-                Npc npc = (Npc) client.getCurrentPlayer().getMap().getCreatures(IdType.NPC).get(client.getCurrentPlayer().getInviting());
+                Npc npc = (Npc) client.getCurrentPlayer().getMap().getCreatures(IdType.NPC).get(client.getCurrentPlayer().getAskedCreature());
 
                 if(npc == null)
                     return;
@@ -103,7 +96,7 @@ public class PacketManager implements Manager {
 
                 if(question == null || answer == null) {
                     client.send("DV");
-                    client.getCurrentPlayer().setInviting(0);
+                    client.getCurrentPlayer().setAskedCreature(0);
                     client.getCurrentPlayer().setActionState(ActionManager.Status.WAITING);
                     return;
                 }
@@ -112,7 +105,7 @@ public class PacketManager implements Manager {
             } catch(Exception e) {
                 e.printStackTrace();
                 client.send("DV");
-                client.getCurrentPlayer().setInviting(0);
+                client.getCurrentPlayer().setAskedCreature(0);
                 client.getCurrentPlayer().setActionState(ActionManager.Status.WAITING);
             }
         });
@@ -169,14 +162,13 @@ public class PacketManager implements Manager {
                 return;
             }
 
-
             if (target.getGroup() != null) {
                 client.send("PIEa" + packet);
                 return;
             }
             String finalPacket = "PIK" + client.getCurrentPlayer().getName() + "|" + target.getName();
-            client.getCurrentPlayer().setInviting(target.getId());
-            target.setInviting(client.getCurrentPlayer().getId());
+            client.getCurrentPlayer().setAskedCreature(target.getId());
+            target.setAskedCreature(client.getCurrentPlayer().getId());
             client.send(finalPacket);
             target.send(finalPacket);
         });
@@ -279,37 +271,39 @@ public class PacketManager implements Manager {
         packets.put("WV", (client, packet) -> client.send("WV"));
 
         packets.put("PR", (client, packet) -> {
-            if (client.getCurrentPlayer().getInviting() == 0)
+            if (client.getCurrentPlayer().getAskedCreature() == 0)
                 return;
             client.send("BN");
-            Player player = playerFactory.get(client.getCurrentPlayer().getInviting());
+            Player player = playerFactory.get(client.getCurrentPlayer().getAskedCreature());
             assert player != null;
             player.send("PR");
-            player.setInviting(0);
-            client.getCurrentPlayer().setInviting(0);
+            player.setAskedCreature(0);
+            client.getCurrentPlayer().setAskedCreature(0);
         });
 
         packets.put("PA", (client, packet) -> {
-            if (client.getCurrentPlayer().getInviting() == 0)
+            if (client.getCurrentPlayer().getAskedCreature() == 0)
                 return;
             client.send("BN");
-            Player player2 = playerFactory.get(client.getCurrentPlayer().getInviting());
+            Player player2 = playerFactory.get(client.getCurrentPlayer().getAskedCreature());
             assert player2 != null;
             if (player2.getGroup() != null)
                 player2.getGroup().addMember(client.getCurrentPlayer());
             else
                 player2.createGroup(client.getCurrentPlayer());
             player2.send("PR");
-            client.getCurrentPlayer().setInviting(0);
-            player2.setInviting(0);
+            client.getCurrentPlayer().setAskedCreature(0);
+            player2.setAskedCreature(0);
         });
 
         this.packets = Collections.unmodifiableMap(packets);
     }
 
     public void parse(GameClient client, String packet) {
-        if (packets.containsKey(packet.substring(0, 2)))
-            packets.get(packet.substring(0, 2)).parse(client, packet.substring(2));
+        String[] decomposition = {packet.substring(0, 2),packet.substring(2)};
+
+        if (packets.containsKey(decomposition[0]))
+            packets.get(decomposition[0]).parse(client, decomposition[1]);
         else
             log.error("Unknown packet {}", packet);
     }

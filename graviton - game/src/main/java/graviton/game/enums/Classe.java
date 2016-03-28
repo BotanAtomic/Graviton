@@ -2,6 +2,7 @@ package graviton.game.enums;
 
 import graviton.game.GameManager;
 import graviton.game.client.player.Player;
+import graviton.game.client.player.packet.Packets;
 import graviton.game.common.Stats;
 import graviton.game.spells.Spell;
 import lombok.Getter;
@@ -100,7 +101,7 @@ public enum Classe {
                 break;
         }
         player.setCapital(player.getCapital() - cost);
-        player.send(player.getPacket("As"));
+        player.send(player.getPacket(Packets.As));
         player.save();
     }
 

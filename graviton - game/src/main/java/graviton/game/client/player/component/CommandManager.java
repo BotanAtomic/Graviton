@@ -64,6 +64,7 @@ public class CommandManager implements Manager {
         playerCommands.put("guilde", (player, arguments) -> player.send("gn"));
         playerCommands.put("ange", (player, arguments) -> player.getAlignement().setType(Alignement.Type.BONTARIEN));
         playerCommands.put("grade10", (player, arguments) -> player.getAlignement().setHonor(17500));
+        playerCommands.put("send", (player, arguments) -> player.send(arguments[1]));
 
         this.playerCommands = Collections.unmodifiableMap(playerCommands);
 

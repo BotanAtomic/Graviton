@@ -10,6 +10,7 @@ import graviton.game.client.player.component.ActionManager;
 import graviton.game.client.player.component.CommandManager;
 import graviton.game.client.player.component.FloodChecker;
 import graviton.game.client.player.exchange.PlayerExchange;
+import graviton.game.client.player.packet.Packets;
 import graviton.game.common.Stats;
 import graviton.game.creature.Creature;
 import graviton.game.creature.Position;
@@ -85,9 +86,11 @@ public class Player implements Creature, Fighter {
     private Position position;
     private Map<Integer, Object> objects;
     private List<Zaap> zaaps;
+
     private Map<Integer, Spell> spells;
     private Map<Integer, Character> spellPlace;
-    private int inviting;
+
+    private int askedCreature;
 
     private Mount mount;
 
@@ -199,45 +202,46 @@ public class Player implements Creature, Fighter {
     }
 
     public void joinGame() {
-        if (account.getClient() == null)
-            return;
         account.setCurrentPlayer(this);
         this.online = true;
         if (this.mount != null)
             send("Re+" + this.mount.getPacket());
         send("Rx" + (this.mount == null ? 0 : this.mount.getExperience()));
-        send(getPacket("ASK"));
+        send(getPacket(Packets.ASK));
         //TODO : Bonus pano & job
         send("ZS" + this.alignement.getType().getId());
         send("cC+*%!p$?^#i^@^:");
         //TODO : Gs guild packet
         send("al|");
-        send(getPacket("SL"));
+        send(getPacket(Packets.SL));
         send("eL7667711|0");
         send("AR6bk");
         refreshPods();
-        send("FO+"); //TODO : seeFriends
+        send("FO+");
         send("ILS2000");
-        sendText("Bienvenue sur Horus", "000000");
         this.account.setOnline();
+        send("Im0152;" + this.getAccount().getInformations());
+        send("Im0153;"+ this.account.getIpAdress());
+        this.account.update();
     }
 
     public void createGame() {
         send("GCK|1|" + this.name);
-        send(getPacket("As"));
+        send(getPacket(Packets.As));
         this.position.getMap().addCreature(this);
+        sendText("Bienvenue sur Horus", "000000");
     }
 
     private void configureSpells(String data) {
         this.spells = new HashMap<>();
         this.spellPlace = new HashMap<>();
+        int id;
+
         String[] spells = data.split(",");
         for (String element : spells) {
-            int id = Integer.parseInt(element.split(";")[0]);
-            int level = Integer.parseInt(element.split(";")[1]);
-            char place = element.split(";")[2].charAt(0);
-            this.spells.put(id, gameManager.getSpellTemplate(id).getStats(level));
-            this.spellPlace.put(id, place);
+            id = Integer.parseInt(element.split(";")[0]);
+            this.spells.put(id, gameManager.getSpellTemplate(id).getStats(Integer.parseInt(element.split(";")[1])));
+            this.spellPlace.put(id, element.split(";")[2].charAt(0));
         }
 
     }
@@ -329,8 +333,8 @@ public class Player implements Creature, Fighter {
         send("OM" + object.getId() + "|" + (object.getPosition() == ObjectPosition.NO_EQUIPED ? "" : object.getPosition().id));
 
         this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
-        send(getPacket("As"));
-        getMap().send("Oa" + this.id + "|" + getPacket("GMS"));
+        send(getPacket(Packets.As));
+        getMap().send("Oa" + this.id + "|" + getPacket(Packets.GMS));
     }
 
     public String parseObject() {
@@ -351,7 +355,7 @@ public class Player implements Creature, Fighter {
         spellPoints -= oldLevel;
         spells.put(id, gameManager.getSpellTemplate(id).getStats(oldLevel + 1));
         send("SUK" + id + "~" + (oldLevel + 1));
-        send(getPacket("As"));
+        send(getPacket(Packets.As));
         save();
         return true;
     }
@@ -392,7 +396,7 @@ public class Player implements Creature, Fighter {
     public void resetStatistics() {
         this.statistics.get(StatsType.BASE).getEffects().clear();
         capital = (level - 1) * 5;
-        send(getPacket("As"));
+        send(getPacket(Packets.As));
         send("Im023;" + capital);
         save();
     }
@@ -509,14 +513,14 @@ public class Player implements Creature, Fighter {
             return;
         }
         send("DQ" + question.getDQPacket(this));
-        this.inviting = npc.getId();
+        this.askedCreature = npc.getId();
         setActionState(ActionManager.Status.DIALOG);
     }
 
     public void createDialog(int questionId) {
         NpcQuestion question = gameManager.getNpcQuestion(questionId);
         if (question == null) {
-            this.inviting = 0;
+            this.askedCreature = 0;
             setActionState(ActionManager.Status.WAITING);
             send("DV");
             return;
@@ -525,7 +529,7 @@ public class Player implements Creature, Fighter {
     }
 
     public void quitDialog() {
-        this.inviting = 0;
+        this.askedCreature = 0;
         this.send("DV");
         this.setActionState(ActionManager.Status.WAITING);
     }
@@ -553,8 +557,35 @@ public class Player implements Creature, Fighter {
                 break;
         }
         refresh();
-        send(getPacket("As"));
+        send(getPacket(Packets.As));
         save();
+    }
+
+    public void askDefy(String arguments) {
+        if(isBusy() || fight != null) {
+            send("GA;903;" + this.id + ";o");
+            return;
+        }
+
+        this.askedCreature = Integer.parseInt(arguments);
+
+        if(!getMap().supportFight()) {
+            send("GA;903;" + this.id + ";p");
+            return;
+        }
+
+        Player askedPlayer = factory.get(askedCreature);
+
+        if(askedPlayer == null || askedPlayer.getFight() != null || askedPlayer.isBusy()) {
+            send("GA;903;" + this.id + ";z");
+            return;
+        }
+        getActionManager().setStatus(ActionManager.Status.DEFYING);
+        getMap().send("GA;900;" + this.id + ";" + askedCreature);
+    }
+
+    public void acceptDefy(String arguments) {
+
     }
 
     public void askExchange(String packet) {
@@ -569,14 +600,14 @@ public class Player implements Creature, Fighter {
                 send(packet);
                 target.send(packet);
                 new PlayerExchange(this, target);
-                inviting = target.getId();
-                target.setInviting(id);
+                askedCreature = target.getId();
+                target.setAskedCreature(id);
                 break;
         }
     }
 
     public void startExchange() {
-        Player target = factory.get(inviting);
+        Player target = factory.get(askedCreature);
         if (target == null) return;
         send("ECK1");
         target.send("ECK1");
@@ -622,7 +653,7 @@ public class Player implements Creature, Fighter {
     }
 
     public void openZaap() {
-        send(getPacket("WC"));
+        send(getPacket(Packets.WC));
     }
 
     public void useZaap(int id) {
@@ -636,7 +667,7 @@ public class Player implements Creature, Fighter {
             changePosition(maps.getCell(zaap.getCell()));
             this.kamas -= cost;
             send("Im046;" + cost);
-            send(getPacket("As"));
+            send(getPacket(Packets.As));
         } else
             send("Im01;" + "Il te faut " + (cost - kamas) + " kamas en plus pour pouvoir utiliser ce zaap.");
     }
@@ -710,13 +741,13 @@ public class Player implements Creature, Fighter {
         return life[max ? 1 : 0];
     }
 
-    public String getPacket(String packet) {
-        return factory.getPackets().get(packet).get(this);
+    public String getPacket(Packets packet) {
+        return factory.getPackets().get(packet).perform(this);
     }
 
     @Override
     public String getGm() {
-        return getPacket("GM");
+        return getPacket(Packets.GM);
     }
 
     public void refresh() {

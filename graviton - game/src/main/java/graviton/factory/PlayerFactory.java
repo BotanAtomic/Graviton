@@ -21,13 +21,13 @@ import graviton.game.spells.Spell;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.UpdateSetFirstStep;
+import graviton.game.client.player.packet.Packets;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
 
 import static graviton.database.utils.game.Tables.ITEMS;
 import static graviton.database.utils.login.Tables.PLAYERS;
@@ -39,13 +39,13 @@ import static graviton.database.utils.login.Tables.PLAYERS;
 @Slf4j
 public class PlayerFactory extends Factory<Player> {
     private final Map<Integer, Player> players;
-    private final Lock locker;
+    private final ReentrantLock locker;
     @Inject
     Injector injector;
     private GameManager gameManager;
     private Map<Classe, Map<Integer, Integer>> classData;
 
-    private Map<String, Packet> packets;
+    private Map<Packets, Packet> packets;
 
     @InjectSetting("server.id")
     private int serverId;
@@ -71,7 +71,7 @@ public class PlayerFactory extends Factory<Player> {
     }
 
     public List<Player> load(Account account) {
-        List<Player> players = new CopyOnWriteArrayList<>();
+        List<Player> players = new ArrayList<>();
         players.addAll(database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (serverId)).map(record -> new Player(account, record, injector)).collect(Collectors.toList()));
         return players;
     }
@@ -198,32 +198,33 @@ public class PlayerFactory extends Factory<Player> {
     }
 
     private void initPackets() {
-        Map<String, Packet> packets = new HashMap<>();
-        packets.put("ALK", player -> {
+        Map<Packets, Packet> packets = new HashMap<>();
+
+        packets.put(Packets.ALK, player -> {
             StringBuilder builder = new StringBuilder();
             builder.append("|").append(player.getId()).append(";").append(player.getName()).append(";").append(player.getLevel()).append(";");
             builder.append(player.getGfx()).append(";");
             builder.append((player.getColor(1) != -1 ? Integer.toHexString(player.getColor(1)) : "-1")).append(";");
             builder.append((player.getColor(2) != -1 ? Integer.toHexString(player.getColor(2)) : "-1")).append(";");
             builder.append((player.getColor(3) != -1 ? Integer.toHexString(player.getColor(3)) : "-1")).append(";");
-            builder.append(player.getPacket("GMS")).append(";0;1;;;;;");
+            builder.append(player.getPacket(Packets.GMS)).append(";0;1;;;;;");
             return builder.toString();
         });
 
-        packets.put("PM", player -> {
+        packets.put(Packets.PM, player -> {
             StringBuilder builder = new StringBuilder();
             builder.append(player.getId()).append(";").append(player.getName()).append(";").append(player.getGfx()).append(";");
             builder.append(player.getColor(1)).append(";");
             builder.append(player.getColor(2)).append(";");
             builder.append(player.getColor(3)).append(";");
-            builder.append(player.getPacket("GMS")).append(";");
+            builder.append(player.getPacket(Packets.GMS)).append(";");
             builder.append(player.getLife(false)).append(",").append(player.getLife(true)).append(";");
             builder.append(player.getLevel()).append(";").append(player.getInitiative()).append(";");
             builder.append(player.getTotalStatistics().getEffect(Stats.ADD_PROS)).append(";0");
             return builder.toString();
         });
 
-        packets.put("GM", player -> {
+        packets.put(Packets.GM, player -> {
             StringBuilder builder = new StringBuilder();
             builder.append(player.getCell().getId());
             builder.append(";").append(player.getOrientation()).append(";0;").append(player.getId()).append(";");
@@ -240,7 +241,7 @@ public class PlayerFactory extends Factory<Player> {
             builder.append(player.getColor(1) == -1 ? "-1" : Integer.toHexString(player.getColor(1))).append(";");
             builder.append(player.getColor(2) == -1 ? "-1" : Integer.toHexString(player.getColor(2))).append(";");
             builder.append(player.getColor(3) == -1 ? "-1" : Integer.toHexString(player.getColor(3))).append(";");
-            builder.append(player.getPacket("GMS")).append(";");
+            builder.append(player.getPacket(Packets.GMS)).append(";");
             builder.append(player.getLevel() > 99 ? (player.getLevel() > 199 ? (2) : (1)) : (0)).append(";;;");
             if (player.getGuild() != null)
                 builder.append(player.getGuild().getName()).append(";").append(player.getGuild().getEmblem()).append(";");
@@ -249,7 +250,7 @@ public class PlayerFactory extends Factory<Player> {
             return builder.toString();
         });
 
-        packets.put("GMS", player -> {
+        packets.put(Packets.GMS, player -> {
             StringBuilder builder = new StringBuilder();
             ObjectPosition[] positions = {ObjectPosition.ARME, ObjectPosition.COIFFE, ObjectPosition.CAPE, ObjectPosition.FAMILIER, ObjectPosition.BOUCLIER};
             for (ObjectPosition position : positions) {
@@ -260,14 +261,14 @@ public class PlayerFactory extends Factory<Player> {
             return builder.toString().substring(0, builder.length() - 1);
         });
 
-        packets.put("WC", player -> {
+        packets.put(Packets.WC, player -> {
             StringBuilder builder = new StringBuilder();
             builder.append("WC").append(player.getMap().getId());
             player.getZaaps().forEach(zaap -> builder.append("|").append(gameManager.getMap(zaap.getMap().getId()).getId()).append(";").append(zaap.getCost(player.getMap())));
             return builder.toString();
         });
 
-        packets.put("ASK", player -> {
+        packets.put(Packets.ASK, player -> {
             StringBuilder builder = new StringBuilder();
             builder.append("ASK|");
             builder.append(player.getId()).append("|").append(player.getName()).append("|");
@@ -278,18 +279,18 @@ public class PlayerFactory extends Factory<Player> {
             builder.append((player.getColor(1)) == -1 ? "-1" : Integer.toHexString(player.getColor(1))).append("|");
             builder.append((player.getColor(2)) == -1 ? "-1" : Integer.toHexString(player.getColor(2))).append("|");
             builder.append((player.getColor(3)) == -1 ? "-1" : Integer.toHexString(player.getColor(3))).append("|");
-            builder.append(player.getPacket("ASKI"));
+            builder.append(player.getPacket(Packets.ASKI));
             return builder.toString();
         });
 
-        packets.put("ASKI", player -> {
+        packets.put(Packets.ASKI, player -> {
             if (player.getObjects().isEmpty()) return "";
             StringBuilder builder = new StringBuilder();
             player.getObjects().values().forEach(object -> builder.append(object.parseItem()));
             return builder.toString();
         });
 
-        packets.put("As", player -> {
+        packets.put(Packets.As, player -> {
             StringBuilder builder = new StringBuilder();
             builder.append("As");
             builder.append(player.getExperience()).append(",").append(getGameManager().getPlayerExperience(player.getLevel())).append(",").append(gameManager.getPlayerExperience(player.getLevel() + 1)).append("|");
@@ -345,7 +346,7 @@ public class PlayerFactory extends Factory<Player> {
             return builder.toString();
         });
 
-        packets.put("SL", player -> {
+        packets.put(Packets.SL, player -> {
             StringBuilder builder = new StringBuilder();
             builder.append("SL");
             for (Spell spell : player.getSpells().values())

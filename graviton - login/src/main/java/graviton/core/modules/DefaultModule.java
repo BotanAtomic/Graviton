@@ -1,4 +1,4 @@
-package graviton.login.modules;
+package graviton.core.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.MembersInjector;
@@ -11,7 +11,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import graviton.api.InjectSetting;
 import graviton.common.Scanner;
 import graviton.database.Database;
-import graviton.login.Manager;
+import graviton.core.Manager;
 import graviton.network.NetworkManager;
 import graviton.network.application.ApplicationNetwork;
 import graviton.network.exchange.ExchangeNetwork;

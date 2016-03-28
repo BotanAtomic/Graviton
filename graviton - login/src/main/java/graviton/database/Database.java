@@ -5,7 +5,7 @@ import com.google.inject.Injector;
 import graviton.game.Account;
 import graviton.game.Player;
 import graviton.game.Server;
-import graviton.login.Manager;
+import graviton.core.Manager;
 import graviton.network.login.LoginClient;
 import org.jooq.*;
 

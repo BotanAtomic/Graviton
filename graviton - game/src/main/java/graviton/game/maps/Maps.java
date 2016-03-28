@@ -170,6 +170,10 @@ public class Maps {
         return goodCells.get(new Random().nextInt(goodCells.size()));
     }
 
+    public boolean supportFight() {
+        return !this.places.isEmpty() && !this.places.equals("|");
+    }
+
     public void sendGdf(Player player) {
         this.cells.values().stream().filter(cell -> cell.getInteractiveObject() != null).forEach(cell1 -> player.send(cell1.getInteractiveObject().getGDF()));
     }

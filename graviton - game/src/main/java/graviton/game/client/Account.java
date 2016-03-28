@@ -9,6 +9,7 @@ import graviton.game.GameManager;
 import graviton.game.admin.Admin;
 import graviton.game.client.player.Player;
 import graviton.game.client.player.component.CommandManager;
+import graviton.game.client.player.packet.Packets;
 import graviton.game.enums.Rank;
 import graviton.game.trunks.Trunk;
 import graviton.network.game.GameClient;
@@ -17,7 +18,12 @@ import org.joda.time.Interval;
 import org.joda.time.Period;
 import org.jooq.Record;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -29,24 +35,26 @@ import static graviton.database.utils.login.Tables.ACCOUNTS;
 @Data
 public class Account {
     @Inject
-    GameManager manager;
-    @Inject
     PlayerFactory playerFactory;
     @Inject
     AccountFactory accountFactory;
     @Inject
     CommandManager commandManager;
+    @Inject
+    GameManager manager;
 
     private final Injector injector;
+
     private final int id;
     private final String answer;
-    private final Rank rank;
     private final String pseudo;
-    private String ipAdress;
 
+    private Rank rank;
+    private String ipAdress;
+    private String informations;
     private GameClient client;
 
-    private boolean seefriends, online;
+    private boolean seeFriends, online;
     private List<Integer> friends;
     private List<Integer> enemies;
 
@@ -66,14 +74,14 @@ public class Account {
         this.accountFactory.getElements().put(id, this);
         this.answer = record.getValue(ACCOUNTS.ANSWER);
         this.pseudo = record.getValue(ACCOUNTS.PSEUDO);
-        this.players = playerFactory.load(this);
         this.friends = convertToList(record.getValue(ACCOUNTS.FRIENDS));
         this.enemies = convertToList(record.getValue(ACCOUNTS.ENEMIES));
         this.rank = Rank.values()[record.getValue(ACCOUNTS.RANK)];
         this.bank = new Trunk(record.getValue(ACCOUNTS.BANK), injector);
+        this.informations = record.getValue(ACCOUNTS.INFORMATIONS);
         if (rank != Rank.PLAYER)
-            this.admin = new Admin(this.rank, this, injector);
-
+            this.admin = new Admin(this, injector);
+        this.players = playerFactory.load(this);
     }
 
     private List<Integer> convertToList(String data) {
@@ -105,7 +113,7 @@ public class Account {
             return "ALK31536000000|0";
         String packet = "ALK31536000000|" + (this.players.size() == 1 ? 2 : this.players.size());
         for (Player player : this.players)
-            packet += (player.getPacket("ALK"));
+            packet += (player.getPacket(Packets.ALK));
         return packet;
     }
 
@@ -121,7 +129,6 @@ public class Account {
             playerFactory.delete(currentPlayer.getId());
         }
         accountFactory.getElements().remove(this.id);
-
         if (admin != null)
             admin.remove();
     }
@@ -216,7 +223,7 @@ public class Account {
     public String getPlayerListPacket(int id) {
         StringBuilder builder = new StringBuilder();
         builder.append(";");
-        builder.append("0;"); //TODO : is in fight = 1
+        builder.append(currentPlayer.getFight() != null ? "1;" : "0;");
         builder.append(currentPlayer.getName()).append(";");
         if (this.friends.contains(id)) {
             builder.append(currentPlayer.getLevel()).append(";");
@@ -237,5 +244,9 @@ public class Account {
 
     public int getBankPrice() {
         return bank.getObjects().size();
+    }
+
+    public String getNewInformations() {
+        return new SimpleDateFormat("yyyy~MM~dd~HH~mm~").format(new Date()) + ipAdress;
     }
 }

@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
-import graviton.game.PacketManager;
+import graviton.network.PacketManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;

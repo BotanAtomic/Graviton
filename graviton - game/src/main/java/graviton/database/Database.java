@@ -20,32 +20,20 @@ import static org.jooq.impl.DSL.max;
 @Data
 public class Database {
 
-    private final HikariDataSource dataSource;
-
     private DSLContext dslContext;
 
     public Database(Properties propreties, String prefix) {
-        this.dataSource = new HikariDataSource(new HikariConfig() {
-            {
-                setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
-                addDataSourceProperty("serverName", decrypt(propreties.getProperty(prefix + "ip")));
-                addDataSourceProperty("port", 3306);
-                addDataSourceProperty("databaseName", decrypt(propreties.getProperty(prefix + "name")));
-                addDataSourceProperty("user", decrypt(propreties.getProperty(prefix + "user")));
-                addDataSourceProperty("password", decrypt(propreties.getProperty(prefix + "password")));
-            }
-        });
-
         try {
-            this.dslContext = DSL.using(dataSource.getConnection(), SQLDialect.MYSQL);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void stop() {
-        try {
-            this.dataSource.getConnection().close();
+            this.dslContext = DSL.using(new HikariDataSource(new HikariConfig() {
+                {
+                    setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
+                    addDataSourceProperty("serverName", decrypt(propreties.getProperty(prefix + "ip")));
+                    addDataSourceProperty("port", 3306);
+                    addDataSourceProperty("databaseName", decrypt(propreties.getProperty(prefix + "name")));
+                    addDataSourceProperty("user", decrypt(propreties.getProperty(prefix + "user")));
+                    addDataSourceProperty("password", decrypt(propreties.getProperty(prefix + "password")));
+                }
+            }).getConnection(), SQLDialect.MYSQL);
         } catch (SQLException e) {
             e.printStackTrace();
         }

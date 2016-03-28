@@ -1,7 +1,7 @@
 package graviton.common;
 
 import com.google.inject.Inject;
-import graviton.login.Manager;
+import graviton.core.Manager;
 import graviton.network.application.ApplicationNetwork;
 import lombok.extern.slf4j.Slf4j;
 import org.fusesource.jansi.AnsiConsole;
@@ -16,10 +16,12 @@ import java.util.Date;
  */
 @Slf4j
 public class Scanner extends Thread {
-    private final java.util.Scanner scanner;
-    private final Date startTime = new Date();
     @Inject
     ApplicationNetwork network;
+
+    private final java.util.Scanner scanner;
+    private final Date startTime = new Date();
+
     private Manager manager;
 
     public Scanner() {
