@@ -50,6 +50,7 @@ public class Manager {
         networkManager.start();
         scanner.start(this);
         database.loadServers();
+        database.loadBannedIp();
         return this;
     }
 

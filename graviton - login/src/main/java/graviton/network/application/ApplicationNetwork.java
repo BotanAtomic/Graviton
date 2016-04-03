@@ -23,11 +23,12 @@ import java.net.InetSocketAddress;
  */
 @Slf4j
 public class ApplicationNetwork implements NetworkService, IoHandler {
+    @Inject
+    Database database;
 
     private final NioSocketAcceptor acceptor;
     private final Manager manager;
-    @Inject
-    Database database;
+
     private IoSession client;
     private String remoteIP = null;
     private Server server;

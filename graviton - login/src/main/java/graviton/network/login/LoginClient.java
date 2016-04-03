@@ -37,6 +37,7 @@ public class LoginClient implements Client {
         this.key = key;
         this.statut = Statut.CONNECTION;
         this.manager.addClient(this);
+        System.err.println("Number of client " + manager.getClients().size());
     }
 
     @Override

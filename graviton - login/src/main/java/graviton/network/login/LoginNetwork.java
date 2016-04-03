@@ -5,7 +5,8 @@ import com.google.inject.Injector;
 import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
 import graviton.core.Manager;
-import graviton.network.security.Filtrer;
+import graviton.database.Database;
+import graviton.network.security.Filter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
@@ -16,6 +17,7 @@ import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Random;
@@ -25,27 +27,29 @@ import java.util.Random;
  */
 @Slf4j
 public class LoginNetwork implements NetworkService, IoHandler {
-    private final NioSocketAcceptor acceptor;
-    private final Manager manager;
-
-    private final Filtrer filtrer = new Filtrer(3,500);
-
     @Inject
     Injector injector;
+
+    private final NioSocketAcceptor acceptor;
+    private final Manager manager;
+    private final Filter filter;
+
+
 
     @InjectSetting("login.port")
     private int port;
 
     @Inject
-    public LoginNetwork(Manager manager) {
+    public LoginNetwork(Manager manager,Database database) {
         this.acceptor = new NioSocketAcceptor();
         this.manager = manager;
+        this.filter = new Filter(3,1000,database);
     }
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        if(!filtrer.check(session.getRemoteAddress().toString())) {
-            session.close(true);
+        if(!filter.check(session)) {
+            log.error("[Session {}] refused", session.getId());
             return;
         }
         session.write("HC" + new LoginClient(session, generateKey(), injector).getKey());
@@ -59,6 +63,8 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
+        if(manager.getClient(session.getId()) != null)
+            manager.getClient(session.getId()).kick();
         log.info("[Session {}] closed", session.getId());
     }
 
@@ -69,7 +75,6 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-        session.close(true);
         log.error("[Session {}] has encountered an error : {}", session.getId(), cause);
      }
 
@@ -90,8 +95,9 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void inputClosed(IoSession session) throws Exception {
+        if(manager.getClient(session.getId()) != null)
+            manager.getClient(session.getId()).kick();
         log.info("[Session {}] input closed", session.getId());
-        session.close(true);
     }
 
     @Override

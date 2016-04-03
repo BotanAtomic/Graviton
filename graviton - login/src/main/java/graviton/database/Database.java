@@ -25,9 +25,11 @@ public class Database {
     Manager manager;
 
     private DSLContext dslContext;
+    private List<String> bannedIp;
 
     public Database(DSLContext context) {
         this.dslContext = context;
+        this.bannedIp = new ArrayList();
     }
 
     private Result<Record> getResult(Table<?> table) {
@@ -87,6 +89,22 @@ public class Database {
 
     public boolean isAvaiableNickname(String nickname) {
         return getRecord(ACCOUNTS, ACCOUNTS.PSEUDO.equal(nickname)) == null;
+    }
+
+    public void banIp(String ip) {
+        this.dslContext.insertInto(BAN,BAN.IP).values(ip).execute();
+        bannedIp.add(ip);
+    }
+
+    public void loadBannedIp() {
+        for(Record record : getResult(BAN))
+            bannedIp.add(record.getValue(BAN.IP));
+    }
+
+    public boolean isBanned(String ip) {
+        if(!bannedIp.contains(ip))
+            return false;
+        return true;
     }
 
     private String encrypt(String pass, String key) {
