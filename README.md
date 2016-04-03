@@ -36,7 +36,7 @@ JOOQ : for typesafe SQL query construction and execution.
 
 #Exemple 
 
-_Inject setting with configuration file : @InjectSetting(value)_
+_Inject setting with configuration file : @InjectSetting(value)_ (Thank's Return)
 ```xml
 #File config.propreties
 server.key = graviton
@@ -52,8 +52,7 @@ public class Exemple {
    String key;
    
    public Exemple() {
-      log.info(key);
-      //Write "graviton" in the Console
+      System.err.println(key); //Write "graviton" in the Console
    }
 }
 ```
@@ -120,11 +119,42 @@ public Database(String ip, String name, String user, String pass) {
 - decryption of the received packets
 
 [Game]
-
-See the <a href = 'https://github.com/Babouche-/Graviton/blob/master/graviton%20-%20game/src/main/resources/changelog.txt'>changelog</a>
+<details> 
+  <summary>Click here for see the changelog</summary>
+  Changelog (game) 
+  last update : 28/03/2016
+  
+- Maps / Cells 100%
+- Deplacement for player 100%
+- Chat with flood checker for mute 80%
+- Command by chat 100%
+- Command by console for admin 100%
+- Items 60%
+- Emotes 100%
+- Guild 60%
+- Alignement 90%
+- Map actions 100%
+- Player group 100%
+- Experience (Job/Player/Mount/Guild) 100%
+- Job 1%
+- Zone/SubZone 80%
+- Creature 10%
+- Spells 10% (place and level only)
+- Boost of statisctics 100%
+- Monster on map
+- Fight 1%
+- Friends & Ennemies 90%
+- System for pods 100%
+- Exchange with other player 100%
+- Bank & Trunk 100%
+- Animation 100%
+- Channel 80%
+- Speak 100%
+</details>
+</p>
 
 [Application]
-
+</p>
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
 </p>
 See the <a href = 'https://github.com/Babouche-/Graviton-Manager/'>project</a>
