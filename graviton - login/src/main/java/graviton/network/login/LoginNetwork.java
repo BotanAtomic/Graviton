@@ -5,6 +5,7 @@ import com.google.inject.Injector;
 import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
 import graviton.core.Manager;
+import graviton.network.security.Filtrer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
@@ -27,6 +28,8 @@ public class LoginNetwork implements NetworkService, IoHandler {
     private final NioSocketAcceptor acceptor;
     private final Manager manager;
 
+    private final Filtrer filtrer = new Filtrer(3,500);
+
     @Inject
     Injector injector;
 
@@ -41,6 +44,10 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
+        if(!filtrer.check(session.getRemoteAddress().toString())) {
+            session.close(true);
+            return;
+        }
         session.write("HC" + new LoginClient(session, generateKey(), injector).getKey());
         log.info("[Session {}] created", session.getId());
     }
@@ -62,9 +69,9 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
-        log.error("[Session {}] has encountered an error : {}", session.getId(), cause.getMessage());
-        cause.printStackTrace();
-    }
+        session.close(true);
+        log.error("[Session {}] has encountered an error : {}", session.getId(), cause);
+     }
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
