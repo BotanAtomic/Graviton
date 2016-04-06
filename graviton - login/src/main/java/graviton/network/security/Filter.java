@@ -2,15 +2,19 @@ package graviton.network.security;
 
 
 import graviton.database.Database;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.session.IoSession;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by Botan on 03/04/2016.
  */
+@Slf4j
 public class Filter {
 
     private final Database database;
@@ -20,6 +24,8 @@ public class Filter {
 
     private final Map<String, IpInstance> data;
 
+    private final Lock locker = new ReentrantLock(); /** Synchronization **/
+
     public Filter(int connexion, int delay, Database database) {
         this.maxConnexion = connexion;
         this.delay = delay;
@@ -27,33 +33,58 @@ public class Filter {
         this.database = database;
     }
 
+    public boolean isAttacker(IoSession session) {
+        String ip;
+        IpInstance ipInstance = search(ip =  session.getRemoteAddress().toString().split(":")[0].substring(1));
+        return ipInstance.isAttacker() || ipInstance.isBanned() || database.isBanned(ip);
+    }
+
     public boolean check(IoSession session) {
-        String ip = session.getRemoteAddress().toString().split(":")[0].substring(1);
-        IpInstance ipInstance = search(ip);
+        locker.lock();
+        try {
+            String ip = session.getRemoteAddress().toString().split(":")[0].substring(1);
+            IpInstance ipInstance = search(ip);
+            ipInstance.addConnection();
 
-        if (ipInstance.isBanned() || database.isBanned(ip)) {
-            session.write("AlEb");
-            session.close(true);
-            return false;
-        }
-        ipInstance.addConnection();
-
-        long newTime = System.currentTimeMillis();
-
-        if ((newTime - ipInstance.getLastConnection()) < delay) {
-            if (ipInstance.getConnection() > maxConnexion) {
-                if (ipInstance.addWarning())
-                    database.banIp(ip);
+            if (ipInstance.isAttacker()) {
                 session.close(true);
+                return false;
             }
-            return false;
-        } else {
-            ipInstance.resetConnection();
-            ipInstance.resetWarning();
-        }
 
-        ipInstance.setLastConnexion(newTime);
-        return true;
+            long newTime = System.currentTimeMillis();
+            long lastTime = ipInstance.getAndSetLastTime(newTime);
+            long difference = newTime - lastTime;
+
+            if (ipInstance.isBanned() || database.isBanned(ip)) {
+                if (difference < 200) {
+                    if (ipInstance.getConnection() > 10) {
+                        log.error("The system has detected an attack from the address {} with {} ms of interval", ip, difference == 0 ? 1 : difference);
+                        ipInstance.isAttacker(true);
+                    } else if (ipInstance.getConnection() > maxConnexion && !database.isBanned(ip))
+                        database.banIp(ip);
+                    session.close(true);
+                    return false;
+                }
+                session.write("AlEb");
+                session.close(true);
+                return false;
+            }
+
+            if (difference < delay) {
+                if (ipInstance.getConnection() > maxConnexion) {
+                    if (ipInstance.addWarning())
+                        database.banIp(ip);
+                    session.close(true);
+                }
+                return true;
+            } else {
+                ipInstance.resetConnection();
+                ipInstance.resetWarning();
+            }
+            return true;
+        } finally {
+            locker.unlock();
+        }
     }
 
     private IpInstance search(String ip) {
@@ -70,7 +101,16 @@ public class Filter {
         private long lastConnection;
         private int warning = 0;
 
+        private boolean attacker = false;
         private boolean banned = false;
+
+        public boolean isAttacker() {
+            return attacker;
+        }
+
+        public void isAttacker(boolean attacker) {
+            this.attacker = attacker;
+        }
 
         public IpInstance() {
             lastConnection = new Date().getTime();
@@ -88,12 +128,10 @@ public class Filter {
             return banned;
         }
 
-        public long getLastConnection() {
-            return lastConnection;
-        }
-
-        public void setLastConnexion(long time) {
-            lastConnection = time;
+        public long getAndSetLastTime(long time) {
+            long lastTime = lastConnection;
+            this.lastConnection = time;
+            return lastTime;
         }
 
         public void addConnection() {

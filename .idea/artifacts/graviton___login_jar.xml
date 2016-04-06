@@ -1,6 +1,6 @@
 <component name="ArtifactManager">
   <artifact type="jar" name="graviton - login:jar">
-    <output-path>$PROJECT_DIR$/build/compiled</output-path>
+    <output-path>$PROJECT_DIR$/build/compiled/login</output-path>
     <root id="archive" name="graviton - login.jar">
       <element id="directory" name="META-INF">
         <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />

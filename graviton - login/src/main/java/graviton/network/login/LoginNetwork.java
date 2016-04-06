@@ -35,37 +35,36 @@ public class LoginNetwork implements NetworkService, IoHandler {
     private final Filter filter;
 
 
-
     @InjectSetting("login.port")
     private int port;
 
     @Inject
-    public LoginNetwork(Manager manager,Database database) {
+    public LoginNetwork(Manager manager, Database database) {
         this.acceptor = new NioSocketAcceptor();
         this.manager = manager;
-        this.filter = new Filter(3,1000,database);
+        this.filter = new Filter(3, 1000, database);
     }
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        if(!filter.check(session)) {
-            log.error("[Session {}] refused", session.getId());
+        if (!filter.check(session))
             return;
-        }
         session.write("HC" + new LoginClient(session, generateKey(), injector).getKey());
         log.info("[Session {}] created", session.getId());
     }
 
     @Override
     public void sessionOpened(IoSession session) throws Exception {
-        log.info("[Session {}] opened", session.getId());
+        if (!session.isClosing())
+            log.info("[Session {}] opened", session.getId());
     }
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
-        if(manager.getClient(session.getId()) != null)
+        if (manager.getClient(session.getId()) != null)
             manager.getClient(session.getId()).kick();
-        log.info("[Session {}] closed", session.getId());
+        if (!filter.isAttacker(session))
+            log.info("[Session {}] closed", session.getId());
     }
 
     @Override
@@ -75,8 +74,10 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void exceptionCaught(IoSession session, Throwable cause) throws Exception {
+        if (cause instanceof IOException)
+            return;
         log.error("[Session {}] has encountered an error : {}", session.getId(), cause);
-     }
+    }
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
@@ -95,8 +96,10 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void inputClosed(IoSession session) throws Exception {
-        if(manager.getClient(session.getId()) != null)
+        if (manager.getClient(session.getId()) != null)
             manager.getClient(session.getId()).kick();
+        if (!session.isClosing() || session.isConnected())
+            session.close(true);
         log.info("[Session {}] input closed", session.getId());
     }
 

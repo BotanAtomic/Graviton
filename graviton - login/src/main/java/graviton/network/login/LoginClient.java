@@ -20,13 +20,15 @@ import java.util.List;
 @Data
 @Slf4j
 public class LoginClient implements Client {
-    private final long id;
-    private final String key;
-    private final IoSession session;
     @Inject
     Manager manager;
     @Inject
     Database database;
+
+    private final long id;
+    private final String key;
+    private final IoSession session;
+
     private Statut statut;
     private Account account;
 
@@ -44,10 +46,6 @@ public class LoginClient implements Client {
     public void parsePacket(String packet) {
         switch (statut) {
             case CONNECTION:
-                if (!packet.contains("@")) {
-                    session.close(true);
-                    return;
-                }
                 String[] args = packet.split("@");
                 log.info("[Session {}] checking username [{}] & password [{}]", id, args[0], args[1]);
                 if (!database.isGoodAccount(args[0], args[1], this)) {
@@ -178,7 +176,6 @@ public class LoginClient implements Client {
         if (account != null)
             account.delete();
         manager.removeClient(this);
-        session.close(true);
     }
 
     @Override
