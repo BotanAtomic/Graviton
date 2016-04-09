@@ -12,7 +12,7 @@ Graviton - Login : is the login server, manages connections
 
 Graviton - Game : is the game server, manages the in-game
 
-Graviton - Defender : [NOT NOW]
+Graviton - Bot : is bot using socket for create a multiple connections to server
 
 Graviton - Manager : for manage Manager and servers with an application
 
@@ -158,3 +158,9 @@ public Database(String ip, String name, String user, String pass) {
 <u>New version of <b>Graviton Manager</b> for manage login and all servers</u>
 </p>
 See the <a href = 'https://github.com/Babouche-/Graviton-Manager/'>project</a>
+
+</p>
+<u>New version of <b>Graviton Bot</b> for test the server</u>
+</p>
+See the <a href = 'https://github.com/Babouche-/Graviton-Bot/'>project</a>
+
