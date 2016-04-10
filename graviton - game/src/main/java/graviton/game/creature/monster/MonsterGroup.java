@@ -3,7 +3,10 @@ package graviton.game.creature.monster;
 import graviton.game.creature.Creature;
 import graviton.game.creature.Position;
 import graviton.game.enums.IdType;
+import graviton.game.fight.fighter.Fightable;
+import graviton.game.fight.fighter.Fighter;
 import graviton.game.maps.Maps;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,10 +14,13 @@ import java.util.List;
 /**
  * Created by Botan on 23/10/2015 [Game]
  */
-public class MonsterGroup implements Creature {
+public class MonsterGroup implements Creature,Fightable {
     final private int id;
 
     final private Position position;
+
+    @Getter
+    final private int agressionDistance;
 
     private List<MonsterGrade> monsters;
 
@@ -22,6 +28,7 @@ public class MonsterGroup implements Creature {
         this.monsters = tries(monsters);
         this.position = new Position(maps, maps.getRandomCell(), -1);
         this.id = IdType.MONSTER_GROUP.MAXIMAL_ID - maps.getId() * 1000 - position.getCell().getId();
+        this.agressionDistance = generateAgressionDistance();
     }
 
     private List<MonsterGrade> tries(List<MonsterGrade> monsters) {
@@ -38,6 +45,14 @@ public class MonsterGroup implements Creature {
         }
 
         return monsterGrades;
+    }
+
+    private int generateAgressionDistance(){
+        int maxLevel = 0;
+        for(MonsterGrade mob : monsters)
+            if(mob.getLevel() > maxLevel)
+                maxLevel = mob.getLevel();
+        return maxLevel > 500 ? 3 : maxLevel / 50;
     }
 
     @Override
@@ -58,7 +73,6 @@ public class MonsterGroup implements Creature {
         if (this.monsters.isEmpty()) {
             return "";
         }
-
         for (MonsterGrade monster : this.monsters) {
             if (!isFirst) {
                 id.append(",");
@@ -74,13 +88,22 @@ public class MonsterGroup implements Creature {
 
         toReturn.append(this.position.getCell().getId()).append(";").append(this.position.getOrientation()).append(";0;").append(this.getId())
                 .append(";").append(id).append(";-3;").append(gfx).append(";").append(level).append(";").append(color);
-
         return toReturn.toString();
     }
 
     @Override
     public void send(String packet) {
 
+    }
+
+    @Override
+    public void setFighter(Fighter fighter) {
+
+    }
+
+    @Override
+    public String getFightGm() {
+        return "";
     }
 
     @Override
@@ -91,5 +114,10 @@ public class MonsterGroup implements Creature {
     @Override
     public Position getPosition() {
         return this.position;
+    }
+
+    @Override
+    public IdType getType() {
+        return IdType.MONSTER_GROUP;
     }
 }
