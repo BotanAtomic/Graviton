@@ -11,6 +11,9 @@ import graviton.game.creature.monster.MonsterGrade;
 import graviton.game.creature.monster.MonsterGroup;
 import graviton.game.creature.npc.Npc;
 import graviton.game.enums.IdType;
+import graviton.game.fight.Fight;
+import graviton.game.fight.fighter.Fighter;
+import graviton.game.fight.type.MonsterFight;
 import lombok.Data;
 import org.jooq.Record;
 
@@ -27,17 +30,24 @@ import static graviton.database.utils.game.Tables.MAPS;
 
 @Data
 public class Maps {
+    @Inject
+    NpcFactory npcFactory;
+    @Inject
+    GameManager gameManager;
+
+    private final List<Integer> temporaryId = new ArrayList<>();
     private final ReentrantLock locker = new ReentrantLock();
+
     private final int id, width, heigth, X, Y, maxGroup;
     private final long date;
     private final String places, key, data;
     private final String descriptionPacket, loadingPacket;
     private final Map<Integer, Cell> cells;
-    @Inject
-    NpcFactory npcFactory;
-    @Inject
-    GameManager gameManager;
+
+    private Map<Integer, Fight> fights;
     private Map<Integer, Creature> creatures;
+
+    private String toSend;
 
     public Maps(int id, Record record, Injector injector) {
         injector.injectMembers(this);
@@ -56,8 +66,36 @@ public class Maps {
         this.descriptionPacket = "GDM|" + id + "|0" + this.date + "|" + (!this.key.isEmpty() ? this.key : this.data);
         this.maxGroup = record.getValue(MAPS.NUMGROUP);
         npcFactory.getNpcOnMap(this).forEach(this::addCreature);
+        this.fights = new HashMap<>();
         if (this.cells.size() > 5)
             spawnMonster(configureMonster(record.getValue(MAPS.MONSTERS)));
+    }
+
+    public Maps(Maps maps) {
+        this.id = maps.getId();
+        this.date = maps.getDate();
+        this.width = maps.getWidth();
+        this.heigth = maps.getHeigth();
+        this.places = maps.getPlaces();
+        this.key = maps.getKey();
+        this.data = maps.getData();
+        this.X = maps.getX();
+        this.Y = maps.getY();
+        this.cells = maps.getCells();
+        this.loadingPacket = "";
+        this.descriptionPacket = "";
+        this.maxGroup = 0;
+    }
+
+    public String getPlaces(int id) {
+        if ((places.split(";").length - 1) < id)
+            id = places.split(";").length - 1;
+        if (id < 0) id = 0;
+        return places.split(";")[id];
+    }
+
+    public Maps getCopy() {
+        return new Maps(this);
     }
 
     private List<MonsterGrade> configureMonster(String group) {
@@ -98,13 +136,24 @@ public class Maps {
         return 0;
     }
 
+    public int getNextFreeId() {
+        int startIndex = IdType.TEMPORARY_OBJECT.MAXIMAL_ID - this.id * 1000;
+        for (int i = startIndex; i > startIndex - 1000 && i >= IdType.TEMPORARY_OBJECT.MINIMAL_ID; i--) {
+            if (!temporaryId.contains(i)) {
+                temporaryId.add(i);
+                return i;
+            }
+        }
+        return 0;
+    }
+
     public Map<Integer, Creature> getCreatures(IdType type) {
         Map<Integer, Creature> creatures = new HashMap<>();
         switch (type) {
             case NPC:
                 this.creatures.values().stream().filter(creature -> creature instanceof Npc).forEach(creature -> creatures.put(creature.getId(), creature));
                 return creatures;
-            case CREATURE:
+            case PLAYER:
                 this.creatures.values().stream().filter(creature -> creature instanceof Player).forEach(creature -> creatures.put(creature.getId(), creature));
                 return creatures;
             case MONSTER_GROUP:
@@ -183,6 +232,25 @@ public class Maps {
         send("GM|+" + creature.getGm());
     }
 
+    public void applyPositionAction(Cell cell, Player player) {
+        cell.applyAction(player);
+        System.err.println(places + "number of group " + this.getCreatures(IdType.MONSTER_GROUP).size());
+        if (places.equals("|")) return;
+
+        for (Creature group : this.getCreatures(IdType.MONSTER_GROUP).values()) {
+            MonsterGroup monsterGroup = (MonsterGroup) group;
+            System.err.println("distance between : " + getDistance(cell.getId(), group.getPosition().getCell().getId()));
+            System.err.println("getaggro distance : " + monsterGroup.getAgressionDistance());
+            if (getDistance(cell.getId(), group.getPosition().getCell().getId()) <= monsterGroup.getAgressionDistance()) {
+                new MonsterFight(getNextFreeId(), player, monsterGroup, this,gameManager.getScheduler());
+                break;
+            }
+        }
+    }
+
+    public void addFight(Fight fight) {
+        this.fights.put(fight.getId(), fight);
+    }
 
     /**
      * Tools
@@ -233,4 +301,18 @@ public class Maps {
         return -1;
     }
 
+    public int getDistance(int firstCell, int secondCell) {
+        return (Math.abs(getXCoordinates(firstCell) - getXCoordinates(secondCell)) + Math.abs(getYCoordinates(firstCell) - getYCoordinates(secondCell)));
+    }
+
+    public int getXCoordinates(int cell) {
+        return ((cell - (width - 1) * getYCoordinates(cell)) / width);
+    }
+
+    public int getYCoordinates(int cell) {
+        int loc5 = (cell / ((width * 2) - 1));
+        int loc6 = cell - loc5 * ((width * 2) - 1);
+        int loc7 = loc6 % width;
+        return (loc5 - loc7);
+    }
 }
