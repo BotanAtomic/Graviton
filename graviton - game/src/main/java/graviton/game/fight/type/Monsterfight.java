@@ -10,7 +10,7 @@ import graviton.game.fight.Fight;
 public class Monsterfight implements Fight {
 
     public Monsterfight(Player player, MonsterGroup group) {
-
+        //TODO : new fight
     }
 
 }
