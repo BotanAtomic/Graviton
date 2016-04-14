@@ -26,15 +26,17 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class GameNetwork implements IoHandler, NetworkService {
+    @Inject
+    private Injector injector;
+    @Inject
+    private PacketManager packetManager;
+
     private final NioSocketAcceptor acceptor;
     @Getter
     private final Map<Long, GameClient> clients;
     @InjectSetting("server.port")
     private int port;
-    @Inject
-    private Injector injector;
-    @Inject
-    private PacketManager packetManager;
+
 
     public GameNetwork() {
         this.acceptor = new NioSocketAcceptor();
@@ -72,7 +74,7 @@ public class GameNetwork implements IoHandler, NetworkService {
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        packetManager.parse(clients.get(session.getId()), message.toString());
+        parsePacket(clients.get(session.getId()), message.toString());
         log.info("[Session {}] recev < {}", session.getId(), message.toString());
     }
 
@@ -98,6 +100,14 @@ public class GameNetwork implements IoHandler, NetworkService {
         if (clients.get(id) != null)
             return clients.get(id);
         return null;
+    }
+
+    public void parsePacket(GameClient client, String packet) {
+        String[] header = {packet.substring(0, 2),packet.substring(2)};
+        if (packetManager.getPackets().containsKey(header[0]))
+            packetManager.getPackets().get(header[0]).parse(client, header[1]);
+        else
+            log.error("Unknown packet {}", packet);
     }
 
     @Override

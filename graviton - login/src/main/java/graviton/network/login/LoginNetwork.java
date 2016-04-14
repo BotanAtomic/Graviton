@@ -6,7 +6,7 @@ import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
 import graviton.core.Manager;
 import graviton.database.Database;
-import graviton.network.security.Filter;
+import graviton.network.security.GravitonFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
@@ -17,7 +17,6 @@ import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Random;
@@ -32,7 +31,6 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     private final NioSocketAcceptor acceptor;
     private final Manager manager;
-    private final Filter filter;
 
 
     @InjectSetting("login.port")
@@ -41,14 +39,16 @@ public class LoginNetwork implements NetworkService, IoHandler {
     @Inject
     public LoginNetwork(Manager manager, Database database) {
         this.acceptor = new NioSocketAcceptor();
+        this.acceptor.setReuseAddress(true);
+        this.acceptor.getFilterChain().addFirst("backlist", new GravitonFilter(3, 1000, database));
+        this.acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new TextLineCodecFactory(Charset.forName("UTF8"), LineDelimiter.NUL, new LineDelimiter("\n\0"))));
+        this.acceptor.setHandler(this);
+
         this.manager = manager;
-        this.filter = new Filter(3, 1000, database);
     }
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        if (!filter.check(session))
-            return;
         session.write("HC" + new LoginClient(session, generateKey(), injector).getKey());
         log.info("[Session {}] created", session.getId());
     }
@@ -63,8 +63,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
     public void sessionClosed(IoSession session) throws Exception {
         if (manager.getClient(session.getId()) != null)
             manager.getClient(session.getId()).kick();
-        if (!filter.isAttacker(session))
-            log.info("[Session {}] closed", session.getId());
+        log.info("[Session {}] closed", session.getId());
     }
 
     @Override
@@ -105,11 +104,6 @@ public class LoginNetwork implements NetworkService, IoHandler {
 
     @Override
     public void start() {
-        acceptor.setReuseAddress(true);
-        acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new TextLineCodecFactory(Charset.forName("UTF8"), LineDelimiter.NUL, new LineDelimiter("\n\0"))));
-        acceptor.setHandler(this);
-        if (acceptor.isActive())
-            return;
         try {
             acceptor.bind(new InetSocketAddress(port));
         } catch (IOException e) {

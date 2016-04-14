@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.game.GameManager;
 import graviton.game.client.player.Player;
+import graviton.game.exchange.trunk.TrunkExchange;
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
 import graviton.game.object.Object;
@@ -29,8 +30,9 @@ public class Trunk {
 
     private long kamas = 0;
 
-    private boolean inUse = false;
     private boolean isBank = false;
+
+    private Player user = null;
 
     public Trunk(int id, long kamas, Maps maps, Cell cell, String objects, Injector injector) {
         injector.injectMembers(this);
@@ -67,13 +69,13 @@ public class Trunk {
     }
 
     public void open(Player player) {
-        if (inUse) {
+        if (this.user != null)
             player.send("Im120");
-            return;
+        else {
+            player.send("ECK5");
+            player.send("EL" + getPacket());
+            this.user = player;
         }
-        player.send("ECK5");
-        player.send("EL" + getPacket());
-        this.inUse = true;
     }
 
     private Map<Integer, Object> getObjectList(String objects) {

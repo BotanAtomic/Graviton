@@ -12,8 +12,6 @@ import graviton.game.creature.monster.MonsterGroup;
 import graviton.game.creature.npc.Npc;
 import graviton.game.enums.IdType;
 import graviton.game.fight.Fight;
-import graviton.game.fight.fighter.Fighter;
-import graviton.game.fight.type.MonsterFight;
 import lombok.Data;
 import org.jooq.Record;
 
@@ -242,14 +240,14 @@ public class Maps {
             System.err.println("distance between : " + getDistance(cell.getId(), group.getPosition().getCell().getId()));
             System.err.println("getaggro distance : " + monsterGroup.getAgressionDistance());
             if (getDistance(cell.getId(), group.getPosition().getCell().getId()) <= monsterGroup.getAgressionDistance()) {
-                new MonsterFight(getNextFreeId(), player, monsterGroup, this,gameManager.getScheduler());
+                //new MonsterFight(getNextFreeId(), player, monsterGroup, this,gameManager.getScheduler());
                 break;
             }
         }
     }
 
     public void addFight(Fight fight) {
-        this.fights.put(fight.getId(), fight);
+       // this.fights.put(fight.getId(), fight);
     }
 
     /**

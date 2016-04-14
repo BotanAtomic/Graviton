@@ -26,7 +26,6 @@
     <orderEntry type="library" exported="" name="Gradle: joda-time:joda-time:2.8.2" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.jooq:jooq-meta:3.7.2" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.jooq:jooq-codegen:3.7.2" level="project" />
-    <orderEntry type="library" exported="" name="Gradle: mysql:mysql-connector-java:5.1.38" level="project" />
     <orderEntry type="library" exported="" name="Gradle: javax.inject:javax.inject:1" level="project" />
     <orderEntry type="library" exported="" name="Gradle: aopalliance:aopalliance:1.0" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.zaxxer:HikariCP:2.3.5" level="project" />
@@ -47,5 +46,14 @@
     <orderEntry type="library" exported="" name="Gradle: org.jooq:jooq:3.7.3" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.google.guava:guava:18.0" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.fasterxml.jackson.core:jackson-annotations:2.5.0" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: io.netty:netty-handler:4.1.0.Beta5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: io.netty:netty-transport-native-epoll:4.1.0.Beta5:linux-x86_64" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: io.netty:netty-codec-http:4.1.0.Beta5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: io.netty:netty-buffer:4.1.0.Beta5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: io.netty:netty-transport:4.1.0.Beta5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: io.netty:netty-codec:4.1.0.Beta5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: io.netty:netty-common:4.1.0.Beta5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: io.netty:netty-resolver:4.1.0.Beta5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: mysql:mysql-connector-java:5.1.38" level="project" />
   </component>
 </module>

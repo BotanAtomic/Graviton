@@ -4,7 +4,7 @@ package graviton.game.enums;
  * Created by Botan on 20/12/2015.
  */
 public enum IdType {
-    CREATURE(-1),
+    PLAYER(-1),
     MONSTER(-2),
     MONSTER_GROUP(-3),
     NPC(-4),

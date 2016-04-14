@@ -19,7 +19,8 @@ public class NetworkManager implements Manager {
     private final List<NetworkService> services;
 
     @Inject
-    public NetworkManager(ExchangeNetwork exchangeNetwork, GameNetwork gameNetwork) {
+    public NetworkManager(ExchangeNetwork exchangeNetwork, GameNetwork gameNetwork, graviton.core.Manager manager) {
+        manager.add(this);
         this.services = Arrays.asList(exchangeNetwork, gameNetwork);
     }
 

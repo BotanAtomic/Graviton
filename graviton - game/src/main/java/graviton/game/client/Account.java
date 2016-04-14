@@ -8,7 +8,7 @@ import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.admin.Admin;
 import graviton.game.client.player.Player;
-import graviton.game.client.player.component.CommandManager;
+import graviton.game.action.player.CommandManager;
 import graviton.game.client.player.packet.Packets;
 import graviton.game.enums.Rank;
 import graviton.game.trunks.Trunk;
@@ -18,12 +18,8 @@ import org.joda.time.Interval;
 import org.joda.time.Period;
 import org.jooq.Record;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 

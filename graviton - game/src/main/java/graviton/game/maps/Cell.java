@@ -2,8 +2,8 @@ package graviton.game.maps;
 
 import com.google.inject.Injector;
 import graviton.game.client.player.Player;
-import graviton.game.client.player.exchange.TrunkExchange;
-import graviton.game.common.Action;
+import graviton.game.exchange.trunk.TrunkExchange;
+import graviton.game.action.Action;
 import graviton.game.creature.Creature;
 import graviton.game.enums.IdType;
 import graviton.game.maps.object.InteractiveObject;

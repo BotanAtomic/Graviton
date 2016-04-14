@@ -73,7 +73,8 @@ public class GameManager implements Manager {
     private List<Admin> admins;
 
     @Inject
-    public GameManager() {
+    public GameManager(graviton.core.Manager manager) {
+        manager.add(this);
         this.admins = new ArrayList<>();
     }
 
@@ -252,7 +253,7 @@ public class GameManager implements Manager {
 
     @Override
     public void unload() {
-
+        save();
     }
 
     private void scheduleActions() {

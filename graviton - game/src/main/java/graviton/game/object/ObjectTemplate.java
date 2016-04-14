@@ -2,10 +2,7 @@ package graviton.game.object;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.common.Utils;
 import graviton.factory.ObjectFactory;
-import graviton.game.enums.ObjectPosition;
-import graviton.game.enums.ObjectType;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 

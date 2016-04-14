@@ -1,10 +1,7 @@
 package graviton.game.creature.npc;
 
 import graviton.game.client.player.Player;
-import graviton.game.common.Action;
 import lombok.Data;
-
-import java.util.List;
 
 /**
  * Created by Botan on 09/02/2016.

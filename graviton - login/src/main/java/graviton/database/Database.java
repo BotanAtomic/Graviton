@@ -52,9 +52,7 @@ public class Database {
 
     }
 
-    /**
-     * Data
-     **/
+    /** Data **/
 
     public boolean isGoodAccount(String username, String password, LoginClient client) {
         Record record = getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(username));

@@ -13,7 +13,7 @@ import graviton.game.client.player.Player;
 import graviton.game.client.player.packet.Packet;
 import graviton.game.common.Stats;
 import graviton.game.enums.Classe;
-import graviton.game.enums.ObjectPosition;
+import graviton.game.object.ObjectPosition;
 import graviton.game.enums.StatsType;
 import graviton.game.experience.Experience;
 import graviton.game.object.Object;
@@ -38,10 +38,12 @@ import static graviton.database.utils.login.Tables.PLAYERS;
 @Data
 @Slf4j
 public class PlayerFactory extends Factory<Player> {
-    private final Map<Integer, Player> players;
-    private final ReentrantLock locker;
     @Inject
     Injector injector;
+
+    private final Map<Integer, Player> players;
+    private final ReentrantLock locker;
+
     private GameManager gameManager;
     private Map<Classe, Map<Integer, Integer>> classData;
 

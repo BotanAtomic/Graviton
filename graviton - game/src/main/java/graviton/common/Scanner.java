@@ -23,7 +23,9 @@ public class Scanner extends Thread implements graviton.api.Manager {
     @Inject
     GameManager gameManager;
 
-    public Scanner() {
+    @Inject
+    public Scanner(graviton.core.Manager manager) {
+        manager.add(this);
         this.scanner = new java.util.Scanner(System.in);
     }
 

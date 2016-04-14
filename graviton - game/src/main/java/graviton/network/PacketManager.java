@@ -1,13 +1,12 @@
 package graviton.network;
 
 import com.google.inject.Inject;
-import graviton.api.Manager;
 import graviton.api.PacketParser;
 import graviton.common.Utils;
 import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.client.player.Player;
-import graviton.game.client.player.component.ActionManager;
+import graviton.game.action.player.ActionManager;
 import graviton.game.creature.Creature;
 import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcAnswer;
@@ -15,17 +14,18 @@ import graviton.game.creature.npc.NpcQuestion;
 import graviton.game.enums.IdType;
 import graviton.game.enums.Rank;
 import graviton.game.maps.Maps;
-import graviton.network.game.GameClient;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
  * Created by Botan on 20/06/2015.
  */
 @Slf4j
-public class PacketManager implements Manager {
+public class PacketManager {
     @Inject
     GameManager gameManager;
     @Inject
@@ -36,18 +36,18 @@ public class PacketManager implements Manager {
     private final String[] forbiden;
 
     private final Calendar calendar;
+    @Getter
     private Map<String, PacketParser> packets;
 
     public PacketManager(String[] dictionnary, String[] forbiden) {
         this.calendar = GregorianCalendar.getInstance();
-
         this.dictionary = dictionnary;
         this.forbiden = forbiden;
+        load();
     }
 
-    @Override
     public void load() {
-        Map<String, PacketParser> packets = new HashMap<>();
+        Map<String, PacketParser> packets = new ConcurrentHashMap<>();
 
         packets.put("cC", (client, packet) -> client.send("cC" + packet));
 
@@ -297,19 +297,5 @@ public class PacketManager implements Manager {
         });
 
         this.packets = Collections.unmodifiableMap(packets);
-    }
-
-    public void parse(GameClient client, String packet) {
-        String[] decomposition = {packet.substring(0, 2),packet.substring(2)};
-
-        if (packets.containsKey(decomposition[0]))
-            packets.get(decomposition[0]).parse(client, decomposition[1]);
-        else
-            log.error("Unknown packet {}", packet);
-    }
-
-    @Override
-    public void unload() {
-        //Usuless
     }
 }

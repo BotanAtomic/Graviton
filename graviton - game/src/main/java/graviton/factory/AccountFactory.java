@@ -77,6 +77,7 @@ public class AccountFactory extends Factory<Account> {
 
     @Override
     public void configure() {
+
     }
 
     @Override

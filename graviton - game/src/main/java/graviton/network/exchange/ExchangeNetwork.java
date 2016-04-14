@@ -101,8 +101,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        String packet = decryptPacket(message);
-        parse(packet);
+        parse(decryptPacket(message));
     }
 
     @Override

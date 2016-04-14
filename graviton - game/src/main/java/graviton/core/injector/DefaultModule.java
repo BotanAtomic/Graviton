@@ -14,8 +14,7 @@ import graviton.database.Database;
 import graviton.factory.*;
 import graviton.game.GameManager;
 import graviton.network.PacketManager;
-import graviton.game.client.player.component.CommandManager;
-import graviton.game.fight.FightManager;
+import graviton.game.action.player.CommandManager;
 import graviton.network.NetworkManager;
 import graviton.network.exchange.ExchangeNetwork;
 import graviton.network.game.GameNetwork;
@@ -37,12 +36,11 @@ public class DefaultModule extends AbstractModule {
         initConfiguration();
 
         /** Interface class **/
+        bind(Manager.class).asEagerSingleton();
         bind(Scanner.class).asEagerSingleton();
         bind(GameManager.class).asEagerSingleton();
         bind(CommandManager.class).asEagerSingleton();
         bind(NetworkManager.class).asEagerSingleton();
-        bind(FightManager.class).asEagerSingleton();
-        bind(Manager.class).asEagerSingleton();
 
         /** Network **/
         bind(GameNetwork.class).asEagerSingleton();
@@ -87,24 +85,7 @@ public class DefaultModule extends AbstractModule {
         bind(Database.class).annotatedWith(Names.named("database.login")).toInstance(new Database(properties, "database.login."));
         bind(Database.class).annotatedWith(Names.named("database.game")).toInstance(new Database(properties, "database.game."));
 
-        String[] dictionnary = null;
-        String[] forbiden = null;
-
-        int i = 0;
-        for(String string : properties.getProperty("word.dictionnary").split(",")) {
-            dictionnary = new String[properties.getProperty("word.dictionnary").split(",").length];
-            dictionnary[i] = string;
-            i++;
-        }
-
-        i = 0;
-        for(String string : properties.getProperty("word.forbiden").split(",")) {
-            forbiden = new String[properties.getProperty("word.forbiden").split(",").length];
-            forbiden[i] = string;
-            i++;
-        }
-
-        bind(PacketManager.class).toInstance(new PacketManager(dictionnary, forbiden));
+        bind(PacketManager.class).toInstance(new PacketManager(properties.getProperty("word.dictionnary").split(","), properties.getProperty("word.forbiden").split(",")));
     }
 
     private TypeListener listener(BiConsumer<TypeLiteral<?>, TypeEncounter<?>> consumer) {
@@ -115,7 +96,7 @@ public class DefaultModule extends AbstractModule {
         return consumer::accept;
     }
 
-    Object parse(Object value, Field field) {
+    private Object parse(Object value, Field field) {
         Type type = field.getType();
 
         if (type == boolean.class)

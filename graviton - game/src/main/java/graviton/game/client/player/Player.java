@@ -6,10 +6,11 @@ import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.alignement.Alignement;
 import graviton.game.client.Account;
-import graviton.game.client.player.component.ActionManager;
-import graviton.game.client.player.component.CommandManager;
-import graviton.game.client.player.component.FloodChecker;
-import graviton.game.client.player.exchange.PlayerExchange;
+import graviton.game.action.player.ActionManager;
+import graviton.game.action.player.CommandManager;
+import graviton.game.common.FloodChecker;
+import graviton.game.enums.IdType;
+import graviton.game.exchange.player.PlayerExchange;
 import graviton.game.client.player.packet.Packets;
 import graviton.game.common.Stats;
 import graviton.game.creature.Creature;
@@ -18,10 +19,11 @@ import graviton.game.creature.mount.Mount;
 import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcQuestion;
 import graviton.game.enums.Classe;
-import graviton.game.enums.ObjectPosition;
+import graviton.game.object.ObjectPosition;
 import graviton.game.enums.StatsType;
-import graviton.game.exchange.Exchange;
+import graviton.game.exchange.api.Exchange;
 import graviton.game.fight.Fight;
+import graviton.game.fight.Fightable;
 import graviton.game.fight.Fighter;
 import graviton.game.group.Group;
 import graviton.game.guild.Guild;
@@ -46,7 +48,7 @@ import static graviton.database.utils.login.Tables.PLAYERS;
  * Created by Botan on 19/06/2015.
  */
 @Data
-public class Player implements Creature, Fighter {
+public class Player implements Creature, Fightable {
     @Inject
     GameManager gameManager;
     @Inject
@@ -221,7 +223,7 @@ public class Player implements Creature, Fighter {
         send("ILS2000");
         this.account.setOnline();
         send("Im0152;" + this.getAccount().getInformations());
-        send("Im0153;"+ this.account.getIpAdress());
+        send("Im0153;" + this.account.getIpAdress());
         this.account.update();
     }
 
@@ -246,7 +248,9 @@ public class Player implements Creature, Fighter {
 
     }
 
-    /** Objects **/
+    /**
+     * Objects
+     **/
     private void setStuff(String objects) {
         if (objects.charAt(objects.length() - 1) == ',')
             objects = objects.substring(0, objects.length() - 1);
@@ -343,7 +347,9 @@ public class Player implements Creature, Fighter {
         return builder.toString();
     }
 
-    /** Spell **/
+    /**
+     * Spell
+     **/
     public boolean boostSpell(int id) {
         if (!spells.containsKey(id))
             return false;
@@ -562,21 +568,21 @@ public class Player implements Creature, Fighter {
     }
 
     public void askDefy(String arguments) {
-        if(isBusy() || fight != null) {
+        if (isBusy() || fight != null) {
             send("GA;903;" + this.id + ";o");
             return;
         }
 
         this.askedCreature = Integer.parseInt(arguments);
 
-        if(!getMap().supportFight()) {
+        if (!getMap().supportFight()) {
             send("GA;903;" + this.id + ";p");
             return;
         }
 
         Player askedPlayer = factory.get(askedCreature);
 
-        if(askedPlayer == null || askedPlayer.getFight() != null || askedPlayer.isBusy()) {
+        if (askedPlayer == null || askedPlayer.getFight() != null || askedPlayer.isBusy()) {
             send("GA;903;" + this.id + ";z");
             return;
         }
@@ -755,7 +761,11 @@ public class Player implements Creature, Fighter {
     }
 
     public void send(String packet) {
-        this.account.getClient().send(packet);
+        if (!packet.contains("\n"))
+            this.account.getClient().send(packet);
+        else
+            for (String newPacket : packet.split("\n"))
+                this.account.getClient().send(newPacket);
     }
 
     public void sendText(String... arguments) {
@@ -769,6 +779,20 @@ public class Player implements Creature, Fighter {
         send("cs<font color='#" + color + "'>" + message + "</font>");
     }
 
+    public boolean checkAttribut(String attribut) {
+        if (attribut == null)
+            return true;
+        switch (attribut.toLowerCase()) {
+            case "group":
+                return this.getGroup() != null;
+            case "guild":
+                return this.getGuild() != null;
+            case "rank":
+                return account.getRank().id != 0;
+        }
+        return false;
+    }
+
     public void delete() {
         account.getPlayers().remove(this);
         factory.remove(this);
@@ -779,4 +803,18 @@ public class Player implements Creature, Fighter {
         factory.update(this);
     }
 
+    @Override
+    public void setFighter(Fighter fighter) {
+
+    }
+
+    @Override
+    public String getFightGm() {
+        return null;
+    }
+
+    @Override
+    public IdType getType() {
+        return null;
+    }
 }

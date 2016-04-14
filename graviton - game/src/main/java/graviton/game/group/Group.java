@@ -5,6 +5,8 @@ import graviton.game.client.player.packet.Packets;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -13,41 +15,35 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Group {
     private final Player chief;
-    private final List<Player> players;
+    private final Map<Integer, Player> players;
 
     private final ReentrantLock locker;
 
     public Group(Player chief, Player second) {
         this.chief = chief;
-        this.players = asList(chief, second);
-        this.players.forEach(player -> player.setGroup(this));
+        this.players = new ConcurrentHashMap<>();
         this.locker = new ReentrantLock();
-        sendPackets();
+        this.players.put(chief.getId(), chief);
+        this.players.put(second.getId(), second);
+        this.players.values().forEach(player -> player.setGroup(this));
+        this.send(getPacket());
     }
 
     public void addMember(Player player) {
         this.send("PM+" + player.getPacket(Packets.PM));
-        this.players.add(player);
+        this.players.put(player.getId(), player);
         player.setGroup(this);
-        sendPackets(player);
+        player.send(getPacket());
     }
 
     public void removeMember(Player player) {
-        if(chief.getId() == player.getId()) {
-            players.forEach(member -> member.setGroup(null));
-            this.send("PV");
-            this.send("IH");
-            players.clear();
-            return;
-        }
-        this.players.remove(player);
-
-        if(players.size() == 1) {
-            players.forEach(member -> member.setGroup(null));
+        if (chief.getId() == player.getId() || (players.size() - 1) == 1) {
+            players.values().forEach(member -> member.setGroup(null));
             this.send("PV");
             this.send("IH");
             players.clear();
         } else {
+            this.players.remove(player);
             player.setGroup(null);
             player.send("PV");
             player.send("IH");
@@ -55,43 +51,27 @@ public class Group {
         }
     }
 
-    public void kick(Player kicker,Player kicked) {
-        if(chief.getId() != kicker.getId())
+    public void kick(Player kicker, Player kicked) {
+        if (chief.getId() != kicker.getId())
             return;
         kicked.send("PV" + kicker.getId());
         kicked.send("IH");
         removeMember(kicked);
-        if(players.size() == 1)
+        if (players.size() == 1)
             removeMember(chief);
-
     }
 
     public void send(String packet) {
         locker.lock();
-        this.players.forEach(player -> player.send(packet));
+        this.players.values().forEach(player -> player.send(packet));
         locker.unlock();
     }
 
-    private List<Player> asList(Player... players) {
-        List<Player> list = new CopyOnWriteArrayList<>();
-        Collections.addAll(list, players);
-        return list;
+    private String getPacket() {
+        StringBuilder builder = new StringBuilder("PCK").append(chief.getName()).append("\n");
+        builder.append("PL").append(chief.getId()).append("\n");
+        builder.append("PM+").append(chief.getId());
+        this.players.values().stream().forEach(player -> builder.append(player.getPacket(Packets.PM)).append("|"));
+        return builder.toString().substring(0, builder.length() - 1);
     }
-
-    private void sendPackets() {
-        this.send("PCK"+ chief.getName());
-        this.send("PL"+chief.getId());
-        final String[] packet = {""};
-        this.players.stream().forEach(player -> packet[0] += ("|" + player.getPacket(Packets.PM)));
-        this.send("PM+" + packet[0].substring(1));
-    }
-
-    private void sendPackets(Player newPlayer) {
-        newPlayer.send("PCK" + chief.getName());
-        newPlayer.send("PL" + chief.getId());
-        final String[] packet = {""};
-        this.players.stream().forEach(player -> packet[0] += ("|" + player.getPacket(Packets.PM)));
-        newPlayer.send("PM+" + packet[0].substring(1));
-    }
-
 }

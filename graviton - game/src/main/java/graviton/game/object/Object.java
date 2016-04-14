@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.factory.ObjectFactory;
 import graviton.game.GameManager;
-import graviton.game.enums.ObjectPosition;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 

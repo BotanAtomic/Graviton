@@ -3,8 +3,8 @@ package graviton.game.creature.monster;
 import graviton.game.creature.Creature;
 import graviton.game.creature.Position;
 import graviton.game.enums.IdType;
-import graviton.game.fight.fighter.Fightable;
-import graviton.game.fight.fighter.Fighter;
+import graviton.game.fight.Fightable;
+import graviton.game.fight.Fighter;
 import graviton.game.maps.Maps;
 import lombok.Getter;
 

@@ -1,7 +1,7 @@
 package graviton.game.creature.npc;
 
 import graviton.game.client.player.Player;
-import graviton.game.common.Action;
+import graviton.game.action.Action;
 import lombok.Getter;
 
 import java.util.ArrayList;

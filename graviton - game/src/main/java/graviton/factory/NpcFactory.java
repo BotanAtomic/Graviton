@@ -6,7 +6,7 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
-import graviton.game.common.Action;
+import graviton.game.action.Action;
 import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcAnswer;
 import graviton.game.creature.npc.NpcQuestion;
