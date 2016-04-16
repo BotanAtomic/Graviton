@@ -9,6 +9,7 @@ import lombok.Data;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Created by Botan on 25/06/2015.
@@ -16,9 +17,11 @@ import java.util.Map;
 @Data
 public class Statistics {
     private Map<Integer, Integer> effects;
+    private Map<Integer, Object> optionalEffect;
 
     public Statistics() {
-        this.effects = new HashMap<>();
+        this.effects = new TreeMap<>();
+        this.optionalEffect = new HashMap<>();
     }
 
     public Statistics(Player player, Map<Integer, Integer> effects) {
@@ -32,46 +35,41 @@ public class Statistics {
     }
 
     public void addEffect(int value, int quantity) {
-        if (effects.get(value) == null || effects.get(value) == 0)
-            effects.put(value, quantity);
-        else
-            effects.put(value, effects.get(value) + quantity);
+        effects.put(value, getEffect(value) + quantity);
+    }
+
+    public void addOptionalEffect(int value, Object argument) {
+        optionalEffect.put(value, argument);
     }
 
     public boolean isSameStatistics(Statistics statistics) {
-        for (Map.Entry<Integer, Integer> entry : this.effects.entrySet()) {
-            if (statistics.getEffects().get(entry.getKey()) == null)
-                return false;
-            if (statistics.getEffects().get(entry.getKey()).compareTo(entry.getValue()) != 0)
-                return false;
-        }
-        for (Map.Entry<Integer, Integer> entry : statistics.getEffects().entrySet()) {
-            if (this.effects.get(entry.getKey()) == null)
-                return false;
-            if (this.effects.get(entry.getKey()).compareTo(entry.getValue()) != 0)
-                return false;
-        }
-        return true;
+        if (statistics.getEffects().equals(effects))
+            return true;
+        return false;
     }
 
     public int getEffect(int value) {
-        return (effects.containsKey(value) ? effects.get(value) : 0);
+        return effects.getOrDefault(value, 0);
+    }
+
+    public Object getOptionalEffect(int value) {
+        return optionalEffect.getOrDefault(value, null);
     }
 
     public Statistics cumulStatistics(Collection<Statistics> stats) {
-        Map<Integer, Integer> builder = new HashMap<>();
-        stats.stream().filter(statistics -> statistics.getEffects() != null).forEach(statistics -> {
-            for (Integer i : statistics.getEffects().keySet())
-                builder.put(i, (builder.get(i) == null ? 0 : builder.get(i)) + statistics.getEffects().get(i));
-        });
-        this.effects = builder;
+        stats.stream().filter(statistics -> statistics.getEffects() != null).forEach(statistics -> statistics.getEffects().keySet().forEach(i -> effects.put(i, (effects.get(i) == null ? 0 : effects.get(i)) + statistics.getEffects().get(i))));
         return this;
     }
 
     public Statistics cumulStatistics(Statistics statistics) {
-        if(statistics == null) return this;
-            for (Integer i : statistics.getEffects().keySet())
-                effects.put(i, (effects.get(i) == null ? 0 : effects.get(i)) + statistics.getEffects().get(i));
+        if (statistics == null) return this;
+        statistics.getEffects().keySet().forEach(i -> effects.put(i, (effects.get(i) == null ? 0 : effects.get(i)) + statistics.getEffects().get(i)));
+        return this;
+    }
+
+    public Statistics removeStatistics(Statistics statistics) {
+        if (statistics == null) return this;
+        statistics.getEffects().keySet().forEach(i -> effects.put(i, ((effects.get(i) == null ||  statistics.getEffects().get(i) > effects.get(i) )? 0 : effects.get(i)) - statistics.getEffects().get(i)));
         return this;
     }
 }

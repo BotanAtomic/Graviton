@@ -85,7 +85,7 @@ public class LoginNetwork implements NetworkService, IoHandler {
         if (packet.isEmpty() || packet.equals("1.29.2") || packet.equals("1.29.1"))
             return;
         client.parsePacket(packet);
-        log.info("[Session {}] recev < {} [{}]", session.getId(), packet, client.getStatut());
+        log.info("[Session {}] receive < {} [{}]", session.getId(), packet, client.getStatut());
     }
 
     @Override

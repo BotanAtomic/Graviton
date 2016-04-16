@@ -295,7 +295,7 @@ public class PlayerFactory extends Factory<Player> {
         packets.put(Packets.As, player -> {
             StringBuilder builder = new StringBuilder();
             builder.append("As");
-            builder.append(player.getExperience()).append(",").append(getGameManager().getPlayerExperience(player.getLevel())).append(",").append(gameManager.getPlayerExperience(player.getLevel() + 1)).append("|");
+            builder.append(player.getExperience()).append(",").append(gameManager.getPlayerExperience(player.getLevel())).append(",").append(gameManager.getPlayerExperience(player.getLevel() + 1)).append("|");
             builder.append(player.getKamas()).append("|").append(player.getCapital()).append("|").append(player.getSpellPoints()).append("|");
             builder.append(player.getAlignement().getType().getId()).append("~");
             builder.append(player.getAlignement().getType().getId()).append(",").append(player.getAlignement().getGrade()).append(",").append(player.getAlignement().getGrade()).append(",").append(player.getAlignement().getHonor()).append(",").append(player.getAlignement().getDeshonnor()).append(",").append(player.getAlignement().isShowWings() ? "1" : "0").append("|");

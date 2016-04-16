@@ -1,6 +1,7 @@
 package graviton.game.object;
 
 
+
 /**
  * Created by Botan on 21/06/2015.
  */
@@ -25,11 +26,18 @@ public enum ObjectPosition {
 
     public final int id;
 
+    public int get(boolean real){
+        if (!real && this.id >= 35 && this.id <= 57)
+            return -1;
+        return this.id;
+    }
     ObjectPosition(int id) {
         this.id = id;
     }
 
     public static ObjectPosition get(int id) {
+        if(id >= 35 && id <= 57)
+            return NO_EQUIPED;
         for (ObjectPosition position : ObjectPosition.values())
             if (position.id == id)
                 return position;

@@ -29,6 +29,11 @@ public class Movement extends Pathfinding implements Action {
 
     @Override
     public boolean start() {
+        if(player.getPodsUsed() > player.getMaxPods()) {
+            player.send("Im112");
+            player.send("GA;0");
+            return false;
+        }
         this.finalPathfinding = this.initialPathfinding = arguments;
         if (player.getActionManager().getStatus() != ActionManager.Status.WAITING) {
             player.send("GA;0");

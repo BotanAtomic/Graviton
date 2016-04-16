@@ -79,7 +79,7 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
             return;
         }
         parsePacket(packet);
-        log.info("[Application {}] recev < {}", session.getId(), packet);
+        log.info("[Application {}] receive < {}", session.getId(), packet);
     }
 
     @Override

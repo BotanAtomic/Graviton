@@ -2,9 +2,13 @@ package graviton.game.object;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import graviton.common.Parameter;
 import graviton.factory.ObjectFactory;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
+
+import java.util.Arrays;
+import java.util.stream.IntStream;
 
 
 /**
@@ -13,11 +17,10 @@ import lombok.Data;
 @Data
 public class ObjectTemplate {
     @Inject
-    ObjectFactory manager;
+    ObjectFactory factory;
 
     final private Injector injector;
 
-    final private int[] swordEffectId = {91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101};
 
     final private int id;
     final private ObjectType type;
@@ -25,13 +28,12 @@ public class ObjectTemplate {
     final private int level;
     final private String statistics;
     final private int usedPod;
-    final private int panoply;
     final private int price;
     final private String condition;
     final private String information;
 
 
-    public ObjectTemplate(int id, int type, String name, int level, String statistics, int usedPod, int panoply, int price, String condition, String information,Injector injector) {
+    public ObjectTemplate(int id, int type, String name, int level, String statistics, int usedPod, int price, String condition, String information, Injector injector) {
         this.injector = injector;
         injector.injectMembers(this);
         this.id = id;
@@ -40,79 +42,39 @@ public class ObjectTemplate {
         this.level = level;
         this.statistics = statistics;
         this.usedPod = usedPod;
-        this.panoply = panoply;
         this.price = price;
         this.condition = condition;
         this.information = information;
     }
 
     public Object createObject(int qua, boolean useMax) {
-        return new Object(manager.getNextId(), this.getId(), qua, ObjectPosition.NO_EQUIPED, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)),injector);
+        return new Object(factory.getNextId(), this.getId(), qua, ObjectPosition.NO_EQUIPED, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)), injector);
     }
 
-    private Statistics getStatistics(String statsTemplate, boolean useMax) {
-        Statistics itemStats = new Statistics();
-        if (statsTemplate.equals(""))
-            return itemStats;
-        String[] splitted = statsTemplate.split(",");
-        for (String s : splitted) {
-            String[] stats = s.split("#");
-            int statID = Integer.parseInt(stats[0], 16);
-            boolean follow = true;
-            for (int a : this.swordEffectId)//Si c'est un Effet Actif
-                if (a == statID)
-                    follow = false;
-            if (!follow)//Si c'?tait un effet Actif d'arme
+    public Statistics getStatistics(String statisticsTemplate, boolean useMax) {
+        Statistics statistic = new Statistics();
+        int maximum;
+        for (String statisticTemplate : statisticsTemplate.split(",")) {
+            String[] arguments = statisticTemplate.split("#");
+            final int statisticId = Integer.parseInt(arguments[0], 16);
+            if (statisticId >= 91 && statisticId <= 101) //sword effect
                 continue;
-            boolean isStatsInvalid = false;
-            switch (statID) {
-                case 110:
-                case 139:
-                case 605:
-                case 614:
-                    isStatsInvalid = true;
-                    break;
-            }
-            if (isStatsInvalid)
-                continue;
-            String jet;
-            int value = 1;
-            try {
-                jet = stats[4];
-                value = getRandomJet(jet);
-                if (useMax) {
-                    try {
-                        //on prend le jet max
-                        int min = Integer.parseInt(stats[1], 16);
-                        int max = Integer.parseInt(stats[2], 16);
-                        value = min;
-                        if (max != 0) value = max;
-                    } catch (Exception e) {
-                        value = getRandomJet(jet);
-                    }
 
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            itemStats.addEffect(statID, value);
+            String argument = arguments[4];
+
+            if (argument.contains("d") && argument.contains("+") && factory.getEffects().contains(statisticId)) {
+                maximum = Integer.parseInt(arguments[2], 16);
+                statistic.addEffect(statisticId, useMax ? (maximum > 0 ? maximum : Integer.parseInt(arguments[1], 16)) : this.getRandomJet(argument));
+            } else
+                statistic.addOptionalEffect(statisticId, new Parameter<>(Integer.parseInt(arguments[1], 16), Integer.parseInt(arguments[2], 16), Integer.parseInt(arguments[3],16), argument));
         }
-        return itemStats;
+        return statistic;
     }
 
     private int getRandomJet(String jet) {
-        try {
-            int num = 0;
-            int des = Integer.parseInt(jet.split("d")[0]);
-            int faces = Integer.parseInt(jet.split("d")[1].split("\\+")[0]);
-            int add = Integer.parseInt(jet.split("d")[1].split("\\+")[1]);
-            for (int a = 0; a < des; a++) {
-                num += (int)(Math.random() * faces + 1);
-            }
-            num += add;
-            return num;
-        } catch (NumberFormatException e) {
-            return -1;
-        }
+        int faces = Integer.parseInt(jet.split("d")[1].split("\\+")[0]);
+        final int[] number = {Integer.parseInt(jet.split("d")[1].split("\\+")[1]) + (int) (Math.random() + 1 * faces)};
+        IntStream.range(1, Integer.parseInt(jet.split("d")[0])).forEach(i -> number[0] += (int) (Math.random() * faces));
+        return number[0];
     }
 }

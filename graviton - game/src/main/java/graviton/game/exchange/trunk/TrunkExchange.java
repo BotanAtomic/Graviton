@@ -32,7 +32,7 @@ public class TrunkExchange implements Exchange {
     @Override
     public void cancel() {
         this.exchanger.send("EV");
-        this.trunk.setUser(null);
+        this.trunk.setUserId(0);
         this.exchanger.setActionState(ActionManager.Status.WAITING);
     }
 

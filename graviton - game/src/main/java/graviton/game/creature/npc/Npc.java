@@ -37,12 +37,7 @@ public class Npc implements Creature {
 
     @Override
     public String getGm() {
-        return  position.getCell().getId() + ";" + position.getOrientation() + ";0;" +
-                id + ";" + template.getId() + ";-4;" + template.getGfx() + "^100;" +
-                template.getSex() + ";" + (template.getColor(1) != -1 ? Integer.toHexString(template.getColor(1)) : "-1") +
-                (template.getColor(2) != -1 ? Integer.toHexString(template.getColor(2)) : "-1") +
-                (template.getColor(3) != -1 ? Integer.toHexString(template.getColor(3)) : "-1") + template.getAccessories() +
-                (template.getExtraClip() == -1 ? "" : template.getExtraClip()) + template.getCustomArt();
+        return template.generateGm(this);
     }
 
     @Override

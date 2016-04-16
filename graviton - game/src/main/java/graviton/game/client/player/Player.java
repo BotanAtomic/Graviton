@@ -56,9 +56,9 @@ public class Player implements Creature, Fightable {
     @Inject
     PlayerFactory factory;
 
-    private final int id;
-    private final Account account;
-    private final Classe classe;
+    final private int id;
+    final private Account account;
+    final private Classe classe;
 
     private String name;
     private int sex;
@@ -131,7 +131,7 @@ public class Player implements Creature, Fightable {
         this.zaaps.addAll(gameManager.getZaaps());
         this.actionManager = new ActionManager(this);
         String items = record.getValue(PLAYERS.ITEMS);
-        if (objects != null && items != null && !items.isEmpty())
+        if (items != null && !items.isEmpty())
             this.setStuff(record.getValue(PLAYERS.ITEMS));
         factory.add(this);
     }
@@ -239,10 +239,9 @@ public class Player implements Creature, Fightable {
         this.spellPlace = new HashMap<>();
         int id;
 
-        String[] spells = data.split(",");
-        for (String element : spells) {
+        for (String element : data.split(",")) {
             id = Integer.parseInt(element.split(";")[0]);
-            this.spells.put(id, gameManager.getSpellTemplate(id).getStats(Integer.parseInt(element.split(";")[1])));
+            this.spells.put(id, this.gameManager.getSpellTemplate(id).getStats(Integer.parseInt(element.split(";")[1])));
             this.spellPlace.put(id, element.split(";")[2].charAt(0));
         }
 
@@ -252,39 +251,40 @@ public class Player implements Creature, Fightable {
      * Objects
      **/
     private void setStuff(String objects) {
-        if (objects.charAt(objects.length() - 1) == ',')
-            objects = objects.substring(0, objects.length() - 1);
         for (String data : objects.split(",")) {
-            Object object = gameManager.getObject(Integer.parseInt(data));
-            if (object == null) continue;
-            if (object.getPosition() != ObjectPosition.NO_EQUIPED)
+            Object object = this.gameManager.getObject(Integer.parseInt(data));
+            if (object.getPosition().getKey() != ObjectPosition.NO_EQUIPED)
                 this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
             this.objects.put(object.getId(), object);
         }
+
     }
 
     public boolean addObject(Object newObject, boolean save) {
-        for (Object object : this.objects.values())
-            if (object.getTemplate().getId() == newObject.getTemplate().getId())
-                if (object.getStatistics().isSameStatistics(newObject.getStatistics())) {
-                    object.setQuantity(object.getQuantity() + newObject.getQuantity());
-                    gameManager.updateObject(object);
-                    send("OQ" + object.getId() + "|" + object.getQuantity());
-                    return false;
-                }
-        this.objects.put(newObject.getId(), newObject);
-        send("OAKO" + newObject.parseItem());
-        if (save)
-            gameManager.saveObject(newObject);
-        save();
-        return true;
+        final boolean[] value = {true};
+        this.objects.values().stream().filter(object -> object.getTemplate().getId() == newObject.getTemplate().getId() &&
+                object.getStatistics().isSameStatistics(newObject.getStatistics())).forEach(object1 -> {
+            object1.setQuantity(object1.getQuantity() + newObject.getQuantity());
+            this.gameManager.updateObject(object1);
+            this.send("OQ" + object1.getId() + "|" + object1.getQuantity());
+            value[0] = false;
+        });
+        if (value[0]) {
+            this.objects.put(newObject.getId(), newObject);
+            this.send("OAKO" + newObject.parseItem());
+            if (save) {
+                this.gameManager.saveObject(newObject);
+                this.save();
+            }
+        }
+        this.refreshPods();
+        return value[0];
     }
 
     public Object getSameObject(Object object) {
-        for (Object similar : this.objects.values())
-            if (object.getTemplate().getId() == similar.getTemplate().getId() && object.getStatistics().isSameStatistics(similar.getStatistics()))
-                return similar;
-        return null;
+        final Object[] similarObject = {null};
+        this.objects.values().stream().filter(similar -> object.getTemplate().getId() == similar.getTemplate().getId() && object.getStatistics().isSameStatistics(similar.getStatistics())).forEach(object1 -> similarObject[0] = object1);
+        return similarObject[0];
     }
 
     public void setObjectQuantity(Object object, int quantity) {
@@ -293,28 +293,26 @@ public class Player implements Creature, Fightable {
     }
 
     public void refreshQuantity() {
-        for (Object object : this.objects.values())
-            send("OQ" + object.getId() + "|" + object.getQuantity());
+        this.objects.values().forEach(object -> send("OQ" + object.getId() + "|" + object.getQuantity()));
     }
 
     public void removeObject(int id, boolean save) {
         this.objects.remove(id);
-        if (save)
+        if (save) {
             gameManager.removeObject(id);
+            save();
+        }
         send("OR" + id);
     }
 
     public void removeObject(int id, int quantity) {
         Object object = this.objects.get(id);
 
-        if (object != null) {
-            if ((object.getQuantity() - quantity) <= 0) {
-                removeObject(id, true);
-                return;
-            }
-            object.setQuantity(object.getQuantity() - quantity);
-            refreshQuantity();
-        }
+        if (object.getQuantity() <= quantity)
+            this.removeObject(id, true);
+        else
+            this.setObjectQuantity(object, object.getQuantity() - quantity);
+        this.refreshPods();
     }
 
     public boolean hasObject(int id) {
@@ -322,29 +320,39 @@ public class Player implements Creature, Fightable {
     }
 
     public Object getObjectByTemplate(int id) {
-        for (Object object : objects.values())
-            if (object.getTemplate().getId() == id)
-                return object;
-        return null;
+        final Object[] object = {null};
+        objects.values().stream().filter(object1 -> object1.getTemplate().getId() == id).forEach(object2 -> object[0] = object2);
+        return object[0];
     }
 
     public void moveObject(String packet) {
-        String[] informations = packet.split("" + (char) 0x0A)[0].split("\\|");
-
+        String[] informations = packet.split("\\|");
+        int position = Integer.parseInt(informations[1]);
         Object object = this.objects.get(Integer.parseInt(informations[0]));
-        object.changePlace(ObjectPosition.get(Integer.parseInt(informations[1])));
 
-        send("OM" + object.getId() + "|" + (object.getPosition() == ObjectPosition.NO_EQUIPED ? "" : object.getPosition().id));
+        object.changePlace(ObjectPosition.get(position), position >= 35 && position <= 57 ? position : 0);
 
-        this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
-        send(getPacket(Packets.As));
-        getMap().send("Oa" + this.id + "|" + getPacket(Packets.GMS));
+        this.send("OM" + object.getId() + "|" + (object.getPosition().getKey() == ObjectPosition.NO_EQUIPED ? object.getPosition().getValue() == 0 ?  "" : object.getPosition().getValue() : object.getPosition().getKey().id));
+        if (object.getPosition().getKey() != ObjectPosition.NO_EQUIPED) {
+            this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
+        } else {
+            this.statistics.get(StatsType.STUFF).removeStatistics(object.getStatistics());
+        }
+
+        this.send(getPacket(Packets.As));
+        this.getMap().send("Oa" + this.id + "|" + getPacket(Packets.GMS));
+    }
+
+    public void removeObject(String packet) {
+        String[] informations = packet.split("\\|");
+        this.removeObject(Integer.parseInt(informations[0]), Integer.parseInt(informations[1]));
     }
 
     public String parseObject() {
+        if (this.objects.isEmpty()) return "";
         StringBuilder builder = new StringBuilder();
         objects.values().forEach(object -> builder.append(object.getId()).append(","));
-        return builder.toString();
+        return builder.toString().substring(0, builder.length() - 1);
     }
 
     /**
@@ -374,16 +382,13 @@ public class Player implements Creature, Fightable {
 
     public String parseSpells() {
         StringBuilder builder = new StringBuilder();
-        for (int key : this.spells.keySet()) {
-            Spell spell = this.spells.get(key);
+        this.spells.keySet().forEach(spellId -> {
+            Spell spell = this.spells.get(spellId);
             builder.append(spell.getTemplate()).append(";").append(spell.getLevel()).append(";");
-            if (this.spellPlace.get(key) != null)
-                builder.append(this.spellPlace.get(key));
-            else
-                builder.append("_");
+            builder.append(this.spellPlace.get(spellId) != null ? this.spellPlace.get(spellId) : "_");
             builder.append(",");
-        }
-        return builder.toString();
+        });
+        return builder.toString().substring(0, builder.length() - 1);
     }
 
     public void learnSpell(int spell, int level) {
@@ -392,7 +397,7 @@ public class Player implements Creature, Fightable {
 
     public void boostStatistics(int id) {
         this.classe.boostStatistics(this, id);
-        refreshPods();
+        this.refreshPods();
     }
 
     public void refreshPods() {
@@ -443,12 +448,9 @@ public class Player implements Creature, Fightable {
     }
 
     public Object getObjectByPosition(ObjectPosition position) {
-        if (position == ObjectPosition.NO_EQUIPED)
-            return null;
-        for (Object object : this.objects.values())
-            if (object.getPosition() == position)
-                return object;
-        return null;
+        final Object[] value = {null};
+        this.objects.values().stream().filter(object -> object.getPosition().getKey() == position).forEach(object1 -> value[0] = object1);
+        return value[0];
     }
 
     public void sendGuildInfos(char e) {
@@ -720,14 +722,13 @@ public class Player implements Creature, Fightable {
         return "";
     }
 
-    private int getPodsUsed() {
-        int pod = 0;
-        for (Object object : this.objects.values())
-            pod += (object.getTemplate().getUsedPod() * object.getQuantity());
-        return pod;
+    public int getPodsUsed() {
+        final int[] pod = {0};
+        this.objects.values().forEach(object -> pod[0] += object.getTemplate().getUsedPod() * object.getQuantity());
+        return pod[0];
     }
 
-    private int getMaxPods() {
+    public int getMaxPods() {
         return this.getTotalStatistics().getEffect(Stats.ADD_PODS) + this.getTotalStatistics().getEffect(Stats.ADD_FORC) * 5 + 1000;
     }
 

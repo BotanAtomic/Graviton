@@ -58,7 +58,7 @@ public class NpcFactory extends Factory<NpcTemplate> {
         Record record = database.getRecord(NPC_TEMPLATE, NPC_TEMPLATE.ID.equal(id));
         if (record != null) {
             int[] colors = {record.getValue(NPC_TEMPLATE.COLOR1), record.getValue(NPC_TEMPLATE.COLOR2), record.getValue(NPC_TEMPLATE.COLOR3)};
-            npcTemplate = new NpcTemplate(id, record.getValue(NPC_TEMPLATE.GFX), record.getValue(NPC_TEMPLATE.SEX), colors, record.getValue(NPC_TEMPLATE.ACCESSORIES), record.getValue(NPC_TEMPLATE.EXTRACLIP), record.getValue(NPC_TEMPLATE.CUSTOMARTWORK), record.getValue(NPC_TEMPLATE.INITQUESTION));
+            npcTemplate = new NpcTemplate(id, record.getValue(NPC_TEMPLATE.GFX), record.getValue(NPC_TEMPLATE.SEX), colors, record.getValue(NPC_TEMPLATE.ACCESSORIES), record.getValue(NPC_TEMPLATE.EXTRACLIP), record.getValue(NPC_TEMPLATE.CUSTOMARTWORK), Integer.parseInt(record.getValue(NPC_TEMPLATE.INITQUESTION)));
             this.templates.put(id, npcTemplate);
         }
         return npcTemplate;

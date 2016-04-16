@@ -2,6 +2,8 @@ package graviton.game.object;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import graviton.common.Pair;
+import graviton.common.Parameter;
 import graviton.factory.ObjectFactory;
 import graviton.game.GameManager;
 import graviton.game.statistics.Statistics;
@@ -29,41 +31,39 @@ public class Object {
 
     private int quantity;
 
-    private ObjectPosition position;
+    private Pair<ObjectPosition,Integer> position;
 
     private Statistics statistics;
-    private Map<Integer, String> stringStats;
 
-    public Object(int id, int template, int quantity, int position, String statistics,Injector injector) {
+    public Object(int id, int template, int quantity, int position, String statistics, Injector injector) {
         injector.injectMembers(this);
         this.id = id;
         this.template = manager.getObjectTemplate(template);
-        this.position = ObjectPosition.get(position);
+        this.position = new Pair<>(ObjectPosition.get(position),position > 15 ? position : 0);
         this.quantity = quantity;
-        this.statistics = new Statistics();
-        this.stringStats = new TreeMap<>();
-        this.parseStringToStats(statistics);
+        this.statistics = this.template.getStatistics(statistics, true);
     }
 
-    public Object(int id, int template, int quantity, ObjectPosition position, Statistics statistics,Injector injector) {
+    public Object(int id, int template, int quantity, ObjectPosition position, Statistics statistics, Injector injector) {
         injector.injectMembers(this);
         this.id = id;
         this.template = manager.getObjectTemplate(template);
         this.quantity = quantity;
-        this.position = position;
+        this.position = new Pair<>(position,0);
         this.statistics = statistics;
-        this.stringStats = new TreeMap<>();
     }
 
-    public Object getClone(int quantity,boolean create) {
-        Object object =  new Object(objectFactory.getNextId(),template.getId(),quantity,ObjectPosition.NO_EQUIPED,this.statistics,injector);
-        if(create)
+    public Object getClone(int quantity, boolean create) {
+        Object object = new Object(objectFactory.getNextId(), template.getId(), quantity, ObjectPosition.NO_EQUIPED, this.statistics, injector);
+        if (create)
             objectFactory.create(object);
         return object;
     }
 
-    public void changePlace(ObjectPosition newPlace) {
-        this.position = newPlace;
+    public void changePlace(ObjectPosition newPlace, int shortcut) {
+        position.setKey(newPlace);
+        if(shortcut != 0)
+            position.setValue(shortcut);
         objectFactory.update(this);
     }
 
@@ -78,70 +78,25 @@ public class Object {
 
     public String parseItem() {
         StringBuilder builder = new StringBuilder();
-        String position = this.getPosition() == ObjectPosition.NO_EQUIPED ? "" : Integer.toHexString(this.getPosition().id);
+        String position = this.position.getKey() == ObjectPosition.NO_EQUIPED ? this.position.getValue() != 0 ? Integer.toHexString(this.position.getValue()) : "-1" : Integer.toHexString(this.position.getKey().id);
         builder.append(Integer.toHexString(this.getId())).append("~").append(Integer.toHexString(this.getTemplate().getId())).append("~").append(Integer.toHexString(this.getQuantity())).append("~").append(position).append("~").append(this.parseEffects()).append(";");
         return builder.toString();
     }
 
     public String parseEffects() {
-        StringBuilder builder = new StringBuilder();
-        boolean isFirst = true;
+        final StringBuilder builder = new StringBuilder();
+        final java.lang.Object[] value = {null};
 
-        for (Map.Entry<Integer, Integer> entry : this.statistics.getEffects().entrySet()) {
-            if (!isFirst)
-                builder.append(",");
-            String jet = "0d0+" + entry.getValue();
-            builder.append(Integer.toHexString(entry.getKey())).append("#").append(Integer.toHexString(entry.getValue())).append("#0#0#").append(jet);
-            isFirst = false;
-        }
+        this.statistics.getEffects().keySet().forEach(i -> {
+            value[0] = this.statistics.getEffect(i);
+            builder.append(Integer.toHexString(i)).append("#").append(Integer.toHexString((int) value[0])).append("#0#0#").append("0d0+" + value[0]).append(",");
+        });
 
-        for (Map.Entry<Integer, String> entry : stringStats.entrySet()) {
-            if (!isFirst)
-                builder.append(",");
-            builder.append(Integer.toHexString(entry.getKey())).append("#0#0#0#").append(entry.getValue());
-            isFirst = false;
-        }
-        return builder.toString();
-    }
+        this.statistics.getOptionalEffect().keySet().forEach(i -> {
+            Parameter parameter = (Parameter) this.statistics.getOptionalEffect(i);
+            builder.append(Integer.toHexString(i)).append("#").append(Integer.toHexString((int)parameter.getFirst())).append("#").append(Integer.toHexString((int)parameter.getSecond())).append("#").append(Integer.toHexString((int)parameter.getThird())).append("#").append(parameter.getFourth()).append(",");
+        });
 
-    public void parseStringToStats(String statistics) {
-        if (statistics.equals("")) return;
-        for (String s : statistics.split(",")) {
-            try {
-                String[] stats = s.split("#");
-                int id = Integer.parseInt(stats[0], 16);
-                if (id == 997 || id == 996) {
-                    stringStats.put(id, stats[4]);
-                    continue;
-                }
-                if ((!stats[3].equals("") && !stats[3].equals("0"))) {
-                    stringStats.put(id, stats[3]);
-                    continue;
-                }
-                boolean follow1 = true;
-                switch (id) {
-                    case 110:
-                    case 139:
-                    case 605:
-                    case 614:
-                        follow1 = false;
-                        break;
-                }
-                if (!follow1)
-                    continue;
-
-                boolean follow2 = true;
-                for (int a : template.getSwordEffectId())
-                    if (a == id)
-                        follow2 = false;
-
-                if (!follow2)
-                    continue;
-                this.statistics.addEffect(id, Integer.parseInt(stats[1], 16));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
+        return builder.toString().substring(0, builder.length() -1);
     }
 }

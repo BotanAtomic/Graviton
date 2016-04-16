@@ -32,7 +32,7 @@ public class Trunk {
 
     private boolean isBank = false;
 
-    private Player user = null;
+    private int userId = 0;
 
     public Trunk(int id, long kamas, Maps maps, Cell cell, String objects, Injector injector) {
         injector.injectMembers(this);
@@ -69,12 +69,18 @@ public class Trunk {
     }
 
     public void open(Player player) {
-        if (this.user != null)
-            player.send("Im120");
+        if (this.userId != 0) {
+            if(gameManager.getPlayer(userId) != null)
+                player.send("Im120");
+            else {
+                userId = 0;
+                open(player);
+            }
+        }
         else {
             player.send("ECK5");
             player.send("EL" + getPacket());
-            this.user = player;
+            this.userId = player.getId();
         }
     }
 

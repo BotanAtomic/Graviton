@@ -198,7 +198,7 @@ public class Maps {
 
     public String getGMs() {
         StringBuilder packet = new StringBuilder();
-        creatures.values().forEach(creature -> packet.append("GM|+").append(creature.getGm()).append('\u0000'));
+        creatures.values().forEach(creature -> packet.append("GM|+").append(creature.getGm()).append("\n"));
         return packet.toString();
     }
 

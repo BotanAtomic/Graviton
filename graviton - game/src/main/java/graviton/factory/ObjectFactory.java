@@ -9,10 +9,14 @@ import graviton.enums.DataType;
 import graviton.game.maps.object.InteractiveObjectTemplate;
 import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static graviton.database.utils.game.Tables.ITEMS;
@@ -26,6 +30,10 @@ import static graviton.database.utils.game.Tables.ITEM_TEMPLATE;
 public class ObjectFactory extends Factory<ObjectTemplate> {
     private final Map<Integer, ObjectTemplate> objectsTemplate;
     private final Map<Integer, InteractiveObjectTemplate> interactiveObjectTemplate;
+
+    @Getter
+    private List<Integer> effects;
+
     @Inject
     Injector injector;
 
@@ -39,22 +47,19 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
     public Object load(int id) {
         Object object = null;
         Record record = database.getRecord(ITEMS, ITEMS.ID.equal(id));
-
         if (record != null)
             object = new Object(id, record.getValue(ITEMS.TEMPLATE), record.getValue(ITEMS.QUANTITY), record.getValue(ITEMS.POSITION), record.getValue(ITEMS.STATS), injector);
-
         return object;
     }
 
     public void create(Object object) {
         database.getDSLContext()
                 .insertInto(ITEMS, ITEMS.ID, ITEMS.TEMPLATE, ITEMS.QUANTITY, ITEMS.POSITION, ITEMS.STATS)
-                .values(object.getId(), object.getTemplate().getId(), object.getQuantity(), object.getPosition().id,
-                        object.parseEffects()).execute();
+                .values(object.getId(), object.getTemplate().getId(), object.getQuantity(), object.getPosition().getKey().id, object.parseEffects()).execute();
     }
 
     public void update(Object object) {
-        database.getDSLContext().update(ITEMS).set(ITEMS.QUANTITY, object.getQuantity()).set(ITEMS.POSITION, object.getPosition().id)
+        database.getDSLContext().update(ITEMS).set(ITEMS.QUANTITY, object.getQuantity()).set(ITEMS.POSITION, object.getPosition().getValue() != 0 ? object.getPosition().getValue() : object.getPosition().getKey().id)
                 .set(ITEMS.STATS, object.parseEffects()).where(ITEMS.ID.equal(object.getId())).execute();
     }
 
@@ -77,8 +82,8 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
 
     private ObjectTemplate get(Record record) {
         return new ObjectTemplate(record.getValue(ITEM_TEMPLATE.ID), record.getValue(ITEM_TEMPLATE.TYPE), record.getValue(ITEM_TEMPLATE.NAME),
-                record.getValue(ITEM_TEMPLATE.PANOPLIE), record.getValue(ITEM_TEMPLATE.STATSTEMPLATE), record.getValue(ITEM_TEMPLATE.POD),
-                record.getValue(ITEM_TEMPLATE.PANOPLIE), record.getValue(ITEM_TEMPLATE.PRICE), record.getValue(ITEM_TEMPLATE.CONDITION),
+                record.getValue(ITEM_TEMPLATE.LEVEL), record.getValue(ITEM_TEMPLATE.STATSTEMPLATE), record.getValue(ITEM_TEMPLATE.POD),
+                record.getValue(ITEM_TEMPLATE.PRICE), record.getValue(ITEM_TEMPLATE.CONDITION),
                 record.getValue(ITEM_TEMPLATE.ARMEINFOS), injector);
     }
 
@@ -104,6 +109,7 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
             InteractiveObjectTemplate template = (InteractiveObjectTemplate) object;
             this.interactiveObjectTemplate.put(template.getId(), template);
         }
+        this.effects = (ArrayList<Integer>) decodeObject("objects/effects");
     }
 
     @Override

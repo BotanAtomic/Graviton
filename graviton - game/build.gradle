@@ -23,6 +23,25 @@ dependencies {
 }
 
 jooq {
+    game(sourceSets.main) {
+        jdbc {
+            driver = 'com.mysql.jdbc.Driver'
+            url = 'jdbc:mysql://localhost:3306'
+            user = 'root'
+            password = ''
+            schema = 'game'
+        }
+        generator {
+            database {
+                name = 'org.jooq.util.mysql.MySQLDatabase'
+                inputSchema = 'game'
+            }
+            target {
+                packageName = 'graviton.database.utils.game'
+                directory = 'src/main/java'
+            }
+        }
+    }
     login(sourceSets.main) {
         jdbc {
             driver = 'com.mysql.jdbc.Driver'
@@ -41,5 +60,5 @@ jooq {
                 directory = 'src/main/java'
             }
         }
-     }
+    }
 }

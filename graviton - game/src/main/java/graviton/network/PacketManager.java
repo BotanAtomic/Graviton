@@ -63,6 +63,8 @@ public class PacketManager {
 
         packets.put("ER", (client, packet) -> client.getCurrentPlayer().askExchange(packet));
 
+        packets.put("Od", (client, packet) -> client.getCurrentPlayer().removeObject(packet));
+
         packets.put("OM", (client, packet) -> client.getCurrentPlayer().moveObject(packet));
 
         packets.put("DV", (client, packet) -> {
