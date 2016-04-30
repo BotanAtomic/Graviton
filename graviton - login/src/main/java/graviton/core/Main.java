@@ -10,7 +10,7 @@ import graviton.core.modules.DefaultModule;
 public class Main {
 
     public static void main(String[] args) {
-        Runtime.getRuntime().addShutdownHook(new Thread(Guice.createInjector(new DefaultModule()).getInstance(Manager.class).start()::stop));
+        Runtime.getRuntime().addShutdownHook(new Thread(Guice.createInjector(new DefaultModule()).getInstance(GlobalManager.class).start()::stop));
     }
 }
 

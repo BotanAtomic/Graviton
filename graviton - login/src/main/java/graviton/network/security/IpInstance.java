@@ -12,18 +12,18 @@ public final class IpInstance {
     private boolean attacker = false;
     private boolean banned = false;
 
+    public IpInstance() {
+        this.lastConnection = 0;
+        this.connection = 0;
+        this.warning = 0;
+    }
+
     public boolean isAttacker() {
         return attacker;
     }
 
     public void isAttacker(boolean attacker) {
         this.attacker = attacker;
-    }
-
-    public IpInstance() {
-        this.lastConnection = 0;
-        this.connection = 0;
-        this.warning = 0;
     }
 
     public void resetConnection() {
@@ -54,8 +54,6 @@ public final class IpInstance {
 
     public boolean addWarning() {
         warning++;
-        if (warning >= 3)
-            return banned = true;
-        return false;
+        return (warning >= 3) ? banned = true : false;
     }
 }

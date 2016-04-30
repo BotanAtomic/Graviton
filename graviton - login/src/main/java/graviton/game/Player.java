@@ -2,7 +2,7 @@ package graviton.game;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.core.Manager;
+import graviton.core.GlobalManager;
 import lombok.Data;
 
 /**
@@ -11,7 +11,7 @@ import lombok.Data;
 @Data
 public class Player {
     @Inject
-    Manager manager;
+    GlobalManager globalManager;
 
     private int id, server;
     private String name;
@@ -21,7 +21,6 @@ public class Player {
         this.id = id;
         this.name = name;
         this.server = server;
-        manager.getPlayers().put(id, this);
     }
 
     public Player(int server) {

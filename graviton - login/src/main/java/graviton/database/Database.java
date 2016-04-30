@@ -2,10 +2,11 @@ package graviton.database;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import graviton.api.Manageable;
+import graviton.core.GlobalManager;
 import graviton.game.Account;
 import graviton.game.Player;
 import graviton.game.Server;
-import graviton.core.Manager;
 import graviton.network.login.LoginClient;
 import org.jooq.*;
 
@@ -17,14 +18,15 @@ import static graviton.database.utils.Tables.*;
 /**
  * Created by Botan on 06/07/2015.
  */
-public class Database {
+public class Database implements Manageable {
     @Inject
     Injector injector;
 
     @Inject
-    Manager manager;
+    GlobalManager globalManager;
 
     private DSLContext dslContext;
+
     private List<String> bannedIp;
 
     public Database(DSLContext context) {
@@ -48,6 +50,12 @@ public class Database {
         return dslContext.select().from(table).where(condition).fetchOne();
     }
 
+    @Override
+    public void configure() {
+        loadBannedIp();
+        loadServers();
+    }
+
     public void stop() {
 
     }
@@ -66,7 +74,7 @@ public class Database {
         Record record = getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(arguments));
 
         if (record != null) {
-            manager.checkAccount(record.getValue(ACCOUNTS.ID));
+            globalManager.checkAccount(record.getValue(ACCOUNTS.ID));
             return new Account(record.getValue(ACCOUNTS.ID),
                     record.getValue(ACCOUNTS.ACCOUNT), record.getValue(ACCOUNTS.PASSWORD),
                     record.getValue(ACCOUNTS.PSEUDO), record.getValue(ACCOUNTS.QUESTION), record.getValue(ACCOUNTS.RANK), injector);
@@ -105,6 +113,28 @@ public class Database {
         return true;
     }
 
+    public void loadPlayers(Account account) {
+        Result<Record> result = getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId()));
+        for (Record record : result)
+            account.getPlayers().add(new Player(record.getValue(PLAYERS.ID), record.getValue(PLAYERS.NAME), record.getValue(PLAYERS.SERVER), injector));
+    }
+
+    public List<Player> getPlayers(String nickname) {
+        Record result = getRecord(ACCOUNTS, ACCOUNTS.PSEUDO.equal(nickname));
+        if (result != null)
+            return getResult(PLAYERS, PLAYERS.ACCOUNT.equal(result.getValue(ACCOUNTS.ID))).stream().map(record -> new Player(record.getValue(PLAYERS.SERVER))).collect(Collectors.toList());
+        else
+            return null;
+    }
+
+    public void loadServers() {
+        Map<Integer, Server> servers = new HashMap<>();
+        Result<Record> result = getResult(SERVERS);
+        for (Record record : result)
+            servers.put(record.getValue(SERVERS.ID), new Server(record.getValue(SERVERS.ID), record.getValue(SERVERS.KEY), injector));
+        globalManager.setServers(Collections.unmodifiableMap(servers));
+    }
+
     private String encrypt(String pass, String key) {
         final char[] HASH = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
                 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A',
@@ -122,34 +152,5 @@ public class Database {
             crypted.append(HASH[(int) ((d + c2 % i) % i)]).append(HASH[(j + c2 % i) % i]);
         }
         return crypted.toString();
-    }
-
-    public void loadPlayers(Account account) {
-        Result<Record> result = getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId()));
-        for (Record record : result)
-            account.getPlayers().add(new Player(record.getValue(PLAYERS.ID), record.getValue(PLAYERS.NAME), record.getValue(PLAYERS.SERVER), injector));
-    }
-
-    public List<Player> getPlayers(String nickname) {
-        List<Player> players = new ArrayList<>();
-        Result<Record> result = getResult(PLAYERS, PLAYERS.ACCOUNT.equal(dslContext.select(ACCOUNTS.ID).where(ACCOUNTS.PSEUDO.equal(nickname)).fetchOne().getValue(ACCOUNTS.ID)));
-        players.addAll(result.stream().map(record -> new Player(record.getValue(PLAYERS.SERVER))).collect(Collectors.toList()));
-        return players;
-    }
-
-    public void loadServers() {
-        Map<Integer, Server> servers = new HashMap<>();
-        Result<Record> result = getResult(SERVERS);
-        for (Record record : result)
-            servers.put(record.getValue(SERVERS.ID), new Server(record.getValue(SERVERS.ID), record.getValue(SERVERS.KEY), injector));
-        manager.setServers(Collections.unmodifiableMap(servers));
-    }
-
-    public String getHostList() {
-        StringBuilder sb = new StringBuilder("AH");
-        List<Server> list = new ArrayList<>();
-        list.addAll(manager.getServers().values());
-        list.forEach((server) -> sb.append(server.getId()).append(";").append(server.getState().id).append(";110;1|"));
-        return sb.toString();
     }
 }

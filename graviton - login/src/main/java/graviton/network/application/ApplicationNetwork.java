@@ -3,10 +3,10 @@ package graviton.network.application;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
 import graviton.api.NetworkService;
+import graviton.core.GlobalManager;
 import graviton.database.Database;
 import graviton.game.Account;
 import graviton.game.Server;
-import graviton.core.Manager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoHandler;
@@ -22,21 +22,20 @@ import java.net.InetSocketAddress;
  * PORT = 5000
  */
 @Slf4j
-public class ApplicationNetwork implements NetworkService, IoHandler {
+public class ApplicationNetwork extends NetworkService implements IoHandler {
+    private final NioSocketAcceptor acceptor;
+    private final GlobalManager globalManager;
     @Inject
     Database database;
-
-    private final NioSocketAcceptor acceptor;
-    private final Manager manager;
-
     private IoSession client;
     private String remoteIP = null;
     private Server server;
 
     @Inject
-    public ApplicationNetwork(Manager manager) {
+    public ApplicationNetwork(GlobalManager globalManager) {
+        globalManager.addManageable(this);
         this.acceptor = new NioSocketAcceptor();
-        this.manager = manager;
+        this.globalManager = globalManager;
     }
 
     @Override
@@ -51,7 +50,7 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
 
     @Override
     public void sessionOpened(IoSession session) throws Exception {
-        log.info("[Application {}] connected", session.getId());
+        log.info("[Application {}] connectedClient", session.getId());
     }
 
     @Override
@@ -102,7 +101,7 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
 
                 break;
             case 'S':
-                this.server = manager.getServerByKey(finalPacket);
+                this.server = globalManager.getServerByKey(finalPacket);
                 break;
             case 'C':
                 String[] args = finalPacket.split(";");
@@ -112,7 +111,7 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
                         send("K");
                         return;
                     }
-                    send(manager.getServerForApplication());
+                    send(globalManager.getServerForApplication());
                     return;
                 }
                 send("E");
@@ -144,7 +143,7 @@ public class ApplicationNetwork implements NetworkService, IoHandler {
     }
 
     @Override
-    public void start() {
+    public void configure() {
         acceptor.setHandler(this);
         if (acceptor.isActive())
             return;

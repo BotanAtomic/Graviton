@@ -21,17 +21,18 @@ public class GravitonFilter extends IoFilterAdapter {
 
     private final Database database;
 
-    private final int maxConnexion;
-    private final int delay;
+    private final byte maxConnexion;
+    private final short delay;
 
     private final Map<String, IpInstance> data;
-    private final Lock locker = new ReentrantLock();
+    private final Lock locker;
 
-    public GravitonFilter(int connexion, int delay, Database database) {
+    public GravitonFilter(byte connexion, short delay, Database database) {
         this.maxConnexion = connexion;
         this.delay = delay;
         this.data = new HashMap<>();
         this.database = database;
+        this.locker = new ReentrantLock();
     }
 
     private boolean isAttack(IpInstance ipInstance,String address,IoSession session, long difference) {
@@ -66,7 +67,7 @@ public class GravitonFilter extends IoFilterAdapter {
             if(isAttack(ipInstance,address,session,difference))
                 return true;
 
-            if (difference < delay) {
+            if (difference < (delay * 1000)) {
                 if (ipInstance.getConnection() > maxConnexion)
                     if (ipInstance.addWarning())
                         database.banIp(address);
@@ -96,7 +97,6 @@ public class GravitonFilter extends IoFilterAdapter {
             nextFilter.sessionCreated(session);
         else
             session.close(true);
-
     }
 
     @Override

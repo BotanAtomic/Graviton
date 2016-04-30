@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
-import graviton.core.Manager;
+import graviton.core.GlobalManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
@@ -13,29 +13,35 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * Created by Botan on 07/07/2015.
  */
 @Slf4j
-public class ExchangeNetwork implements NetworkService, IoHandler {
+public class ExchangeNetwork extends NetworkService implements IoHandler {
     private final NioSocketAcceptor acceptor;
-    private final Manager manager;
+    private final GlobalManager globalManager;
+
     @Inject
     Injector injector;
+
     @InjectSetting("exchange.port")
     private int port;
 
     @Inject
-    public ExchangeNetwork(Manager manager) {
+    public ExchangeNetwork(GlobalManager globalManager) {
+        globalManager.addManageable(this);
         this.acceptor = new NioSocketAcceptor();
-        this.manager = manager;
+        this.globalManager = globalManager;
     }
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
         log.info("[(E)Session {}] created", session.getId());
-        new ExchangeClient(session,injector);
+        new ExchangeClient(session, injector);
     }
 
     @Override
@@ -45,7 +51,8 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
-        manager.getClient(session.getId()).kick();
+        ExchangeClient client = (ExchangeClient) session.getAttribute("client");
+        client.kick();
         log.info("[(E)Session {}] closed", session.getId());
     }
 
@@ -62,11 +69,13 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
         String packet = decryptPacket(message);
-        if (packet.equals("PING") && packet.length() == 4) {
-            manager.getClient(session.getId()).send("PONG");
-            return;
-        }
-        manager.getClient(session.getId()).parsePacket(packet);
+        ExchangeClient client = (ExchangeClient) session.getAttribute("client");
+
+        if (packet.equals("PING"))
+            client.send("PONG");
+        else
+            client.parsePacket(packet);
+
         log.info("[(E)Session {}] receive < {}", session.getId(), packet);
     }
 
@@ -82,7 +91,7 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
     }
 
     @Override
-    public void start() {
+    public void configure() {
         acceptor.setReuseAddress(true);
         acceptor.setHandler(this);
         if (acceptor.isActive())
@@ -98,5 +107,9 @@ public class ExchangeNetwork implements NetworkService, IoHandler {
     public void stop() {
         acceptor.unbind();
         acceptor.getManagedSessions().values().forEach(session -> session.close(true));
+    }
+
+    public Collection<ExchangeClient> getSessions() {
+        return this.acceptor.getManagedSessions().values().stream().map(session -> (ExchangeClient) session.getAttribute("client")).collect(Collectors.toCollection(ArrayList::new));
     }
 }

@@ -10,11 +10,11 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import graviton.api.InjectSetting;
 import graviton.common.Scanner;
+import graviton.core.GlobalManager;
 import graviton.database.Database;
-import graviton.core.Manager;
-import graviton.network.NetworkManager;
 import graviton.network.application.ApplicationNetwork;
 import graviton.network.exchange.ExchangeNetwork;
+import graviton.network.login.LoginNetwork;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import sun.misc.BASE64Decoder;
@@ -38,10 +38,8 @@ public class DefaultModule extends AbstractModule {
         /** Configuration **/
         initConfiguration();
 
-        bind(Manager.class).asEagerSingleton();
         bind(Scanner.class).asEagerSingleton();
-
-        bind(NetworkManager.class).asEagerSingleton();
+        bind(LoginNetwork.class).asEagerSingleton();
         bind(ExchangeNetwork.class).asEagerSingleton();
         bind(ApplicationNetwork.class).asEagerSingleton();
     }
@@ -51,9 +49,7 @@ public class DefaultModule extends AbstractModule {
         try {
             Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec("1Hbfh667adfDEJ78".getBytes(), "AES"));
-            byte[] decryptedValue64 = new BASE64Decoder().decodeBuffer(value);
-            byte[] decryptedByteValue = cipher.doFinal(decryptedValue64);
-            return new String(decryptedByteValue, "utf-8");
+            return new String(cipher.doFinal(new BASE64Decoder().decodeBuffer(value)), "utf-8");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -65,7 +61,8 @@ public class DefaultModule extends AbstractModule {
 
         try {
             properties.load(getClass().getClassLoader().getResourceAsStream("config.properties"));
-            bind(Database.class).toInstance(new Database(DSL.using(new HikariDataSource(new HikariConfig() {
+
+            final Database database = new Database(DSL.using(new HikariDataSource(new HikariConfig() {
                 {
                     setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
                     addDataSourceProperty("serverName", decrypt(properties.getProperty("database.ip")));
@@ -74,7 +71,10 @@ public class DefaultModule extends AbstractModule {
                     addDataSourceProperty("user", decrypt(properties.getProperty("database.user")));
                     addDataSourceProperty("password", decrypt(properties.getProperty("database.password")));
                 }
-            }).getConnection(), SQLDialect.MYSQL)));
+            }).getConnection(), SQLDialect.MYSQL));
+
+            bind(Database.class).toInstance(database);
+            bind(GlobalManager.class).toInstance(new GlobalManager(database));
         } catch (Exception e) {
             binder().addError(e);
             throw new RuntimeException(e);
@@ -87,9 +87,7 @@ public class DefaultModule extends AbstractModule {
 
                     encounter.register(injector(instance -> {
                         try {
-                            Object value = properties.get(field.getAnnotation(InjectSetting.class).value());
-
-                            field.set(instance, parse(value, field));
+                            field.set(instance, parse(properties.get(field.getAnnotation(InjectSetting.class).value()), field));
                         } catch (IllegalAccessException e) {
                             binder().addError(e);
                         }
@@ -99,15 +97,15 @@ public class DefaultModule extends AbstractModule {
         })));
     }
 
-    TypeListener listener(BiConsumer<TypeLiteral<?>, TypeEncounter<?>> consumer) {
+    private TypeListener listener(BiConsumer<TypeLiteral<?>, TypeEncounter<?>> consumer) {
         return consumer::accept;
     }
 
-    MembersInjector<Object> injector(Consumer<Object> consumer) {
+    private MembersInjector<Object> injector(Consumer<Object> consumer) {
         return consumer::accept;
     }
 
-    Object parse(Object value, Field field) {
+    private Object parse(Object value, Field field) {
         Type type = field.getType();
 
         if (type == boolean.class)

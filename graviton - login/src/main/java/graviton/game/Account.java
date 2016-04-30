@@ -3,7 +3,7 @@ package graviton.game;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.core.Manager;
+import graviton.core.GlobalManager;
 import graviton.network.login.LoginClient;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -19,12 +19,12 @@ import java.util.List;
 public class Account {
     private final int id, rank;
     @Inject
-    Manager manager;
+    GlobalManager globalManager;
     private String name, password, question, pseudo;
     private LoginClient client;
     private List<Player> players;
 
-    public Account(int id, String name, String password, String pseudo, String question, int rank,Injector injector) {
+    public Account(int id, String name, String password, String pseudo, String question, int rank, Injector injector) {
         injector.injectMembers(this);
         this.id = id;
         this.name = name;
@@ -33,9 +33,10 @@ public class Account {
         this.question = question;
         this.players = new ArrayList<>();
         this.rank = rank;
-        manager.getAccounts().put(id, this);
+        globalManager.getAccounts().put(id, this);
     }
-    public Account(String pseudo, int rank,Injector injector) {
+
+    public Account(String pseudo, int rank, Injector injector) {
         injector.injectMembers(this);
         this.id = 0;
         this.pseudo = pseudo;
@@ -43,11 +44,7 @@ public class Account {
     }
 
     public void delete() {
-        try {
-            if (manager.getAccounts().get(id) != null)
-                manager.getAccounts().remove(id);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        }
+        if (globalManager.getAccounts().get(id) != null)
+            globalManager.getAccounts().remove(id);
     }
 }

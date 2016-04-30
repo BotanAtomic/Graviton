@@ -3,8 +3,8 @@ package graviton.network.exchange;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.Client;
+import graviton.core.GlobalManager;
 import graviton.game.Server;
-import graviton.core.Manager;
 import graviton.network.application.ApplicationNetwork;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -16,28 +16,26 @@ import org.apache.mina.core.session.IoSession;
 @Data
 @Slf4j
 public class ExchangeClient implements Client {
-    @Inject
-    Manager manager;
-    @Inject
-    ApplicationNetwork network;
-
     private final long id;
     private final IoSession session;
-
+    @Inject
+    GlobalManager globalManager;
+    @Inject
+    ApplicationNetwork network;
     private Server server;
 
     public ExchangeClient(IoSession session,Injector injector) {
         injector.injectMembers(this);
         this.id = session.getId();
         this.session = session;
-        manager.addClient(this);
+        session.setAttribute("client", this);
         send("?");
     }
 
     public void addServer(int server, String key) {
-        if (manager.getServers().get(server).getKey().equals(key)) {
-            this.server = manager.getServers().get(server);
-            this.server.setState(Server.State.ONLINE);
+        if (globalManager.getServers().get(server).getKey().equals(key)) {
+            this.server = globalManager.getServers().get(server);
+            this.server.setState((byte) 1);
             this.server.setClient(this);
             send("I");
             return;
@@ -58,7 +56,7 @@ public class ExchangeClient implements Client {
                 log.info("[(E)Session {}] server {} is ready to connect", session.getId(), server.getId());
                 break;
             case 'C':
-                server.setState(getState(Integer.parseInt(finalPacket[0])));
+                server.setState(Byte.parseByte(finalPacket[0]));
             case 'R' :
                 network.send(packet);
                 break;
@@ -69,26 +67,11 @@ public class ExchangeClient implements Client {
 
     @Override
     public void kick() {
-        server.setState(Server.State.OFFLINE);
-        manager.removeClient(this);
-        session.close(true);
+        server.setState((byte) 0);
     }
 
     @Override
     public void send(String packet) {
         session.write(cryptPacket(packet));
-    }
-
-    private Server.State getState(int id) {
-        switch (id) {
-            case 0:
-                return Server.State.OFFLINE;
-            case 1:
-                return Server.State.ONLINE;
-            case 2:
-                return Server.State.SAVING;
-            default:
-                return null;
-        }
     }
 }

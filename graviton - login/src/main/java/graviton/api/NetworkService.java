@@ -9,12 +9,9 @@ import java.nio.charset.CharsetDecoder;
 /**
  * Created by Botan on 06/07/2015.
  */
-public interface NetworkService {
-    void start();
+public abstract class NetworkService implements Manageable {
 
-    void stop();
-
-    default String decryptPacket(Object o) {
+    protected String decryptPacket(Object o) {
         IoBuffer buffer = IoBuffer.allocate(2048);
         buffer.put((IoBuffer) o);
         buffer.flip();
