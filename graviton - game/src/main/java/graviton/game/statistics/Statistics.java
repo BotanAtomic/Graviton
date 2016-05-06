@@ -24,6 +24,11 @@ public class Statistics {
         this.optionalEffect = new HashMap<>();
     }
 
+    public Statistics(Map<Integer, Integer> effects) {
+        this.effects = effects;
+        this.optionalEffect = new HashMap<>();
+    }
+
     public Statistics(Player player, Map<Integer, Integer> effects) {
         this.effects = (effects == null ? new HashMap<>() : effects);
         this.effects.put(Stats.ADD_PA, player.getLevel() < 100 ? 6 : 7);
@@ -70,5 +75,16 @@ public class Statistics {
     public Statistics removeStatistics(Statistics statistics) {
         statistics.getEffects().keySet().forEach(i -> effects.put(i, ((effects.get(i) == null ||  statistics.getEffects().get(i) > effects.get(i) )? 0 : effects.get(i)) - statistics.getEffects().get(i)));
         return this;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder builder = new StringBuilder();
+        for (Map.Entry<Integer, Integer> entry : this.effects.entrySet()) {
+            if (builder.length() > 0)
+                builder.append(",");
+            builder.append(Integer.toHexString(entry.getKey())).append("#").append(Integer.toHexString(entry.getValue())).append("#0#0");
+        }
+        return builder.toString();
     }
 }

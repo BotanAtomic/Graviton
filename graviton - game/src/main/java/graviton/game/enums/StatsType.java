@@ -6,6 +6,7 @@ package graviton.game.enums;
 public enum StatsType {
     BASE,
     STUFF,
+    PANOPLY,
     GIFT,
     BUFF,
     MOUNT

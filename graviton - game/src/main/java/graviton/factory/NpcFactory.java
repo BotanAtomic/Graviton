@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
 import org.jooq.Result;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,9 +64,7 @@ public class NpcFactory extends Factory<NpcTemplate> {
     }
 
     public List<Npc> getNpcOnMap(Maps maps) {
-        List<Npc> npcs = new ArrayList<>();
-        npcs.addAll(database.getResult(NPCS, NPCS.MAP.equal(maps.getId())).stream().map(record -> new Npc(record.getValue(NPCS.TEMPLATE), maps, record.getValue(NPCS.CELL), record.getValue(NPCS.ORIENTATION), injector)).collect(Collectors.toList()));
-        return npcs;
+        return database.getResult(NPCS, NPCS.MAP.equal(maps.getId())).stream().map(record -> new Npc(record.getValue(NPCS.TEMPLATE), maps, record.getValue(NPCS.CELL), record.getValue(NPCS.ORIENTATION), injector)).collect(Collectors.toList());
     }
 
     @Override

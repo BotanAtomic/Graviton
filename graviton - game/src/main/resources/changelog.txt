@@ -5,7 +5,8 @@ Changelog (game) 19/03/2016
 - Chat with flood checker for mute 80%
 - Command by chat 100%
 - Command by console for admin 100%
-- Items 70.980%
+- Items 100%
+- Panoply 100%
 - Emotes 100%
 - Guild 60%
 - Alignement 90%

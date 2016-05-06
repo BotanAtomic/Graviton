@@ -12,5 +12,6 @@ public enum Packets {
     ASK,
     ASKI,
     As,
-    SL
+    SL,
+    OS
 }

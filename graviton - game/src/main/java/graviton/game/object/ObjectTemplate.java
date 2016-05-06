@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Parameter;
 import graviton.factory.ObjectFactory;
+import graviton.game.object.panoply.PanoplyTemplate;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 
@@ -27,9 +28,9 @@ public class ObjectTemplate {
     final private String information;
     @Inject
     ObjectFactory factory;
+    private PanoplyTemplate panoplyTemplate;
 
-
-    public ObjectTemplate(int id, int type, String name, int level, String statistics, int usedPod, int price, String condition, String information, Injector injector) {
+    public ObjectTemplate(int id, int type, String name, int level, String statistics, int usedPod, int price, String condition, String information, int panoplyId, Injector injector) {
         this.injector = injector;
         injector.injectMembers(this);
         this.id = id;
@@ -41,7 +42,11 @@ public class ObjectTemplate {
         this.price = price;
         this.condition = condition;
         this.information = information;
+        this.factory.addObjectTemplate(this);
+        if (panoplyId > 0)
+            this.panoplyTemplate = factory.getPanoply(panoplyId);
     }
+
 
     public Object createObject(int qua, boolean useMax) {
         return new Object(factory.getNextId(), this.getId(), qua, -1, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)), injector);
@@ -62,7 +67,7 @@ public class ObjectTemplate {
                 maximum = Integer.parseInt(arguments[2], 16);
                 statistic.addEffect(statisticId, useMax ? (maximum > 0 ? maximum : Integer.parseInt(arguments[1], 16)) : this.getRandomJet(argument));
             } else
-                statistic.addOptionalEffect(statisticId, new Parameter<>(Integer.parseInt(arguments[1], 16), Integer.parseInt(arguments[2], 16), Integer.parseInt(arguments[3],16), argument));
+                statistic.addOptionalEffect(statisticId, new Parameter<>(Integer.parseInt(arguments[1], 16), Integer.parseInt(arguments[2], 16), Integer.parseInt(arguments[3], 16), argument));
         }
         return statistic;
     }
