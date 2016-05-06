@@ -55,5 +55,6 @@
     <orderEntry type="library" exported="" name="Gradle: io.netty:netty-common:4.1.0.Beta5" level="project" />
     <orderEntry type="library" exported="" name="Gradle: io.netty:netty-resolver:4.1.0.Beta5" level="project" />
     <orderEntry type="library" exported="" name="Gradle: mysql:mysql-connector-java:5.1.38" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: it.unimi.dsi:fastutil:6.6.0" level="project" />
   </component>
 </module>

@@ -26,6 +26,9 @@ public class AccountFactory extends Factory<Account> {
     Injector injector;
 
     @Inject
+    PlayerFactory playerFactory;
+
+    @Inject
     public AccountFactory(@Named("database.login") Database database) {
         super(database);
         this.accounts = new ConcurrentHashMap<>();
@@ -33,12 +36,12 @@ public class AccountFactory extends Factory<Account> {
 
     public Account load(int id) {
         Record record = database.getRecord(ACCOUNTS, ACCOUNTS.ID.equal(id));
-        return record == null ? null : new Account(record, injector);
+        return record == null ? null : new Account(record, playerFactory, this, injector);
     }
 
     private Account load(String name) {
         Record record = database.getRecord(ACCOUNTS, ACCOUNTS.PSEUDO.equal(name));
-        return record == null ? null : new Account(record, injector);
+        return record == null ? null : new Account(record, playerFactory, this, injector);
     }
 
     public void update(Account account) {

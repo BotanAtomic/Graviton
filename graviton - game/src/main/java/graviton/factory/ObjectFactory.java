@@ -16,7 +16,6 @@ import org.jooq.Record;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static graviton.database.utils.game.Tables.ITEMS;
@@ -30,12 +29,10 @@ import static graviton.database.utils.game.Tables.ITEM_TEMPLATE;
 public class ObjectFactory extends Factory<ObjectTemplate> {
     private final Map<Integer, ObjectTemplate> objectsTemplate;
     private final Map<Integer, InteractiveObjectTemplate> interactiveObjectTemplate;
-
-    @Getter
-    private List<Integer> effects;
-
     @Inject
     Injector injector;
+    @Getter
+    private List<Integer> effects;
 
     @Inject
     public ObjectFactory(@Named("database.game") Database database) {
@@ -55,11 +52,11 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
     public void create(Object object) {
         database.getDSLContext()
                 .insertInto(ITEMS, ITEMS.ID, ITEMS.TEMPLATE, ITEMS.QUANTITY, ITEMS.POSITION, ITEMS.STATS)
-                .values(object.getId(), object.getTemplate().getId(), object.getQuantity(), object.getPosition().getKey().id, object.parseEffects()).execute();
+                .values(object.getId(), object.getTemplate().getId(), object.getQuantity(), object.getShortcut() != 0 ? object.getShortcut() : object.getObjectPosition().id, object.parseEffects()).execute();
     }
 
     public void update(Object object) {
-        database.getDSLContext().update(ITEMS).set(ITEMS.QUANTITY, object.getQuantity()).set(ITEMS.POSITION, object.getPosition().getValue() != 0 ? object.getPosition().getValue() : object.getPosition().getKey().id)
+        database.getDSLContext().update(ITEMS).set(ITEMS.QUANTITY, object.getQuantity()).set(ITEMS.POSITION, object.getShortcut() != 0 ? object.getShortcut() : object.getObjectPosition().id)
                 .set(ITEMS.STATS, object.parseEffects()).where(ITEMS.ID.equal(object.getId())).execute();
     }
 

@@ -6,9 +6,9 @@ import graviton.common.Pair;
 import graviton.factory.AccountFactory;
 import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
+import graviton.game.action.player.CommandManager;
 import graviton.game.admin.Admin;
 import graviton.game.client.player.Player;
-import graviton.game.action.player.CommandManager;
 import graviton.game.client.player.packet.Packets;
 import graviton.game.enums.Rank;
 import graviton.game.trunks.Trunk;
@@ -30,21 +30,16 @@ import static graviton.database.utils.login.Tables.ACCOUNTS;
  */
 @Data
 public class Account {
-    @Inject
-    PlayerFactory playerFactory;
-    @Inject
-    AccountFactory accountFactory;
+    private final PlayerFactory playerFactory;
+    private final AccountFactory accountFactory;
+    private final Injector injector;
+    private final int id;
+    private final String answer;
+    private final String pseudo;
     @Inject
     CommandManager commandManager;
     @Inject
     GameManager manager;
-
-    private final Injector injector;
-
-    private final int id;
-    private final String answer;
-    private final String pseudo;
-
     private Rank rank;
     private String ipAdress;
     private String informations;
@@ -63,9 +58,13 @@ public class Account {
 
     private Admin admin;
 
-    public Account(Record record, Injector injector) {
+    public Account(Record record, PlayerFactory playerFactory, AccountFactory accountFactory, Injector injector) {
         injector.injectMembers(this);
+
+        this.playerFactory = playerFactory;
+        this.accountFactory = accountFactory;
         this.injector = injector;
+
         this.id = record.getValue(ACCOUNTS.ID);
         this.accountFactory.getElements().put(id, this);
         this.answer = record.getValue(ACCOUNTS.ANSWER);
@@ -105,7 +104,7 @@ public class Account {
     }
 
     public String getPlayersPacket() {
-        if (players.isEmpty())
+        if (players == null || players.isEmpty())
             return "ALK31536000000|0";
         String packet = "ALK31536000000|" + (this.players.size() == 1 ? 2 : this.players.size());
         for (Player player : this.players)
@@ -131,7 +130,6 @@ public class Account {
 
     public void setOnline() {
         this.online = true;
-
         for (Integer i : friends) {
             Account account = accountFactory.getElements().get(i);
             if (account == null) return;

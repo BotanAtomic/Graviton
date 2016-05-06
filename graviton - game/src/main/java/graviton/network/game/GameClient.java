@@ -24,13 +24,10 @@ public class GameClient {
         injector.injectMembers(this);
         this.id = session.getId();
         this.session = session;
-        gameNetwork.addClient(this);
     }
 
     public void kick() {
         account.close();
-        gameNetwork.removeClient(this);
-        session.close(true);
     }
 
     public void send(String packet) {

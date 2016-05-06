@@ -4,14 +4,12 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
-import graviton.game.alignement.Alignement;
-import graviton.game.client.Account;
 import graviton.game.action.player.ActionManager;
 import graviton.game.action.player.CommandManager;
-import graviton.game.common.FloodChecker;
-import graviton.game.enums.IdType;
-import graviton.game.exchange.player.PlayerExchange;
+import graviton.game.alignement.Alignement;
+import graviton.game.client.Account;
 import graviton.game.client.player.packet.Packets;
+import graviton.game.common.FloodChecker;
 import graviton.game.common.Stats;
 import graviton.game.creature.Creature;
 import graviton.game.creature.Position;
@@ -19,9 +17,10 @@ import graviton.game.creature.mount.Mount;
 import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcQuestion;
 import graviton.game.enums.Classe;
-import graviton.game.object.ObjectPosition;
+import graviton.game.enums.IdType;
 import graviton.game.enums.StatsType;
 import graviton.game.exchange.api.Exchange;
+import graviton.game.exchange.player.PlayerExchange;
 import graviton.game.fight.Fight;
 import graviton.game.fight.Fightable;
 import graviton.game.fight.Fighter;
@@ -33,6 +32,8 @@ import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
 import graviton.game.maps.Zaap;
 import graviton.game.object.Object;
+import graviton.game.object.ObjectPosition;
+import graviton.game.object.ObjectType;
 import graviton.game.spells.Animation;
 import graviton.game.spells.Spell;
 import graviton.game.spells.SpellTemplate;
@@ -41,6 +42,7 @@ import lombok.Data;
 import org.jooq.Record;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static graviton.database.utils.login.Tables.PLAYERS;
 
@@ -49,17 +51,15 @@ import static graviton.database.utils.login.Tables.PLAYERS;
  */
 @Data
 public class Player implements Creature, Fightable {
+    private final int id;
+    private final Account account;
+    private final Classe classe;
     @Inject
     GameManager gameManager;
     @Inject
     CommandManager commandManager;
     @Inject
     PlayerFactory factory;
-
-    final private int id;
-    final private Account account;
-    final private Classe classe;
-
     private String name;
     private int sex;
 
@@ -119,7 +119,7 @@ public class Player implements Creature, Fightable {
         this.spellPoints = record.getValue(PLAYERS.SPELLPOINTS);
         Maps playerMap = gameManager.getMap(Integer.parseInt(record.getValue(PLAYERS.POSITION).split(";")[0]));
         this.position = new Position(playerMap, playerMap.getCell(Integer.parseInt(record.getValue(PLAYERS.POSITION).split(";")[1])), -1);
-        this.objects = new HashMap<>();
+        this.objects = new ConcurrentHashMap<>();
         this.zaaps = new ArrayList<>();
         this.title = record.getValue(PLAYERS.TITLE);
         int life = ((this.level - 1) * 5 + 50) + getTotalStatistics().getEffect(Stats.ADD_VITA);
@@ -138,6 +138,7 @@ public class Player implements Creature, Fightable {
 
     public Player(String name, byte sex, byte classeId, int[] colors, Account account, Injector injector) {
         injector.injectMembers(this);
+        this.send("TB");
         this.account = account;
         this.id = factory.getNextId();
         this.name = name;
@@ -156,7 +157,7 @@ public class Player implements Creature, Fightable {
         final Maps maps = gameManager.getMap(factory.getStartMap());
         final Cell cell = maps.getCell(factory.getStartCell());
         this.position = new Position(maps, cell, -1);
-        this.objects = new HashMap<>();
+        this.objects = new ConcurrentHashMap<>();
         this.zaaps = new ArrayList<>();
         this.online = false;
         this.title = 0;
@@ -205,33 +206,36 @@ public class Player implements Creature, Fightable {
 
     public void joinGame() {
         account.setCurrentPlayer(this);
-        this.online = true;
+
+        send(getPacket(Packets.ASK));
+        send(getPacket(Packets.As));
+        this.position.getMap().addCreature(this);
+
         if (this.mount != null)
             send("Re+" + this.mount.getPacket());
         send("Rx" + (this.mount == null ? 0 : this.mount.getExperience()));
-        send(getPacket(Packets.ASK));
-        //TODO : Bonus pano & job
-        send("ZS" + this.alignement.getType().getId());
-        send("cC+*%!p$?^#i^@^:");
-        //TODO : Gs guild packet
-        send("al|");
+
         send(getPacket(Packets.SL));
-        send("eL7667711|0");
-        send("AR6bk");
-        refreshPods();
-        send("FO+");
-        send("ILS2000");
-        this.account.setOnline();
-        send("Im0152;" + this.getAccount().getInformations());
-        send("Im0153;" + this.account.getIpAdress());
-        this.account.update();
     }
 
     public void createGame() {
         send("GCK|1|" + this.name);
-        send(getPacket(Packets.As));
-        this.position.getMap().addCreature(this);
+        send("al|");
+        send("FO+");
+        send("ILS2000");
+        //TODO : Bonus pano & job
+        send("ZS" + this.alignement.getType().getId());
+        send("cC+*%!p$?^#i^@^:");
+        //TODO : Gs guild packet
+        send("eL7667711|0");
+        refreshPods();
+        send("AR6bk");
+        this.account.update();
+        send("Im0152;" + this.getAccount().getInformations());
+        send("Im0153;" + this.account.getIpAdress());
         sendText("Bienvenue sur Horus", "000000");
+        this.online = true;
+        this.account.setOnline();
     }
 
     private void configureSpells(String data) {
@@ -253,7 +257,7 @@ public class Player implements Creature, Fightable {
     private void setStuff(String objects) {
         for (String data : objects.split(",")) {
             Object object = this.gameManager.getObject(Integer.parseInt(data));
-            if (object.getPosition().getKey() != ObjectPosition.NO_EQUIPED)
+            if (object.getObjectPosition() != ObjectPosition.NO_EQUIPED)
                 this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
             this.objects.put(object.getId(), object);
         }
@@ -288,8 +292,11 @@ public class Player implements Creature, Fightable {
     }
 
     public void setObjectQuantity(Object object, int quantity) {
-        send("OQ" + object.getId() + "|" + quantity);
-        object.setQuantity(quantity);
+        if (quantity > 0) {
+            send("OQ" + object.getId() + "|" + quantity);
+            object.setQuantity(quantity);
+        } else
+            removeObject(object.getId(), true);
     }
 
     public void refreshQuantity() {
@@ -298,11 +305,11 @@ public class Player implements Creature, Fightable {
 
     public void removeObject(int id, boolean save) {
         this.objects.remove(id);
+        send("OR" + id);
         if (save) {
             gameManager.removeObject(id);
             save();
         }
-        send("OR" + id);
     }
 
     public void removeObject(int id, int quantity) {
@@ -325,22 +332,79 @@ public class Player implements Creature, Fightable {
         return object[0];
     }
 
-    public void moveObject(String packet) {
+    public synchronized void moveObject(String packet) {
         String[] informations = packet.split("\\|");
+
         int position = Integer.parseInt(informations[1]);
+        boolean equipable = position != -1 && !(position >= 35 && position <= 57) ? ObjectPosition.get(position) != null ? true : false : false;
+
+        int quantity;
+        if ((quantity = (informations.length > 2 && !equipable) ? Integer.parseInt(informations[2]) : 1) < 1)
+            return;
+
         Object object = this.objects.get(Integer.parseInt(informations[0]));
 
-        object.changePlace(ObjectPosition.get(position), position >= 35 && position <= 57 ? position : 0);
+        if (object == null || !ObjectPosition.get(position).contains(object.getTemplate().getType().getValue()))
+            return;
 
-        this.send("OM" + object.getId() + "|" + (object.getPosition().getKey() == ObjectPosition.NO_EQUIPED ? object.getPosition().getValue() == 0 ?  "" : object.getPosition().getValue() : object.getPosition().getKey().id));
-        if (object.getPosition().getKey() != ObjectPosition.NO_EQUIPED) {
-            this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
+        Object sameObject = this.getSameObjectByPosition(object, position);
+
+        if (sameObject != null)
+            if (!sameObject.getStatistics().isSameStatistics(object.getStatistics()) || sameObject.getTemplate().getId() != object.getTemplate().getId()) {
+                System.err.println("STAPE 0");
+                Object newObject = object.getClone(quantity, position);
+                this.setObjectQuantity(object, object.getQuantity() - quantity);
+                this.objects.put(newObject.getId(), newObject);
+                this.send("OAKO" + newObject.parseItem());
+                return;
+            }
+
+        if (sameObject != null || quantity < object.getQuantity()) {
+
+            if (sameObject != null && !equipable) {
+                System.err.println(packet + " STAPE 1");
+                if (quantity >= object.getQuantity()) {
+                    this.removeObject(object.getId(), true);
+                    System.err.println(packet + " STAPE 1/2");
+                } else {
+                    this.setObjectQuantity(object, object.getQuantity() - quantity);
+                    System.err.println(packet + " STAPE 2/2");
+                }
+                this.setObjectQuantity(sameObject, sameObject.getQuantity() + quantity);
+                System.err.println(packet + " STAPE 2");
+            } else if (sameObject == null || equipable) {
+                Object equipped;
+                if ((equipped = getObjectByPosition(position)) != null) {
+                    removeObject(equipped.getId(), true);
+                    this.setObjectQuantity(sameObject, sameObject.getQuantity() + 1);
+                }
+                System.err.println(packet + " STAPE 3");
+                Object newObject = object.getClone(quantity, position);
+                this.setObjectQuantity(object, object.getQuantity() - quantity);
+                this.objects.put(newObject.getId(), newObject);
+                this.send("OAKO" + newObject.parseItem());
+                System.err.println(packet + " STAPE 3 OK");
+            }
+            this.save();
+            System.err.println(packet + " STAPE 4");
         } else {
-            this.statistics.get(StatsType.STUFF).removeStatistics(object.getStatistics());
+            System.err.println(packet + " STAPE 5");
+            this.send("OM" + object.getId() + "|" + (object.getPosition().getKey() == ObjectPosition.NO_EQUIPED ? object.getPosition().getValue() == 0 ? "" : object.getPosition().getValue() : object.getPosition().getKey().id));
+            object.changePlace(ObjectPosition.get(position), position >= 35 && position <= 57 ? position : 0);
+            System.err.println(packet + " STAPE 5 OK");
         }
 
-        this.send(getPacket(Packets.As));
-        this.getMap().send("Oa" + this.id + "|" + getPacket(Packets.GMS));
+        if (!(position >= 35 && position <= 57)) {
+            if (position != -1) {
+                this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
+            } else if (position == -1)
+                this.statistics.get(StatsType.STUFF).removeStatistics(object.getStatistics());
+
+            this.send(getPacket(Packets.As));
+            if (object.getTemplate().getType() == ObjectType.COIFFE || object.getTemplate().getType() == ObjectType.CAPE)
+                this.getMap().send("Oa" + this.id + "|" + getPacket(Packets.GMS));
+        }
+        System.err.println(packet + " FINISH");
     }
 
     public void removeObject(String packet) {
@@ -447,9 +511,21 @@ public class Player implements Creature, Fightable {
         return colors[id - 1];
     }
 
-    public Object getObjectByPosition(ObjectPosition position) {
+    public Object getObjectByPosition(int position) {
         final Object[] value = {null};
-        this.objects.values().stream().filter(object -> object.getPosition().getKey() == position).forEach(object1 -> value[0] = object1);
+        if (position >= 35 && position <= 57)
+            this.objects.values().stream().filter(object -> object.getShortcut() == position).forEach(object1 -> value[0] = object1);
+        else
+            this.objects.values().stream().filter(object -> object.getObjectPosition().id == position && object.getShortcut() == 0).forEach(object1 -> value[0] = object1);
+        return value[0];
+    }
+
+    public Object getSameObjectByPosition(Object object, int position) {
+        final Object[] value = {null};
+        if (position >= 35 && position <= 57)
+            this.objects.values().stream().filter(object1 -> object1.getShortcut() == position && object.getStatistics().isSameStatistics(object1.getStatistics())).forEach(object1 -> value[0] = object1);
+        else
+            this.objects.values().stream().filter(item -> item.getTemplate().getId() == object.getTemplate().getId()).filter(item -> item.getStatistics().isSameStatistics(object.getStatistics())).filter(item -> item.getObjectPosition().id == -1).forEach(item -> value[0] = item);
         return value[0];
     }
 
@@ -677,7 +753,7 @@ public class Player implements Creature, Fightable {
             send("Im046;" + cost);
             send(getPacket(Packets.As));
         } else
-            send("Im01;" + "Il te faut " + (cost - kamas) + " kamas en plus pour pouvoir utiliser ce zaap.");
+            send("Im01;" + "Il vous faut " + (cost - kamas) + " kamas en plus pour pouvoir utiliser ce zaap.");
     }
 
     public void changeOrientation(int orientation, boolean send) {

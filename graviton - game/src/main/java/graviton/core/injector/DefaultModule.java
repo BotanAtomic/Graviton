@@ -13,9 +13,9 @@ import graviton.core.Manager;
 import graviton.database.Database;
 import graviton.factory.*;
 import graviton.game.GameManager;
-import graviton.network.PacketManager;
 import graviton.game.action.player.CommandManager;
 import graviton.network.NetworkManager;
+import graviton.network.PacketManager;
 import graviton.network.exchange.ExchangeNetwork;
 import graviton.network.game.GameNetwork;
 
@@ -85,7 +85,7 @@ public class DefaultModule extends AbstractModule {
         bind(Database.class).annotatedWith(Names.named("database.login")).toInstance(new Database(properties, "database.login."));
         bind(Database.class).annotatedWith(Names.named("database.game")).toInstance(new Database(properties, "database.game."));
 
-        bind(PacketManager.class).toInstance(new PacketManager(properties.getProperty("word.dictionnary").split(","), properties.getProperty("word.forbiden").split(",")));
+        bind(PacketManager.class).toInstance(new PacketManager(properties.getProperty("word.dictionary").split(","), properties.getProperty("word.forbidden").split(",")));
     }
 
     private TypeListener listener(BiConsumer<TypeLiteral<?>, TypeEncounter<?>> consumer) {

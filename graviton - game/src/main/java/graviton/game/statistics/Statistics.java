@@ -43,9 +43,9 @@ public class Statistics {
     }
 
     public boolean isSameStatistics(Statistics statistics) {
-        if (statistics.getEffects().equals(effects))
-            return true;
-        return false;
+        System.err.println("Effect : " + statistics.getEffects() + ";" + effects);
+        System.err.println("OEffect : " + statistics.getOptionalEffect() + ";" + optionalEffect);
+        return statistics.getEffects().equals(effects) && optionalEffect.equals(statistics.getOptionalEffect());
     }
 
     public int getEffect(int value) {
@@ -68,7 +68,6 @@ public class Statistics {
     }
 
     public Statistics removeStatistics(Statistics statistics) {
-        if (statistics == null) return this;
         statistics.getEffects().keySet().forEach(i -> effects.put(i, ((effects.get(i) == null ||  statistics.getEffects().get(i) > effects.get(i) )? 0 : effects.get(i)) - statistics.getEffects().get(i)));
         return this;
     }

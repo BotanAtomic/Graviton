@@ -11,23 +11,23 @@ import graviton.game.GameManager;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
 import graviton.game.client.player.packet.Packet;
+import graviton.game.client.player.packet.Packets;
 import graviton.game.common.Stats;
 import graviton.game.enums.Classe;
-import graviton.game.object.ObjectPosition;
 import graviton.game.enums.StatsType;
 import graviton.game.experience.Experience;
 import graviton.game.object.Object;
+import graviton.game.object.ObjectPosition;
 import graviton.game.spells.Spell;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.UpdateSetFirstStep;
-import graviton.game.client.player.packet.Packets;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-
 
 import static graviton.database.utils.game.Tables.ITEMS;
 import static graviton.database.utils.login.Tables.PLAYERS;
@@ -38,12 +38,10 @@ import static graviton.database.utils.login.Tables.PLAYERS;
 @Data
 @Slf4j
 public class PlayerFactory extends Factory<Player> {
-    @Inject
-    Injector injector;
-
     private final Map<Integer, Player> players;
     private final ReentrantLock locker;
-
+    @Inject
+    Injector injector;
     private GameManager gameManager;
     private Map<Classe, Map<Integer, Integer>> classData;
 
@@ -73,9 +71,7 @@ public class PlayerFactory extends Factory<Player> {
     }
 
     public List<Player> load(Account account) {
-        List<Player> players = new ArrayList<>();
-        players.addAll(database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (serverId)).map(record -> new Player(account, record, injector)).collect(Collectors.toList()));
-        return players;
+        return database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (serverId)).map(record -> new Player(account, record, injector)).collect(Collectors.toList());
     }
 
     public int getNextId() {
@@ -200,7 +196,7 @@ public class PlayerFactory extends Factory<Player> {
     }
 
     private void initPackets() {
-        Map<Packets, Packet> packets = new HashMap<>();
+        Map<Packets, Packet> packets = new Object2ObjectOpenHashMap<>(16, 1);
 
         packets.put(Packets.ALK, player -> {
             StringBuilder builder = new StringBuilder();
@@ -256,8 +252,8 @@ public class PlayerFactory extends Factory<Player> {
             StringBuilder builder = new StringBuilder();
             ObjectPosition[] positions = {ObjectPosition.ARME, ObjectPosition.COIFFE, ObjectPosition.CAPE, ObjectPosition.FAMILIER, ObjectPosition.BOUCLIER};
             for (ObjectPosition position : positions) {
-                if (player.getObjectByPosition(position) != null)
-                    builder.append(Integer.toHexString(player.getObjectByPosition(position).getTemplate().getId()));
+                if (player.getObjectByPosition(position.id) != null)
+                    builder.append(Integer.toHexString(player.getObjectByPosition(position.id).getTemplate().getId()));
                 builder.append(",");
             }
             return builder.toString().substring(0, builder.length() - 1);
@@ -300,7 +296,7 @@ public class PlayerFactory extends Factory<Player> {
             builder.append(player.getAlignement().getType().getId()).append("~");
             builder.append(player.getAlignement().getType().getId()).append(",").append(player.getAlignement().getGrade()).append(",").append(player.getAlignement().getGrade()).append(",").append(player.getAlignement().getHonor()).append(",").append(player.getAlignement().getDeshonnor()).append(",").append(player.getAlignement().isShowWings() ? "1" : "0").append("|");
             builder.append(player.getLife(false)).append(",").append(player.getLife(true)).append("|");
-            builder.append(10000).append(",10000|");
+            builder.append(10000).append(",10000|"); //TODO : Energy
             builder.append(player.getInitiative()).append("|");
             builder.append(player.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_PROS) + player.getStatistics().get(StatsType.STUFF).getEffect(Stats.ADD_PROS) + ((int) Math.ceil(player.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_CHAN) / 10)) + player.getStatistics().get(StatsType.BUFF).getEffect(Stats.ADD_PROS)).append("|");
             builder.append(player.getStatistics().get(StatsType.BASE).getEffect(Stats.ADD_PA)).append(",").append(player.getStatistics().get(StatsType.STUFF).getEffect(Stats.ADD_PA)).append(",").append(player.getStatistics().get(StatsType.GIFT).getEffect(Stats.ADD_PA)).append(",").append(player.getStatistics().get(StatsType.BUFF).getEffect(Stats.ADD_PA)).append(",").append(player.getTotalStatistics().getEffect(Stats.ADD_PA)).append("|");

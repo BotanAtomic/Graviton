@@ -5,8 +5,8 @@ import graviton.api.PacketParser;
 import graviton.common.Utils;
 import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
-import graviton.game.client.player.Player;
 import graviton.game.action.player.ActionManager;
+import graviton.game.client.player.Player;
 import graviton.game.creature.Creature;
 import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcAnswer;
@@ -14,11 +14,11 @@ import graviton.game.creature.npc.NpcQuestion;
 import graviton.game.enums.IdType;
 import graviton.game.enums.Rank;
 import graviton.game.maps.Maps;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -26,28 +26,25 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 public class PacketManager {
+    private final String[] dictionary;
+    private final String[] forbidden;
+    private final Calendar calendar;
     @Inject
     GameManager gameManager;
     @Inject
     PlayerFactory playerFactory;
-
-    private final String[] dictionary;
-
-    private final String[] forbiden;
-
-    private final Calendar calendar;
     @Getter
     private Map<String, PacketParser> packets;
 
-    public PacketManager(String[] dictionnary, String[] forbiden) {
+    public PacketManager(String[] dictionary, String[] forbidden) {
         this.calendar = GregorianCalendar.getInstance();
-        this.dictionary = dictionnary;
-        this.forbiden = forbiden;
+        this.dictionary = dictionary;
+        this.forbidden = forbidden;
         load();
     }
 
     public void load() {
-        Map<String, PacketParser> packets = new ConcurrentHashMap<>();
+        Map<String, PacketParser> packets = new Object2ObjectOpenHashMap(16, 1);
 
         packets.put("cC", (client, packet) -> client.send("cC" + packet));
 
@@ -230,13 +227,17 @@ public class PacketManager {
         });
 
         packets.put("AA", (client, packet) -> {
+            if (client.getAccount().getPlayers().size() >= 5) {
+                client.send("AAEf");
+                return;
+            }
             String[] arguments = packet.split("\\|");
             if (playerFactory.checkName(arguments[0]) || arguments[0].length() < 4 || arguments[0].length() > 12) {
                 client.send("AAEa");
                 return;
             }
-            for (String forbidenWord : forbiden)
-                if (arguments[0].toLowerCase().contains(forbidenWord)) {
+            for (String forbiddenWord : forbidden)
+                if (arguments[0].toLowerCase().contains(forbiddenWord)) {
                     client.send("AAEa");
                     return;
                 }

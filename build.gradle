@@ -28,6 +28,7 @@ allprojects  {
         compile 'org.jooq:jooq-meta:3.7.2'
         compile 'org.jooq:jooq-codegen:3.7.2'
         compile 'mysql:mysql-connector-java:5.1.38'
+        compile 'it.unimi.dsi:fastutil:6.6.0'
     }
 
     sourceSets {

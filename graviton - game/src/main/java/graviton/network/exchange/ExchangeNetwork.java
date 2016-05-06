@@ -152,7 +152,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
                 accountFactory.load(Integer.parseInt(packet.substring(1)));
                 break;
             case '-':
-                gameNetwork.getClients().values().stream().filter(client -> client.getAccount().getId() == Integer.parseInt(packet.substring(1))).forEach(client -> {
+                gameNetwork.getClients().stream().filter(client -> client.getAccount().getId() == Integer.parseInt(packet.substring(1))).forEach(client -> {
                     client.send("AlEa");
                     client.getSession().close(true);
                 });

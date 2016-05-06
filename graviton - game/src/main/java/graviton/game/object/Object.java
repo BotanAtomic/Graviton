@@ -9,29 +9,22 @@ import graviton.game.GameManager;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 /**
  * Created by Botan on 21/06/2015.
  */
 @Data
 public class Object {
-    @Inject
-    Injector injector;
-
-    @Inject
-    GameManager manager;
-
-    @Inject
-    ObjectFactory objectFactory;
-
     private final int id;
     private final ObjectTemplate template;
-
+    @Inject
+    Injector injector;
+    @Inject
+    GameManager manager;
+    @Inject
+    ObjectFactory objectFactory;
     private int quantity;
 
-    private Pair<ObjectPosition,Integer> position;
+    private Pair<ObjectPosition, Integer> position;
 
     private Statistics statistics;
 
@@ -39,31 +32,36 @@ public class Object {
         injector.injectMembers(this);
         this.id = id;
         this.template = manager.getObjectTemplate(template);
-        this.position = new Pair<>(ObjectPosition.get(position),position > 15 ? position : 0);
+        this.position = new Pair<>(ObjectPosition.get(position), position > 16 ? position : 0);
         this.quantity = quantity;
         this.statistics = this.template.getStatistics(statistics, true);
     }
 
-    public Object(int id, int template, int quantity, ObjectPosition position, Statistics statistics, Injector injector) {
+    public Object(int id, int template, int quantity, int position, Statistics statistics, Injector injector) {
         injector.injectMembers(this);
         this.id = id;
         this.template = manager.getObjectTemplate(template);
         this.quantity = quantity;
-        this.position = new Pair<>(position,0);
+        this.position = new Pair<>(ObjectPosition.get(position), position > 16 ? position : 0);
         this.statistics = statistics;
     }
 
     public Object getClone(int quantity, boolean create) {
-        Object object = new Object(objectFactory.getNextId(), template.getId(), quantity, ObjectPosition.NO_EQUIPED, this.statistics, injector);
+        Object object = new Object(objectFactory.getNextId(), template.getId(), quantity, -1, this.statistics, injector);
         if (create)
             objectFactory.create(object);
         return object;
     }
 
+    public Object getClone(int quantity, int position) {
+        Object object = new Object(objectFactory.getNextId(), template.getId(), quantity, position, this.statistics, injector);
+        objectFactory.create(object);
+        return object;
+    }
+
     public void changePlace(ObjectPosition newPlace, int shortcut) {
         position.setKey(newPlace);
-        if(shortcut != 0)
-            position.setValue(shortcut);
+        position.setValue(shortcut);
         objectFactory.update(this);
     }
 
@@ -78,7 +76,7 @@ public class Object {
 
     public String parseItem() {
         StringBuilder builder = new StringBuilder();
-        String position = this.position.getKey() == ObjectPosition.NO_EQUIPED ? this.position.getValue() != 0 ? Integer.toHexString(this.position.getValue()) : "-1" : Integer.toHexString(this.position.getKey().id);
+        String position = this.getObjectPosition() == ObjectPosition.NO_EQUIPED ? this.getShortcut() != 0 ? Integer.toHexString(this.getShortcut()) : "-1" : Integer.toHexString(this.getObjectPosition().id);
         builder.append(Integer.toHexString(this.getId())).append("~").append(Integer.toHexString(this.getTemplate().getId())).append("~").append(Integer.toHexString(this.getQuantity())).append("~").append(position).append("~").append(this.parseEffects()).append(";");
         return builder.toString();
     }
@@ -94,9 +92,18 @@ public class Object {
 
         this.statistics.getOptionalEffect().keySet().forEach(i -> {
             Parameter parameter = (Parameter) this.statistics.getOptionalEffect(i);
-            builder.append(Integer.toHexString(i)).append("#").append(Integer.toHexString((int)parameter.getFirst())).append("#").append(Integer.toHexString((int)parameter.getSecond())).append("#").append(Integer.toHexString((int)parameter.getThird())).append("#").append(parameter.getFourth()).append(",");
+            builder.append(Integer.toHexString(i)).append("#").append(Integer.toHexString((int) parameter.getFirst())).append("#").append(Integer.toHexString((int) parameter.getSecond())).append("#").append(Integer.toHexString((int) parameter.getThird())).append("#").append(parameter.getFourth()).append(",");
         });
 
-        return builder.toString().substring(0, builder.length() -1);
+        return builder.toString().substring(0, builder.length() == 0 ? 0 : builder.length() - 1);
     }
+
+    public ObjectPosition getObjectPosition() {
+        return this.position.getKey();
+    }
+
+    public int getShortcut() {
+        return this.position.getValue();
+    }
+
 }

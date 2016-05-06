@@ -12,7 +12,6 @@ import lombok.Data;
 import org.apache.mina.core.session.IoSession;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Botan on 06/07/2015.
@@ -31,6 +30,7 @@ public class GlobalManager {
     private Map<Integer, Integer> connectedClient;
 
     private Map<Integer, Account> accounts;
+
     private Map<Integer, Server> servers;
 
     private List<Manageable> manageableList;
@@ -39,7 +39,7 @@ public class GlobalManager {
         this.manageableList = new ArrayList() {{
             add(firstManageable);
         }};
-        this.accounts = new ConcurrentHashMap<>();
+        this.accounts = new HashMap();
         this.connectedClient = new HashMap();
     }
 

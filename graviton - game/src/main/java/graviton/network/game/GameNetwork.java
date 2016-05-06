@@ -5,7 +5,6 @@ import com.google.inject.Injector;
 import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
 import graviton.network.PacketManager;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.session.IdleStatus;
@@ -18,22 +17,19 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by Botan on 17/06/2015.
  */
 @Slf4j
 public class GameNetwork implements IoHandler, NetworkService {
+    private final NioSocketAcceptor acceptor;
     @Inject
     private Injector injector;
     @Inject
     private PacketManager packetManager;
-
-    private final NioSocketAcceptor acceptor;
-    @Getter
-    private final Map<Long, GameClient> clients;
     @InjectSetting("server.port")
     private int port;
 
@@ -42,12 +38,11 @@ public class GameNetwork implements IoHandler, NetworkService {
         this.acceptor = new NioSocketAcceptor();
         this.acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new TextLineCodecFactory(Charset.forName("UTF-8"), LineDelimiter.NUL, new LineDelimiter("\n\0"))));
         this.acceptor.setHandler(this);
-        this.clients = new ConcurrentHashMap<>();
     }
 
     @Override
     public void sessionCreated(IoSession session) throws Exception {
-        new GameClient(session,injector);
+        session.setAttribute("client", new GameClient(session, injector));
         log.info("[Session {}] created", session.getId());
     }
 
@@ -58,7 +53,7 @@ public class GameNetwork implements IoHandler, NetworkService {
 
     @Override
     public void sessionClosed(IoSession session) throws Exception {
-        getClient(session.getId()).kick();
+        getClient(session).kick();
         log.info("[Session {}] closed", session.getId());
     }
 
@@ -74,7 +69,7 @@ public class GameNetwork implements IoHandler, NetworkService {
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        parsePacket(clients.get(session.getId()), message.toString());
+        parsePacket(getClient(session), message.toString());
         log.info("[Session {}] recev < {}", session.getId(), message.toString());
     }
 
@@ -88,18 +83,8 @@ public class GameNetwork implements IoHandler, NetworkService {
         session.close(true);
     }
 
-    public void addClient(GameClient client) {
-        this.clients.put(client.getId(), client);
-    }
-
-    public void removeClient(GameClient client) {
-        this.clients.remove(client.getId());
-    }
-
-    private GameClient getClient(long id) {
-        if (clients.get(id) != null)
-            return clients.get(id);
-        return null;
+    private GameClient getClient(IoSession session) {
+        return (GameClient) session.getAttribute("client");
     }
 
     public void parsePacket(GameClient client, String packet) {
@@ -108,6 +93,10 @@ public class GameNetwork implements IoHandler, NetworkService {
             packetManager.getPackets().get(header[0]).parse(client, header[1]);
         else
             log.error("Unknown packet {}", packet);
+    }
+
+    public List<GameClient> getClients() {
+        return acceptor.getManagedSessions().values().stream().map(session -> (GameClient) session.getAttribute("client")).collect(Collectors.toList());
     }
 
     @Override
@@ -121,9 +110,8 @@ public class GameNetwork implements IoHandler, NetworkService {
 
     @Override
     public void stop() {
+        acceptor.getManagedSessions().values().forEach(session -> session.close(true));
         acceptor.unbind();
         acceptor.dispose();
-        clients.values().forEach(client -> client.getSession().close(true));
-        clients.clear();
     }
 }

@@ -7,7 +7,6 @@ import graviton.factory.ObjectFactory;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
 
-import java.util.Arrays;
 import java.util.stream.IntStream;
 
 
@@ -16,12 +15,7 @@ import java.util.stream.IntStream;
  */
 @Data
 public class ObjectTemplate {
-    @Inject
-    ObjectFactory factory;
-
     final private Injector injector;
-
-
     final private int id;
     final private ObjectType type;
     final private String name;
@@ -31,6 +25,8 @@ public class ObjectTemplate {
     final private int price;
     final private String condition;
     final private String information;
+    @Inject
+    ObjectFactory factory;
 
 
     public ObjectTemplate(int id, int type, String name, int level, String statistics, int usedPod, int price, String condition, String information, Injector injector) {
@@ -48,7 +44,7 @@ public class ObjectTemplate {
     }
 
     public Object createObject(int qua, boolean useMax) {
-        return new Object(factory.getNextId(), this.getId(), qua, ObjectPosition.NO_EQUIPED, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)), injector);
+        return new Object(factory.getNextId(), this.getId(), qua, -1, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)), injector);
     }
 
     public Statistics getStatistics(String statisticsTemplate, boolean useMax) {
