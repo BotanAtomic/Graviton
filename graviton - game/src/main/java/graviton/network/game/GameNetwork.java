@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
+import graviton.database.utils.game.Game;
 import graviton.network.PacketManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.mina.core.service.IoHandler;
@@ -15,7 +16,9 @@ import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -69,13 +72,19 @@ public class GameNetwork implements IoHandler, NetworkService {
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        parsePacket(getClient(session), message.toString());
-        log.info("[Session {}] recev < {}", session.getId(), message.toString());
+        GameClient client = getClient(session);
+        String packet = message.toString();
+
+        if (client.getKey() != null && !packet.startsWith("Ak"))
+            packet = decryptMessage(packet, client.getKey());
+
+        parsePacket(client, packet);
+        log.info("[Session {}] receives < {} [{}]", session.getId(), message.toString(), packet);
     }
 
     @Override
     public void messageSent(IoSession session, Object message) throws Exception {
-        log.info("[Session {}] send > {}", session.getId(), message.toString());
+        log.info("[Session {}] sends > {}", session.getId(), message.toString());
     }
 
     @Override
@@ -88,15 +97,35 @@ public class GameNetwork implements IoHandler, NetworkService {
     }
 
     public void parsePacket(GameClient client, String packet) {
-        String[] header = {packet.substring(0, 2),packet.substring(2)};
-        if (packetManager.getPackets().containsKey(header[0]))
+        String[] header = {packet.substring(0, 2), packet.substring(2)};
+        try {
             packetManager.getPackets().get(header[0]).parse(client, header[1]);
-        else
-            log.error("Unknown packet {}", packet);
+        } catch (NullPointerException e) {
+            if (packetManager.getPackets().containsKey(header[0]))
+                log.error("unable to parse packet {}", packet , e);
+            else
+                log.error("Unknown packet {}", packet);
+        }
     }
 
     public List<GameClient> getClients() {
         return acceptor.getManagedSessions().values().stream().map(session -> (GameClient) session.getAttribute("client")).collect(Collectors.toList());
+    }
+
+    private String decryptMessage(String message, String key) {
+        int c = Integer.parseInt(Character.toString(message.charAt(1)), 16) * 2;
+        StringBuilder builder = new StringBuilder();
+        int j = 0;
+
+        for (int i = 2; i < message.length(); i = i + 2)
+            builder.append((char) (Integer.parseInt(message.substring(i, i + 2), 16) ^ key.charAt((j++ + c) % 16)));
+
+        try {
+            return URLDecoder.decode(builder.toString().replaceAll("%(?![0-9a-fA-F]{2})", "%25").replaceAll("\\+", "%2B"), "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            log.error("unable to decrypt packet {} ", message, e);
+            return "";
+        }
     }
 
     @Override

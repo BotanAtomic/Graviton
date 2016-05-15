@@ -17,6 +17,14 @@ public class Utils {
         return HASH[c];
     }
 
+    public static String generateKey() {
+        String key = "";
+        for(int i = 0; i <32;i++)
+            key = key.concat(String.valueOf(HASH[(int)Math.random()*HASH.length]));
+        return key;
+    }
+
+
     public static int getIntByHashedValue(char c) {
         for (int a = 0; a <= HASH.length; a++)
             if (HASH[a] == c)

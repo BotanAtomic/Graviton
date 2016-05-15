@@ -47,6 +47,9 @@ public class ObjectTemplate {
             this.panoplyTemplate = factory.getPanoply(panoplyId);
     }
 
+    public String getStatistics() {
+        return String.valueOf(this.id).concat(";").concat(statistics);
+    }
 
     public Object createObject(int qua, boolean useMax) {
         return new Object(factory.getNextId(), this.getId(), qua, -1, (statistics.equals("") ? new Statistics() : this.getStatistics(statistics, useMax)), injector);
@@ -54,11 +57,16 @@ public class ObjectTemplate {
 
     public Statistics getStatistics(String statisticsTemplate, boolean useMax) {
         Statistics statistic = new Statistics();
+        if(statisticsTemplate.isEmpty()) return statistic;
         int maximum;
         for (String statisticTemplate : statisticsTemplate.split(",")) {
             String[] arguments = statisticTemplate.split("#");
             final int statisticId = Integer.parseInt(arguments[0], 16);
+
             if (statisticId >= 91 && statisticId <= 101) //sword effect
+                continue;
+
+            if(arguments.length < 5)
                 continue;
 
             String argument = arguments[4];

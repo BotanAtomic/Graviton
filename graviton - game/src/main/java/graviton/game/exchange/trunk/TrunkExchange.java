@@ -6,7 +6,7 @@ import graviton.game.action.player.ActionManager;
 import graviton.game.client.player.packet.Packets;
 import graviton.game.exchange.api.Exchange;
 import graviton.game.object.Object;
-import graviton.game.trunks.Trunk;
+import graviton.game.trunk.Trunk;
 import lombok.Getter;
 
 /**

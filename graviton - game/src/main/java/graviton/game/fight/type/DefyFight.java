@@ -3,7 +3,7 @@ package graviton.game.fight.type;
 import graviton.game.fight.Fight;
 
 /**
- * Created by Botan on 28/12/2015.
+ * Created by Botan on 10/05/2016.
  */
-public class PlayerFight extends Fight {
+public class DefyFight extends Fight {
 }

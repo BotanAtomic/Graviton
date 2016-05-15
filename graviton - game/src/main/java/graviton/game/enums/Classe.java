@@ -55,10 +55,10 @@ public enum Classe {
     }
 
     public Map<Integer, Character> getStartPlace(GameManager manager) {
-        Map<Integer, Character> startPlaces = new HashMap<>();
-        startPlaces.put(manager.getSpellTemplate(startSpell1).getId(), 'b');
-        startPlaces.put(manager.getSpellTemplate(startSpell2).getId(), 'c');
-        startPlaces.put(manager.getSpellTemplate(startSpell3).getId(), 'd');
+        Map<Integer, Character> startPlaces = new HashMap() {{
+                put(manager.getSpellTemplate(startSpell1).getId(), 'b');
+                put(manager.getSpellTemplate(startSpell2).getId(), 'c');
+                put(manager.getSpellTemplate(startSpell3).getId(), 'd');}};
         return startPlaces;
     }
 

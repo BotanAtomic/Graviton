@@ -5,11 +5,9 @@ import graviton.game.client.player.Player;
 import graviton.game.exchange.trunk.TrunkExchange;
 import graviton.game.action.Action;
 import graviton.game.creature.Creature;
-import graviton.game.enums.IdType;
 import graviton.game.maps.object.InteractiveObject;
-import graviton.game.trunks.Trunk;
-import lombok.Getter;
-import lombok.Setter;
+import graviton.game.trunk.Trunk;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,21 +17,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Created by Botan on 22/06/2015.
  */
+@Data
 public class Cell {
-    @Getter
     private final int id;
-    @Getter
     private final Maps map;
     private final boolean walkable;
-    @Getter
     private final List<Creature> creatures;
 
     private List<Action> action;
 
-    @Getter
     private InteractiveObject interactiveObject;
 
-    @Setter @Getter
     private Trunk trunk;
 
     public Cell(int id, Maps map, boolean walkable, int interactiveObject, Injector injector) {
@@ -51,7 +45,6 @@ public class Cell {
     public void applyAction(Player player) {
         if (action != null)
             action.forEach(action1 -> action1.apply(player));
-        map.getCreatures(IdType.MONSTER_GROUP).values().stream().filter(group -> group.getPosition().getCell().getId() == this.id).forEach(group -> player.launchAnimation());
     }
 
     public boolean isWalkable() {

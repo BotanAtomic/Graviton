@@ -6,6 +6,7 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.game.GameManager;
 import graviton.game.action.Action;
 import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcAnswer;
@@ -33,6 +34,8 @@ public class NpcFactory extends Factory<NpcTemplate> {
     private final Map<Integer, NpcAnswer> answers;
     @Inject
     Injector injector;
+    @Inject
+    GameManager gameManager;
 
     @Inject
     public NpcFactory(@Named("database.game") Database database) {
@@ -57,7 +60,7 @@ public class NpcFactory extends Factory<NpcTemplate> {
         Record record = database.getRecord(NPC_TEMPLATE, NPC_TEMPLATE.ID.equal(id));
         if (record != null) {
             int[] colors = {record.getValue(NPC_TEMPLATE.COLOR1), record.getValue(NPC_TEMPLATE.COLOR2), record.getValue(NPC_TEMPLATE.COLOR3)};
-            npcTemplate = new NpcTemplate(id, record.getValue(NPC_TEMPLATE.GFX), record.getValue(NPC_TEMPLATE.SEX), colors, record.getValue(NPC_TEMPLATE.ACCESSORIES), record.getValue(NPC_TEMPLATE.EXTRACLIP), record.getValue(NPC_TEMPLATE.CUSTOMARTWORK), Integer.parseInt(record.getValue(NPC_TEMPLATE.INITQUESTION)));
+            npcTemplate = new NpcTemplate(gameManager,id, record.getValue(NPC_TEMPLATE.GFX), record.getValue(NPC_TEMPLATE.SEX), colors, record.getValue(NPC_TEMPLATE.ACCESSORIES), record.getValue(NPC_TEMPLATE.EXTRACLIP), record.getValue(NPC_TEMPLATE.CUSTOMARTWORK), Integer.parseInt(record.getValue(NPC_TEMPLATE.INITQUESTION)),record.getValue(NPC_TEMPLATE.SALES));
             this.templates.put(id, npcTemplate);
         }
         return npcTemplate;
@@ -79,7 +82,7 @@ public class NpcFactory extends Factory<NpcTemplate> {
             return this.questions.get(id);
         Record record = database.getRecord(NPC_QUESTIONS, NPC_QUESTIONS.ID.equal(id));
         if (record != null) {
-            NpcQuestion question = new NpcQuestion(id, record.getValue(NPC_QUESTIONS.RESPONSES), record.getValue(NPC_QUESTIONS.PARAMS), record.getValue(NPC_QUESTIONS.COND), Integer.parseInt(record.getValue(NPC_QUESTIONS.IFFALSE)));
+            NpcQuestion question = new NpcQuestion(id, record.getValue(NPC_QUESTIONS.RESPONSES), record.getValue(NPC_QUESTIONS.PARAMS), record.getValue(NPC_QUESTIONS.COND), 0); //TODO : ifFalse
             this.questions.put(id, question);
             return question;
         }

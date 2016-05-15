@@ -49,7 +49,7 @@ public class PanoplyTemplate {
 
     public Statistics getStatistics(int objectEquipped, Player player) {
         Statistics panoplyStatistics = statistics[objectEquipped] == null ? new Statistics() : statistics[objectEquipped];
-        player.getStatistics().get(StatsType.PANOPLY).cumulStatistics(panoplyStatistics);
+        player.getStatistics().get(StatsType.PANOPLY).accumulateStatistics(panoplyStatistics);
         return panoplyStatistics;
     }
 }

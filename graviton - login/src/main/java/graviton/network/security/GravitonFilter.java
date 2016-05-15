@@ -10,7 +10,6 @@ import org.apache.mina.core.write.WriteRequest;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -25,7 +24,7 @@ public class GravitonFilter extends IoFilterAdapter {
     private final short delay;
 
     private final Map<String, IpInstance> data;
-    private final Lock locker;
+    private final ReentrantLock locker;
 
     public GravitonFilter(byte connexion, short delay, Database database) {
         this.maxConnexion = connexion;

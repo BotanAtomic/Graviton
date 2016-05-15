@@ -17,6 +17,7 @@ public abstract class Pathfinding {
         int steps = 0;
         String path = pathRef.get();
         String newPath = "";
+
         for (int i = 0; i < path.length(); i += 3) {
             String smallPath = path.substring(i, i + 3);
             char dir = smallPath.charAt(0);
@@ -27,6 +28,7 @@ public abstract class Pathfinding {
             if (aPathInfos[0].equalsIgnoreCase("stop"))
                 break;
         }
+
         pathRef.set(newPath);
         return steps;
     }
@@ -53,8 +55,8 @@ public abstract class Pathfinding {
         return result;
     }
 
-    private int getCellFromDirection(int CaseID, char Direction, Maps map) {
-        switch (Direction) {
+    private int getCellFromDirection(int CaseID, char direction, Maps map) {
+        switch (direction) {
             case 'a':
                 return CaseID + 1;
             case 'b':

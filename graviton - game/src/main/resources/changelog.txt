@@ -20,7 +20,7 @@ Changelog (game) 19/03/2016
 - Boost of statisctics 100%
 - Monster on map
 - Fight 1%
-- Friends & Ennemies 90%
+- Friends & Ennemies 100%
 - System for pods 100%
 - Exchange with other player 100%
 - Bank & Trunk 100%

@@ -11,7 +11,7 @@ import graviton.game.admin.Admin;
 import graviton.game.client.player.Player;
 import graviton.game.client.player.packet.Packets;
 import graviton.game.enums.Rank;
-import graviton.game.trunks.Trunk;
+import graviton.game.trunk.Trunk;
 import graviton.network.game.GameClient;
 import lombok.Data;
 import org.joda.time.Interval;
@@ -41,7 +41,7 @@ public class Account {
     @Inject
     GameManager manager;
     private Rank rank;
-    private String ipAdress;
+    private String networkAddress;
     private String informations;
     private GameClient client;
 
@@ -60,13 +60,11 @@ public class Account {
 
     public Account(Record record, PlayerFactory playerFactory, AccountFactory accountFactory, Injector injector) {
         injector.injectMembers(this);
-
+        this.id = record.getValue(ACCOUNTS.ID);
+        accountFactory.getElements().put(id, this);
         this.playerFactory = playerFactory;
         this.accountFactory = accountFactory;
         this.injector = injector;
-
-        this.id = record.getValue(ACCOUNTS.ID);
-        this.accountFactory.getElements().put(id, this);
         this.answer = record.getValue(ACCOUNTS.ANSWER);
         this.pseudo = record.getValue(ACCOUNTS.PSEUDO);
         this.friends = convertToList(record.getValue(ACCOUNTS.FRIENDS));
@@ -108,7 +106,7 @@ public class Account {
             return "ALK31536000000|0";
         String packet = "ALK31536000000|" + (this.players.size() == 1 ? 2 : this.players.size());
         for (Player player : this.players)
-            packet += (player.getPacket(Packets.ALK));
+            packet = packet.concat(player.getPacket(Packets.ALK));
         return packet;
     }
 
@@ -157,24 +155,7 @@ public class Account {
         return true;
     }
 
-    public void addFriend(Player friend) {
-        if (friends.contains(friend.getAccount().getId())) return;
-
-        if (friend != null)
-            friends.add(friend.getAccount().getId());
-        send("FAe" + friend.getName());
-        accountFactory.update(this);
-    }
-
     public void update() {
-        accountFactory.update(this);
-    }
-
-    public void removeFriend(String friend) {
-        Account account = accountFactory.getByName(friend.substring(1));
-        if (account != null)
-            friends.remove((java.lang.Object) account.getId());
-        send("FD" + account.getId());
         accountFactory.update(this);
     }
 
@@ -182,36 +163,54 @@ public class Account {
         this.client.getSession().write(packet);
     }
 
-    public String parseFriends() {
-        if (friends.isEmpty()) return "";
-        final String[] data = {""};
-        this.friends.forEach(integer -> data[0] += integer + ";");
-        return data[0];
-    }
-
-    public String parseEnemies() {
-        if (enemies.isEmpty()) return "";
-        final String[] data = {""};
-        this.enemies.forEach(integer -> data[0] += integer + ";");
-        return data[0].substring(0, data[0].length() - 1);
-    }
-
     public String parseMute() {
         return mute == null ? "" : mute.getKey() + ";" + mute.getValue().getTime();
     }
 
-    public String getFriendsPacket() {
-        if (friends.isEmpty()) return "FL";
-        StringBuilder builder = new StringBuilder("FL");
-        Account account;
-        for (Integer i : friends) {
-            account = accountFactory.get(i);
-            if (account == null) continue;
-            builder.append("|").append(account.getPseudo());
-            if (account.isOnline())
-                builder.append(account.getPlayerListPacket(this.id));
-        }
+    public String getListPacket(boolean friends) {
+        List<Integer> list = friends ? this.friends : this.enemies;
+        if (list.isEmpty()) return friends ? "FL" : "iL";
+
+        StringBuilder builder = new StringBuilder(friends ? "FL" : "iL");
+
+        list.forEach(i -> {
+            final Account account = accountFactory.get(i);
+            if (account != null) {
+                builder.append("|").append(account.getPseudo());
+                if (account.isOnline())
+                    builder.append(account.getPlayerListPacket(this.id));
+            }
+        });
         return builder.toString();
+    }
+
+    public String parseList(boolean friends) {
+        List<Integer> list = friends ? this.friends : this.enemies;
+        if (list.isEmpty()) return "";
+
+        final String[] data = {""};
+        list.forEach(integer -> data[0] = data[0].concat(integer + ";"));
+        return data[0];
+    }
+
+    public void addInList(Player target, boolean friends) {
+        List<Integer> list = friends ? this.friends : this.enemies;
+        if (list.contains(target.getAccount().getId())) return;
+
+        if (list != null)
+            list.add(target.getAccount().getId());
+        send((friends ? "FAe" : "iAe") + target.getName());
+        accountFactory.update(this);
+    }
+
+    public void removeInList(String target, boolean friends) {
+        List<Integer> list = friends ? this.friends : this.enemies;
+        Account account = accountFactory.getByName(target.substring(1));
+
+        if (account != null)
+            list.remove((java.lang.Object) account.getId());
+        send((friends ? "FD" : "iD") + account.getId());
+        accountFactory.update(this);
     }
 
     public String getPlayerListPacket(int id) {
@@ -219,13 +218,8 @@ public class Account {
         builder.append(";");
         builder.append(currentPlayer.getFight() != null ? "1;" : "0;");
         builder.append(currentPlayer.getName()).append(";");
-        if (this.friends.contains(id)) {
-            builder.append(currentPlayer.getLevel()).append(";");
-            builder.append(currentPlayer.getAlignement().getType().getId()).append(";");
-        } else {
-            builder.append("?;");
-            builder.append("-1;");
-        }
+        builder.append(friends.contains(id) ? currentPlayer.getLevel() : "?;").append(";");
+        builder.append(friends.contains(id) ? currentPlayer.getAlignement().getType().getId() : "-1;").append(";");
         builder.append(currentPlayer.getClasse().getId()).append(";");
         builder.append(currentPlayer.getSex()).append(";");
         builder.append(currentPlayer.getGfx());
@@ -241,6 +235,6 @@ public class Account {
     }
 
     public String getNewInformations() {
-        return new SimpleDateFormat("yyyy~MM~dd~HH~mm~").format(new Date()) + ipAdress;
+        return new SimpleDateFormat("yyyy~MM~dd~HH~mm~").format(new Date()) + networkAddress;
     }
 }

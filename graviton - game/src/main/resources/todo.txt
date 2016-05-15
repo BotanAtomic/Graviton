@@ -3,11 +3,15 @@ Game :
  - Jobs
  - Spells
  - Guilds
- - Items (Panoplie)
  - Change static class for statistics
  - Defy
  - Change class "Scanner.java"
+ - House
+ - NPC ex
 
 Optional :
  - Migrate to Netty (optional)
  - Scripts
+
+
+Helpful :

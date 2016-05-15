@@ -39,7 +39,7 @@ public class Maps {
     private final int id, width, heigth, X, Y, maxGroup;
     private final long date;
     private final String places, key, data;
-    private final String descriptionPacket, loadingPacket;
+    private final String descriptionPacket;
     private final Map<Integer, Cell> cells;
 
     private Map<Integer, Fight> fights;
@@ -60,7 +60,6 @@ public class Maps {
         this.X = Integer.parseInt(position.split(",")[0]);
         this.Y = Integer.parseInt(position.split(",")[1]);
         this.cells = decompileCells(record.getValue(MAPS.MAPDATA), record.getValue(MAPS.CELLS), injector);
-        this.loadingPacket = "GA;2;" + this.getId() + ";";
         this.descriptionPacket = "GDM|" + id + "|0" + this.date + "|" + (!this.key.isEmpty() ? this.key : this.data);
         this.maxGroup = record.getValue(MAPS.NUMGROUP);
         npcFactory.getNpcOnMap(this).forEach(this::addCreature);
@@ -80,7 +79,6 @@ public class Maps {
         this.X = maps.getX();
         this.Y = maps.getY();
         this.cells = maps.getCells();
-        this.loadingPacket = "";
         this.descriptionPacket = "";
         this.maxGroup = 0;
     }
@@ -165,6 +163,20 @@ public class Maps {
         return cells.get(id);
     }
 
+    public boolean applyAction(Player player, Cell cell) {
+        final Boolean[] value = {false};
+
+        for (Creature group : this.getCreatures(IdType.MONSTER_GROUP).values()) {
+            MonsterGroup monsterGroup = (MonsterGroup) group;
+            if (getDistance(cell.getId(), group.getPosition().getCell().getId()) <= monsterGroup.getAgressionDistance()) {
+                player.speak("Starting fight !");
+                value[0] = true;
+                break;
+            }
+        }
+        return value[0];
+    }
+
     public void addCreature(Creature creature) {
         if (this.creatures == null)
             this.creatures = new ConcurrentHashMap<>();
@@ -181,7 +193,7 @@ public class Maps {
 
     private void loadCreature(Creature creature) {
         creature.send(descriptionPacket);
-        creature.send(loadingPacket);
+        creature.send("GA;2;" + this.getId() + ";");
         send("GM|+" + creature.getGm());
         this.creatures.put(creature.getId(), creature);
     }
@@ -203,12 +215,7 @@ public class Maps {
     }
 
     public void send(String packet) {
-        try {
-            locker.lock();
-            creatures.values().forEach(creature -> creature.send(packet));
-        } finally {
-            locker.unlock();
-        }
+        creatures.values().forEach(creature -> creature.send(packet));
     }
 
     public Cell getRandomCell() {
@@ -230,24 +237,8 @@ public class Maps {
         send("GM|+" + creature.getGm());
     }
 
-    public void applyPositionAction(Cell cell, Player player) {
-        cell.applyAction(player);
-        System.err.println(places + "number of group " + this.getCreatures(IdType.MONSTER_GROUP).size());
-        if (places.equals("|")) return;
-
-        for (Creature group : this.getCreatures(IdType.MONSTER_GROUP).values()) {
-            MonsterGroup monsterGroup = (MonsterGroup) group;
-            System.err.println("distance between : " + getDistance(cell.getId(), group.getPosition().getCell().getId()));
-            System.err.println("getaggro distance : " + monsterGroup.getAgressionDistance());
-            if (getDistance(cell.getId(), group.getPosition().getCell().getId()) <= monsterGroup.getAgressionDistance()) {
-                //new MonsterFight(getNextFreeId(), player, monsterGroup, this,gameManager.getScheduler());
-                break;
-            }
-        }
-    }
-
     public void addFight(Fight fight) {
-       // this.fights.put(fight.getId(), fight);
+        // this.fights.put(fight.getId(), fight);
     }
 
     /**

@@ -1,6 +1,7 @@
 package graviton.game.creature.npc;
 
-import graviton.game.object.Object;
+import graviton.game.GameManager;
+import graviton.game.object.ObjectTemplate;
 import lombok.Data;
 
 import java.util.List;
@@ -22,22 +23,35 @@ public class NpcTemplate {
     private int extraClip;
 
     private int initQuestion;
-    private List<Object> items;
+    private List<ObjectTemplate> saleObjects; //TODO : delete ?
 
-    public NpcTemplate(int id,int gfx,int sex, int[] colors,String accessories,int extraClip,int customArt,int initQuestion) {
+    private String sellObjectsPacket;
+
+    public NpcTemplate(GameManager gameManager, int id, int gfx, int sex, int[] colors, String accessories, int extraClip, int customArt, int initQuestion, String objects) {
         this.id = id;
         this.gfx = gfx;
-        this.sex = (byte)sex;
+        this.sex = (byte) sex;
         this.colors = colors;
         this.accessories = accessories;
         this.customArt = customArt;
         this.extraClip = extraClip;
         this.initQuestion = initQuestion;
-        this.items = new CopyOnWriteArrayList<>();
+        if (!objects.isEmpty() || !objects.equals("-1"))
+            this.saleObjects = configureObjects(objects, gameManager);
+    }
+
+    private List<ObjectTemplate> configureObjects(String data, GameManager gameManager) {
+        List<ObjectTemplate> objects = new CopyOnWriteArrayList<>();
+        for (String object : data.split(",")) {
+            if(object.isEmpty()) continue;
+            objects.add(gameManager.getObjectTemplate(Integer.parseInt(object)));
+        }
+        buildSellObjectsPacket(objects);
+        return objects;
     }
 
     public int getColor(int color) {
-        return colors[color-1];
+        return colors[color - 1];
     }
 
     public String generateGm(Npc npc) {
@@ -50,6 +64,12 @@ public class NpcTemplate {
         builder.append((this.getColor(3) != -1 ? Integer.toHexString(this.getColor(3)) : "-1")).append(";");
         builder.append(this.accessories).append(";").append(this.extraClip == -1 ? "" : this.extraClip).append(";").append(this.customArt);
         return builder.toString();
+    }
+
+    private void buildSellObjectsPacket(List<ObjectTemplate> objects) {
+        final StringBuilder builder = new StringBuilder();
+        objects.forEach(object -> builder.append(object.getStatistics()).append("|"));
+        this.sellObjectsPacket = builder.toString();
     }
 
 }

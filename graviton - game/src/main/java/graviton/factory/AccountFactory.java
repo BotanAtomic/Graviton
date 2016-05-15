@@ -46,8 +46,8 @@ public class AccountFactory extends Factory<Account> {
 
     public void update(Account account) {
         UpdateSetFirstStep firstStep = database.getDSLContext().update(ACCOUNTS);
-        firstStep.set(ACCOUNTS.FRIENDS, account.parseFriends());
-        firstStep.set(ACCOUNTS.ENEMIES, account.parseEnemies());
+        firstStep.set(ACCOUNTS.FRIENDS, account.parseList(true));
+        firstStep.set(ACCOUNTS.ENEMIES, account.parseList(false));
         firstStep.set(ACCOUNTS.RANK, account.getRank().id);
         firstStep.set(ACCOUNTS.INFORMATIONS, account.getNewInformations());
         firstStep.set(ACCOUNTS.BANK, account.getBank().getKamas() + ";" + account.getBank().parseToDatabase());

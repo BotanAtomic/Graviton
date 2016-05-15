@@ -2,6 +2,7 @@ package graviton.game.action.player.action;
 
 import graviton.api.Action;
 import graviton.common.Utils;
+import graviton.game.action.ActionType;
 import graviton.game.client.player.Player;
 import graviton.game.action.player.ActionManager;
 import graviton.game.common.Pathfinding;
@@ -21,6 +22,9 @@ public class Movement extends Pathfinding implements Action {
     private String finalPathfinding;
     private String initialPathfinding;
 
+    private Cell newCell;
+    private boolean teleportation = false;
+
     public Movement(int id, Player player, String arguments) {
         this.id = id;
         this.player = player;
@@ -29,7 +33,7 @@ public class Movement extends Pathfinding implements Action {
 
     @Override
     public boolean start() {
-        if(player.getPodsUsed() > player.getMaxPods()) {
+        if (player.getPodsUsed() > player.getMaxPods()) {
             player.send("Im112");
             player.send("GA;0");
             return false;
@@ -49,6 +53,16 @@ public class Movement extends Pathfinding implements Action {
         player.getMap().send("GA" + id + ";" + action + ";" + player.getId() + ";" + "a" + cellToCode(player.getCell().getId()) + arguments);
         this.finalPathfinding = arguments;
         player.getActionManager().setStatus(ActionManager.Status.MOVING);
+
+        newCell = player.getMap().getCell(getFinalCell(finalPathfinding));
+
+        if (newCell.getAction() == null)
+            return true;
+
+        newCell.getAction().stream().filter(action -> action.getAction() == ActionType.TELEPORT).forEach(action -> {
+            player.getGameManager().getMapFactory().get(Integer.parseInt(action.getArguments().split(",")[0]));
+            teleportation = true;
+        });
         return true;
     }
 
@@ -68,11 +82,11 @@ public class Movement extends Pathfinding implements Action {
 
     @Override
     public void onSuccess(String args) {
-        Cell newCell = player.getMap().getCell(getFinalCell(finalPathfinding));
         newCell.addCreature(player);
         player.changeOrientation(getFinalOrientation(finalPathfinding), false);
         player.getActionManager().setStatus(ActionManager.Status.WAITING);
-        player.getCell().applyAction(player);
+        if (player.getMap().applyAction(player, newCell) && teleportation) return;
+        newCell.applyAction(player);
     }
 
 }

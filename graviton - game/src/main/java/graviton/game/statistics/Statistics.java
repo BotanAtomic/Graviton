@@ -24,11 +24,6 @@ public class Statistics {
         this.optionalEffect = new HashMap<>();
     }
 
-    public Statistics(Map<Integer, Integer> effects) {
-        this.effects = effects;
-        this.optionalEffect = new HashMap<>();
-    }
-
     public Statistics(Player player, Map<Integer, Integer> effects) {
         this.effects = (effects == null ? new HashMap<>() : effects);
         this.effects.put(Stats.ADD_PA, player.getLevel() < 100 ? 6 : 7);
@@ -48,8 +43,6 @@ public class Statistics {
     }
 
     public boolean isSameStatistics(Statistics statistics) {
-        System.err.println("Effect : " + statistics.getEffects() + ";" + effects);
-        System.err.println("OEffect : " + statistics.getOptionalEffect() + ";" + optionalEffect);
         return statistics.getEffects().equals(effects) && optionalEffect.equals(statistics.getOptionalEffect());
     }
 
@@ -61,13 +54,12 @@ public class Statistics {
         return optionalEffect.getOrDefault(value, null);
     }
 
-    public Statistics cumulStatistics(Collection<Statistics> stats) {
+    public Statistics accumulateStatistics(Collection<Statistics> stats) {
         stats.stream().filter(statistics -> statistics.getEffects() != null).forEach(statistics -> statistics.getEffects().keySet().forEach(i -> effects.put(i, (effects.get(i) == null ? 0 : effects.get(i)) + statistics.getEffects().get(i))));
         return this;
     }
 
-    public Statistics cumulStatistics(Statistics statistics) {
-        if (statistics == null) return this;
+    public Statistics accumulateStatistics(Statistics statistics) {
         statistics.getEffects().keySet().forEach(i -> effects.put(i, (effects.get(i) == null ? 0 : effects.get(i)) + statistics.getEffects().get(i)));
         return this;
     }

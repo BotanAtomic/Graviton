@@ -11,4 +11,5 @@ public class Main {
     public static void main(String[] args) {
         Runtime.getRuntime().addShutdownHook(new Thread(Guice.createInjector(new DefaultModule()).getInstance(Manager.class).start()::stop));
     }
+
 }

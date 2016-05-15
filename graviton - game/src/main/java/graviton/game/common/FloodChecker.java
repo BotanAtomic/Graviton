@@ -23,10 +23,10 @@ public class FloodChecker {
         this.player = player;
         this.channels = new HashMap<Channel, Long>() {
             {
-                put(Channel.BASIC, (long) 0);
-                put(Channel.TRADE, (long) 0);
-                put(Channel.RECRUITMENT, (long) 0);
-                put(Channel.ALIGNEMENT, (long) 0);
+                put(Channel.BASIC, 0L);
+                put(Channel.TRADE, 0L);
+                put(Channel.RECRUITMENT, 0L);
+                put(Channel.ALIGNEMENT, 0L);
             }
         };
     }
@@ -35,28 +35,30 @@ public class FloodChecker {
         long difference = System.currentTimeMillis() - channels.get(channel);
 
         if (channel == Channel.BASIC) {
-            if (difference < 2000) {
-                if (message > 2) {
-                    if (!addWarning())
-                        player.sendText("<b>Anti - Flood :</b> vous devez ralentir votre rythme de message", "FF0000");
+            if (difference < 3000) {
+                if (message > 4) {
+                    player.send("M10");
                     return false;
                 }
                 message++;
             } else {
-                if (difference < 4500) {
-                    player.send("Im0115;" + (45 - difference / 1000));
-                    return false;
-                }
+                warning = 0;
+                message = 0;
             }
-            channels.put(channel, System.currentTimeMillis());
+        } else {
+            if (difference < 4500) {
+                player.send("Im0115;" + (45 - difference / 1000));
+                return false;
+            }
         }
+        channels.put(channel, System.currentTimeMillis());
         return true;
     }
 
     public void speak(String packet, String canal) {
         Channel channel = Channel.get(canal.charAt(0));
 
-        if(channel == Channel.PRIVATE) {
+        if (channel == Channel.PRIVATE) {
             Player target = player.getFactory().get(packet.split("\\|")[0]);
             if (target != null) {
                 String finalMessage = "|" + packet.split("\\|")[1];
@@ -70,24 +72,7 @@ public class FloodChecker {
         if (channel.limited && !checkChannel(channel))
             return;
         if (player.checkAttribut(channel.attribute))
-            player.getMap().send(channel.generatePacket(player,packet.substring(1)));
-    }
-
-    private boolean addWarning() {
-        warning++;
-        if (warning == 3) {
-            player.sendText("<b>Anti - Flood :</b> c'est votre 3ème avertissement ! Vous êtes maintenant muet pour 10 minutes", "FF0000");
-            mute();
-            warning = 0;
-            return true;
-        }
-        return false;
-    }
-
-    private void mute() {
-        String message = "<b>[Anti Flood]</b> - Le joueur " + player.getPacketName() + " s'est fait muter <b>10 minutes</b> pour la raison suivante : <b> flood </b>";
-        player.getAccount().setMute(new Pair<>(10, new Date()));
-        player.getGameManager().send("cs<font color='#000000'>" + message + "</font>");
+            player.getMap().send(channel.generatePacket(player, packet.substring(1)));
     }
 
     enum Channel {
@@ -97,8 +82,8 @@ public class FloodChecker {
         RECRUITMENT('?', true, null),
         GROUP('$', false, "group"),
         GUILD('%', false, "guild"),
-        RANK('@',false,"rank"),
-        PRIVATE('p',false,null);
+        RANK('@', false, "rank"),
+        PRIVATE('i', false, null);
 
         private final char channel;
         private final boolean limited;
@@ -110,8 +95,8 @@ public class FloodChecker {
             this.attribute = attribute;
         }
 
-        public String generatePacket(Player player,String message) {
-            return ("cMK"+ channel + "|" + player.getId() + "|" + player.getName() + message);
+        public String generatePacket(Player player, String message) {
+            return ("cMK" + channel + "|" + player.getId() + "|" + player.getName() + message);
         }
 
         public static Channel get(char argument) {

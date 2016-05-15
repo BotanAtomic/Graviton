@@ -21,7 +21,7 @@ import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
 import graviton.game.spells.Animation;
 import graviton.game.spells.SpellTemplate;
-import graviton.game.trunks.Trunk;
+import graviton.game.trunk.Trunk;
 import graviton.network.exchange.ExchangeNetwork;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -213,16 +213,14 @@ public class GameManager implements Manager {
     }
 
     public void sendToAdmins(String packet) {
-        try {
-            locker.lock();
-            admins.forEach(admin -> admin.getAccount().send(packet));
-        } finally {
-            locker.unlock();
-        }
+        admins.forEach(admin -> admin.getAccount().send(packet));
     }
 
     public Player getPlayer(java.lang.Object object) {
-        return playerFactory.get(object);
+        if(object instanceof Integer)
+            return playerFactory.get(object);
+        else
+            return playerFactory.getByName((String)object);
     }
 
     public String getAdminsName() {
@@ -258,5 +256,12 @@ public class GameManager implements Manager {
 
     private void scheduleActions() {
         this.scheduler.scheduleAtFixedRate(() -> save(), 1, 1, TimeUnit.HOURS);
+
+        this.scheduler.scheduleAtFixedRate(() -> this.accountFactory.getElements().values().forEach(account -> {
+            if ((System.currentTimeMillis() - account.getClient().getSession().getLastWriteTime() / 1000 > 60 * 1000)) {
+                account.send("M01");
+                account.getClient().getSession().close(true);
+            }
+        }), 10, 10, TimeUnit.MINUTES);
     }
 }

@@ -47,8 +47,8 @@ public class Scanner extends Thread implements Manageable {
             double currentMemory = (((double) (Runtime.getRuntime().totalMemory() / 1024) / 1024)) - (((double) (Runtime.getRuntime().freeMemory() / 1024) / 1024));
             System.out.println(" ______________________________________________");
             System.out.println("| Total server : " + (globalManager.getServers().size()) + globalManager.getServerName(false));
-            System.out.println("| Number of connectedClient servers : " + globalManager.getExchangeClients().size() + globalManager.getServerName(true));
-            System.out.println("| Number of connectedClient clients on the manager : " + globalManager.getLoginClients().size());
+            System.out.println("| Number of connected servers : " + globalManager.getExchangeClients().size() + globalManager.getServerName(true));
+            System.out.println("| Number of connected clients on the manager : " + globalManager.getLoginClients().size());
             System.out.println("| Application is connectedClient : " + network.applicationIsConnected());
             System.out.println("| Process PID : " + ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
             System.out.println("| Client who passed and connectedClient : " + globalManager.getConnectedClient().size());

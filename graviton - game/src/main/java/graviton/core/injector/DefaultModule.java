@@ -74,7 +74,7 @@ public class DefaultModule extends AbstractModule {
                     encounter.register(injector(instance -> {
                         try {
                             Object value = properties.get(field.getAnnotation(InjectSetting.class).value());
-                            field.set(instance, parse(value, field));
+                            field.set(instance, parse(value, field.getType()));
                         } catch (IllegalAccessException e) {
                             binder().addError(e);
                         }
@@ -82,10 +82,12 @@ public class DefaultModule extends AbstractModule {
                 }
             }
         })));
+
         bind(Database.class).annotatedWith(Names.named("database.login")).toInstance(new Database(properties, "database.login."));
         bind(Database.class).annotatedWith(Names.named("database.game")).toInstance(new Database(properties, "database.game."));
-
         bind(PacketManager.class).toInstance(new PacketManager(properties.getProperty("word.dictionary").split(","), properties.getProperty("word.forbidden").split(",")));
+
+
     }
 
     private TypeListener listener(BiConsumer<TypeLiteral<?>, TypeEncounter<?>> consumer) {
@@ -96,14 +98,11 @@ public class DefaultModule extends AbstractModule {
         return consumer::accept;
     }
 
-    private Object parse(Object value, Field field) {
-        Type type = field.getType();
-
+    private Object parse(Object value, Type type) {
         if (type == boolean.class)
             value = Boolean.parseBoolean(value.toString());
         else if (type == int.class)
             value = Integer.parseInt(value.toString());
-
         return value;
     }
 }

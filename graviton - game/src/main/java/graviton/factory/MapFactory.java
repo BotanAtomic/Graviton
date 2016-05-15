@@ -10,7 +10,7 @@ import graviton.game.action.Action;
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
 import graviton.game.maps.Zaap;
-import graviton.game.trunks.Trunk;
+import graviton.game.trunk.Trunk;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;

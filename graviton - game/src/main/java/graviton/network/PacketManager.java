@@ -1,19 +1,21 @@
 package graviton.network;
 
 import com.google.inject.Inject;
+import graviton.api.InjectSetting;
 import graviton.api.PacketParser;
 import graviton.common.Utils;
 import graviton.factory.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.action.player.ActionManager;
 import graviton.game.client.player.Player;
+import graviton.game.client.player.packet.Packets;
 import graviton.game.creature.Creature;
 import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcAnswer;
-import graviton.game.creature.npc.NpcQuestion;
 import graviton.game.enums.IdType;
 import graviton.game.enums.Rank;
 import graviton.game.maps.Maps;
+import graviton.game.object.ObjectTemplate;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,9 @@ public class PacketManager {
     private final String[] dictionary;
     private final String[] forbidden;
     private final Calendar calendar;
+
+    @InjectSetting("packet.crypted")
+    private boolean crypted;
     @Inject
     GameManager gameManager;
     @Inject
@@ -56,7 +61,26 @@ public class PacketManager {
 
         packets.put("EA", (client, packet) -> client.getCurrentPlayer().startExchange());
 
-        packets.put("EV", (client, packet) -> client.getCurrentPlayer().getExchange().cancel());
+        packets.put("EB", (client, packet) -> {
+            String[] arguments = packet.split("\\|");
+
+            ObjectTemplate template = gameManager.getObjectTemplate(Integer.parseInt(arguments[0]));
+            int quantity = Integer.parseInt(arguments[1]);
+
+            client.getCurrentPlayer().addKamas(-template.getPrice() * quantity);
+            client.getCurrentPlayer().addObject(template.createObject(quantity, false), true);
+
+            client.send(client.getCurrentPlayer().getPacket(Packets.As));
+            client.send("EBK");
+        });
+
+        packets.put("EV", (client, packet) -> {
+            if (client.getCurrentPlayer().getExchange() == null) {
+                client.send("EV");
+                client.getCurrentPlayer().save();
+            } else
+                client.getCurrentPlayer().getExchange().cancel();
+        });
 
         packets.put("ER", (client, packet) -> client.getCurrentPlayer().askExchange(packet));
 
@@ -75,25 +99,22 @@ public class PacketManager {
             if (creature != null)
                 client.getCurrentPlayer().createDialog((Npc) creature);
             else
-                log.error("Le PNJ {} est introuvable", packet);
+                log.error("The NPC can not be found", packet);
         });
 
         packets.put("DR", (client, packet) -> {
             try {
-                String[] infos = packet.split("\\|");
+                String[] informations = packet.split("\\|");
 
-                if(client.getCurrentPlayer().getActionManager().getStatus() != ActionManager.Status.DIALOG)
-                    return;
+                assert (client.getCurrentPlayer().getActionManager().getStatus() != ActionManager.Status.DIALOG);
 
                 Npc npc = (Npc) client.getCurrentPlayer().getMap().getCreatures(IdType.NPC).get(client.getCurrentPlayer().getAskedCreature());
 
-                if(npc == null)
-                    return;
+                assert npc != null;
 
-                NpcQuestion question = gameManager.getNpcQuestion(Integer.parseInt(infos[0]));
-                NpcAnswer answer = gameManager.getNpcAnswer(Integer.parseInt(infos[1]));
+                NpcAnswer answer = gameManager.getNpcAnswer(Integer.parseInt(informations[1]));
 
-                if(question == null || answer == null) {
+                if (answer == null) {
                     client.send("DV");
                     client.getCurrentPlayer().setAskedCreature(0);
                     client.getCurrentPlayer().setActionState(ActionManager.Status.WAITING);
@@ -101,7 +122,7 @@ public class PacketManager {
                 }
 
                 answer.apply(client.getCurrentPlayer());
-            } catch(Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 client.send("DV");
                 client.getCurrentPlayer().setAskedCreature(0);
@@ -116,11 +137,17 @@ public class PacketManager {
                 client.getCurrentPlayer().getGroup().kick(client.getCurrentPlayer(), gameManager.getPlayer(Integer.parseInt(packet)));
         });
 
-        packets.put("FD", (client, packet) -> client.getAccount().removeFriend(packet));
+        packets.put("FD", (client, packet) -> client.getAccount().removeInList(packet,true));
 
-        packets.put("FL", (client, packet) -> client.send(client.getAccount().getFriendsPacket()));
+        packets.put("iD", (client, packet) -> client.getAccount().removeInList(packet,false));
 
-        packets.put("FA", (client, packet) -> client.getAccount().addFriend(client.getCurrentPlayer().getGameManager().getPlayer(packet)));
+        packets.put("FL", (client, packet) -> client.send(client.getAccount().getListPacket(true)));
+
+        packets.put("iL", (client, packet) -> client.send(client.getAccount().getListPacket(false)));
+
+        packets.put("FA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet),true));
+
+        packets.put("iA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet),false));
 
         packets.put("Ba", (client, packet) -> {
             if (client.getAccount().getRank().id == Rank.PLAYER.id)
@@ -178,10 +205,10 @@ public class PacketManager {
             if (client.getCurrentPlayer().getActionManager() == null || client.getCurrentPlayer().getActionManager().getCurrentActions().isEmpty())
                 return;
             int gameActionId;
-            String[] infos = packet.substring(1).split("\\|");
+            String[] informations = packet.substring(1).split("\\|");
             try {
-                gameActionId = Integer.parseInt(infos[0]);
-                client.getCurrentPlayer().getActionManager().endAction(gameActionId, packet.charAt(0) == 'K', infos.length > 1 ? infos[1] : "");
+                gameActionId = Integer.parseInt(informations[0]);
+                client.getCurrentPlayer().getActionManager().endAction(gameActionId, packet.charAt(0) == 'K', informations.length > 1 ? informations[1] : "");
             } catch (Exception e) {
                 log.error("Problem at packet {} : {}", packet, e);
             }
@@ -203,8 +230,8 @@ public class PacketManager {
             client.setAccount(gameManager.getAccount(Integer.parseInt(packet)));
             if (client.getAccount() != null) {
                 client.getAccount().setClient(client);
-                client.getAccount().setIpAdress(client.getSession().getLocalAddress().toString().replace("/", "").split(":")[0]);
-                client.send("ATK0");
+                client.getAccount().setNetworkAddress(client.getSession().getLocalAddress().toString().replace("/", "").split(":")[0]);
+                client.send("ATK" + (crypted ? client.generateKey() : "0"));
             } else {
                 client.send("ATE");
             }
@@ -247,7 +274,12 @@ public class PacketManager {
 
         /** Without argument **/
 
-        packets.put("AL", (client, packet) -> client.send(client.getAccount().getPlayersPacket()));
+        packets.put("Ai", (client, packet) -> client.send(client.getAccount().getPlayersPacket()));
+
+        packets.put("AL", (client, packet) -> {
+            if (packet.isEmpty()) return;
+            client.send(client.getAccount().getPlayersPacket());
+        });
 
         packets.put("AV", (client, packet) -> client.send("AV0"));
 
@@ -301,4 +333,5 @@ public class PacketManager {
 
         this.packets = Collections.unmodifiableMap(packets);
     }
+
 }

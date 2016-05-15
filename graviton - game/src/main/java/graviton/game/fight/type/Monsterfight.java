@@ -7,9 +7,9 @@ import graviton.game.fight.Fight;
 /**
  * Created by Botan on 28/12/2015.
  */
-public class MonsterFight implements Fight {
+public class MonsterFight extends Fight {
 
-    public MonsterFight(Player player, MonsterGroup group) {
+    public MonsterFight(Player player) {
         //TODO : new group fight
     }
 

@@ -35,7 +35,6 @@ import graviton.game.object.Object;
 import graviton.game.object.ObjectPosition;
 import graviton.game.object.ObjectType;
 import graviton.game.object.panoply.PanoplyTemplate;
-import graviton.game.spells.Animation;
 import graviton.game.spells.Spell;
 import graviton.game.spells.SpellTemplate;
 import graviton.game.statistics.Statistics;
@@ -53,9 +52,9 @@ import static graviton.database.utils.login.Tables.PLAYERS;
  */
 @Data
 public class Player implements Creature, Fightable {
-    private final int id;
-    private final Account account;
-    private final Classe classe;
+    private int id;
+    private Account account;
+    private Classe classe;
     @Inject
     GameManager gameManager;
     @Inject
@@ -114,7 +113,7 @@ public class Player implements Creature, Fightable {
         String colors[] = record.getValue(PLAYERS.COLORS).split(";");
         this.colors = new int[]{Integer.parseInt(colors[0]), Integer.parseInt(colors[1]), Integer.parseInt(colors[2])};
         this.experience = record.getValue(PLAYERS.EXPERIENCE);
-        this.configureStatisctics(record);
+        this.configureStatistics(record);
         this.size = record.getValue(PLAYERS.SIZE);
         this.kamas = record.getValue(PLAYERS.KAMAS);
         this.capital = record.getValue(PLAYERS.CAPITAL);
@@ -140,19 +139,19 @@ public class Player implements Creature, Fightable {
 
     public Player(String name, byte sex, byte classeId, int[] colors, Account account, Injector injector) {
         injector.injectMembers(this);
-        this.send("TB");
         this.account = account;
+        this.send("TB");
         this.id = factory.getNextId();
         this.name = name;
         this.sex = sex;
         this.classe = Classe.values()[classeId - 1];
         this.alignement = new Alignement(this);
         this.level = factory.getStartLevel();
-        this.gfx = classeId * 10 + sex;
+        this.gfx = (classeId * 10) + sex;
         this.colors = colors;
         this.experience = gameManager.getPlayerExperience(level);
         this.size = 100;
-        this.configureStatisctics(null);
+        this.configureStatistics(null);
         this.kamas = factory.getStartKamas();
         this.capital = (level - 1) * 5;
         this.spellPoints = level - 1;
@@ -183,7 +182,7 @@ public class Player implements Creature, Fightable {
         if (data == null || data.isEmpty()) return;
     }
 
-    private void configureStatisctics(Record record) {
+    private void configureStatistics(Record record) {
         Map<Integer, Integer> stats = new HashMap<>();
 
         if (record != null) {
@@ -207,17 +206,20 @@ public class Player implements Creature, Fightable {
 
     public void joinGame() {
         account.setCurrentPlayer(this);
+        try {
+            send(getPacket(Packets.ASK));
+            send(getPacket(Packets.OS));
+            send(getPacket(Packets.As));
+            this.position.getMap().addCreature(this);
 
-        send(getPacket(Packets.ASK));
-        send(getPacket(Packets.OS));
-        send(getPacket(Packets.As));
-        this.position.getMap().addCreature(this);
+            if (this.mount != null)
+                send("Re+" + this.mount.getPacket());
+            send("Rx" + (this.mount == null ? 0 : this.mount.getExperience()));
 
-        if (this.mount != null)
-            send("Re+" + this.mount.getPacket());
-        send("Rx" + (this.mount == null ? 0 : this.mount.getExperience()));
-
-        send(getPacket(Packets.SL));
+            send(getPacket(Packets.SL));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void createGame() {
@@ -233,7 +235,7 @@ public class Player implements Creature, Fightable {
         send("AR6bk");
         this.account.update();
         send("Im0152;" + this.getAccount().getInformations());
-        send("Im0153;" + this.account.getIpAdress());
+        send("Im0153;" + this.account.getNetworkAddress());
         sendText("Bienvenue sur Horus", "000000");
         this.online = true;
         this.account.setOnline();
@@ -257,7 +259,7 @@ public class Player implements Creature, Fightable {
         for (String data : objects.split(",")) {
             Object object = this.gameManager.getObject(Integer.parseInt(data));
             if (object.getObjectPosition() != ObjectPosition.NO_EQUIPED)
-                this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
+                this.statistics.get(StatsType.STUFF).accumulateStatistics(object.getStatistics());
             this.objects.put(object.getId(), object);
         }
 
@@ -275,10 +277,10 @@ public class Player implements Creature, Fightable {
         } else {
             this.objects.put(newObject.getId(), newObject);
             this.send("OAKO" + newObject.parseItem());
-            if (save) {
-                this.gameManager.saveObject(newObject);
-                this.save();
-            }
+        }
+        if (save) {
+            this.gameManager.saveObject(newObject);
+            this.save();
         }
         this.refreshPods();
         return value[0];
@@ -376,7 +378,6 @@ public class Player implements Creature, Fightable {
 
         if (sameObject != null || quantity < object.getQuantity()) {
             if (sameObject != null && !equipable) {
-                System.err.println(packet + " STAPE 1");
                 if (quantity >= object.getQuantity()) {
                     this.removeObject(object.getId(), true);
                     System.err.println(packet + " STAPE 1/2");
@@ -392,6 +393,7 @@ public class Player implements Creature, Fightable {
                     removeObject(equipped.getId(), true);
                     this.setObjectQuantity(sameObject, sameObject.getQuantity() + 1);
                 }
+
                 if (object.getTemplate().getType() == ObjectType.ANNEAU && (equipped = getObjectByPosition(position == ObjectPosition.ANNEAU2.id ? ObjectPosition.ANNEAU1.id : ObjectPosition.ANNEAU2.id)) != null) {
                     if (equipped.getTemplate().getPanoplyTemplate() != null && object.getTemplate().getPanoplyTemplate() != null)
                         if (equipped.getTemplate().getPanoplyTemplate().getId() == object.getTemplate().getPanoplyTemplate().getId()) {
@@ -409,7 +411,6 @@ public class Player implements Creature, Fightable {
             this.save();
             System.err.println(packet + " STAPE 4");
         } else {
-            System.err.println(packet + " STAPE 5");
             object.changePlace(ObjectPosition.get(position), position >= 35 && position <= 57 ? position : 0);
             this.send("OM" + object.getId() + "|" + (object.getPosition().getKey() == ObjectPosition.NO_EQUIPED ? object.getPosition().getValue() == 0 ? "" : object.getPosition().getValue() : object.getPosition().getKey().id));
             System.err.println(packet + " STAPE 5 OK");
@@ -417,9 +418,11 @@ public class Player implements Creature, Fightable {
 
         if (!(position >= 35 && position <= 57)) {
             if (position != -1) {
-                this.statistics.get(StatsType.STUFF).cumulStatistics(object.getStatistics());
+                this.statistics.get(StatsType.STUFF).accumulateStatistics(object.getStatistics());
             } else if (position == -1)
                 this.statistics.get(StatsType.STUFF).removeStatistics(object.getStatistics());
+            if (object.getTemplate().getPanoplyTemplate() != null && this.getNumberOfEquippedObject(object.getTemplate().getPanoplyTemplate().getId()).isEmpty())
+                send("OS-" + object.getTemplate().getPanoplyTemplate().getId());
             if (object.getTemplate().getType() == ObjectType.COIFFE || object.getTemplate().getType() == ObjectType.CAPE || object.getTemplate().getType() == ObjectType.FAMILIER)
                 this.getMap().send("Oa" + this.id + "|" + getPacket(Packets.GMS));
         }
@@ -443,10 +446,9 @@ public class Player implements Creature, Fightable {
      * Spell
      **/
     public boolean boostSpell(int id) {
-        if (!spells.containsKey(id))
-            return false;
         SpellTemplate spellTemplate = gameManager.getSpellTemplate(id);
         int oldLevel = spells.get(id).getLevel();
+
         if (spellPoints < oldLevel || oldLevel == 6 || spellTemplate.getStats(oldLevel + 1).getRequiredLevel() > this.level)
             return false;
 
@@ -497,19 +499,11 @@ public class Player implements Creature, Fightable {
     }
 
     public Statistics getStuffStatistics() {
-        return this.statistics.get(StatsType.PANOPLY).cumulStatistics(this.statistics.get(StatsType.STUFF));
-    }
-
-    public Statistics getBaseStatistics() {
-        return this.statistics.get(StatsType.BASE);
-    }
-
-    public Statistics getBuffStatistics() {
-        return this.statistics.get(StatsType.BUFF);
+        return new Statistics().accumulateStatistics(Arrays.asList(this.statistics.get(StatsType.PANOPLY), this.statistics.get(StatsType.STUFF)));
     }
 
     public Statistics getTotalStatistics() {
-        return new Statistics().cumulStatistics(this.statistics.values());
+        return new Statistics().accumulateStatistics(this.statistics.values());
     }
 
     public String parseStatistics() {
@@ -608,12 +602,6 @@ public class Player implements Creature, Fightable {
         floodCheck.speak(packet, canal);
     }
 
-    public void launchAnimation() {
-        int[] aleatories = {345, 53, 319, 380, 381, 210, 342, 337, 334, 330, 294, 293, 281, 372};
-        Animation animation = gameManager.getAnimation(aleatories[new Random().nextInt(aleatories.length)]);
-        send("GA;" + 228 + ";" + id + ";" + getCell().getId() + "," + animation.getGA());
-    }
-
     @Override
     public void speak(String message) {
         speak("*|" + message, "*");
@@ -698,13 +686,22 @@ public class Player implements Creature, Fightable {
         getMap().send("GA;900;" + this.id + ";" + askedCreature);
     }
 
-    public void acceptDefy(String arguments) {
+    public void acceptDefy(String argument) {
 
     }
 
     public void askExchange(String packet) {
-        switch (packet.charAt(0)) {
-            case '1':
+        String[] data = packet.split("\\|");
+        switch (Integer.parseInt(data[0])) {
+
+            case 0:
+                Npc npc = (Npc) getMap().getCreatures(IdType.NPC).get(Integer.parseInt(data[1]));
+                assert npc != null;
+                send("ECK0|".concat(String.valueOf(npc.getId())));
+                send("EL".concat(npc.getTemplate().getSellObjectsPacket()));
+                break;
+
+            case 1:
                 Player target = factory.get(Integer.parseInt(packet.substring(2)));
                 if (target == null || target.getMap() != this.getMap() || !target.isOnline() || target.isBusy()) {
                     send("EREE");
@@ -717,12 +714,17 @@ public class Player implements Creature, Fightable {
                 askedCreature = target.getId();
                 target.setAskedCreature(id);
                 break;
+
+            case 11: {
+
+                break;
+            }
         }
     }
 
     public void startExchange() {
         Player target = factory.get(askedCreature);
-        if (target == null) return;
+        assert target != null;
         send("ECK1");
         target.send("ECK1");
     }

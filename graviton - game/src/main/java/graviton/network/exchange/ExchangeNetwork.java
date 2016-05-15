@@ -137,6 +137,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
                 send("S" + serverId + "@" + serverKey);
                 break;
             case 'E':
+                log.error("connection refused");
                 System.exit(0);
                 break;
             case 'R':
