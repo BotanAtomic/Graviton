@@ -3,8 +3,8 @@ package graviton.game.client;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Pair;
-import graviton.factory.AccountFactory;
-import graviton.factory.PlayerFactory;
+import graviton.factory.type.AccountFactory;
+import graviton.factory.type.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.action.player.CommandManager;
 import graviton.game.admin.Admin;
@@ -57,6 +57,8 @@ public class Account {
     private Trunk bank;
 
     private Admin admin;
+
+    private String playersCachePacket;
 
     public Account(Record record, PlayerFactory playerFactory, AccountFactory accountFactory, Injector injector) {
         injector.injectMembers(this);
@@ -135,11 +137,6 @@ public class Account {
             if (account.isOnline() && account.getFriends().contains(id))
                 account.send("Im0143;" + this.pseudo + " (" + currentPlayer.getPacketName() + ")");
         }
-    }
-
-    public void mute(int time, Player player, String reason) {
-        this.mute = new Pair<>(time, new Date());
-        manager.mute(currentPlayer, player, time, reason);
     }
 
     public boolean canSpeak() {

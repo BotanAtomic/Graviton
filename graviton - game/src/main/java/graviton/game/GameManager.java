@@ -4,7 +4,8 @@ import com.google.inject.Inject;
 import graviton.api.Factory;
 import graviton.api.Manager;
 import graviton.enums.DataType;
-import graviton.factory.*;
+import graviton.factory.FactoryManager;
+import graviton.factory.type.*;
 import graviton.game.admin.Admin;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
@@ -29,11 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by Botan on 19/06/2015.
@@ -42,31 +41,14 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public class GameManager implements Manager {
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private final ReentrantLock locker = new ReentrantLock();
+    @Inject
+    FactoryManager factoryManager;
 
-    @Inject
-    PlayerFactory playerFactory;
-    @Inject
-    MapFactory mapFactory;
-    @Inject
-    AccountFactory accountFactory;
-    @Inject
-    ObjectFactory objectFactory;
-    @Inject
-    SpellFactory spellFactory;
-    @Inject
-    NpcFactory npcFactory;
-    @Inject
-    GuildFactory guildFactory;
-    @Inject
-    MonsterFactory monsterFactory;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private ExchangeNetwork exchangeNetwork;
 
     private Experience experience;
-
-    private Map<DataType, Factory<?>> factorys;
 
     private Map<Classe, Map<Integer, Integer>> classData;
 
@@ -80,96 +62,99 @@ public class GameManager implements Manager {
 
     @Override
     public void load() {
-        this.factorys = getFactorys(playerFactory, npcFactory, accountFactory, objectFactory, spellFactory, mapFactory, guildFactory, monsterFactory);
-        this.factorys.values().forEach(Factory::configure);
+        this.factoryManager.getFactorys().values().forEach(Factory::configure);
         this.scheduleActions();
     }
 
+    public Player getPlayer(java.lang.Object object) {
+        if (object instanceof Integer)
+            return getPlayerFactory().get(object);
+        else
+            return getPlayerFactory().getByName((String) object);
+    }
+
     public Zaap getZaap(int map) {
-        for (Zaap zaap : getZaaps())
-            if (zaap.getMap().getId() == map)
-                return zaap;
-        return null;
+        return getMapFactory().getZaap(map);
     }
 
     public Map<Integer, ?> getElements(DataType type) {
-        return this.factorys.get(type).getElements();
+        return this.factoryManager.get(type).getElements();
     }
 
     public Maps getMap(int id) {
-        return mapFactory.get(id);
+        return getMapFactory().get(id);
     }
 
     public Maps getMapByPosition(int x1, int y1) {
-        return mapFactory.getByPosition(x1, y1);
+        return getMapFactory().getByPosition(x1, y1);
     }
 
     public SpellTemplate getSpellTemplate(int id) {
-        return spellFactory.get(id);
+        return getSpellFactory().get(id);
     }
 
     public Account getAccount(int id) {
-        return accountFactory.get(id);
+        return getAccountFactory().get(id);
     }
 
     public ObjectTemplate getObjectTemplate(int id) {
-        return objectFactory.get((java.lang.Object) id);
+        return getObjectFactory().get((java.lang.Object) id);
     }
 
     public InteractiveObjectTemplate getInteractiveObjectTemplates(int id) {
-        return objectFactory.get(id);
+        return getObjectFactory().get(id);
     }
 
     public Object getObject(int id) {
-        return objectFactory.load(id);
+        return getObjectFactory().load(id);
     }
 
     public void updateObject(Object object) {
-        objectFactory.update(object);
+        getObjectFactory().update(object);
     }
 
     public void saveObject(Object object) {
-        objectFactory.create(object);
+        getObjectFactory().create(object);
     }
 
     public void removeObject(int id) {
-        objectFactory.remove(id);
+        getObjectFactory().remove(id);
     }
 
     public NpcTemplate getNpcTemplate(int id) {
-        return npcFactory.get(id);
+        return getNpcFactory().get(id);
     }
 
     public NpcQuestion getNpcQuestion(int id) {
-        return npcFactory.getQuestion(id);
+        return getNpcFactory().getQuestion(id);
     }
 
     public NpcAnswer getNpcAnswer(int id) {
-        return npcFactory.getAnswer(id);
+        return getNpcFactory().getAnswer(id);
     }
 
     public Map<Classe, Map<Integer, Integer>> getClassData() {
-        return this.playerFactory.getClassData();
+        return getPlayerFactory().getClassData();
     }
 
     public List<Zaap> getZaaps() {
-        return mapFactory.getZaaps();
+        return getMapFactory().getZaaps();
     }
 
     public boolean checkName(String name) {
-        return guildFactory.check(name, true);
+        return getGuildFactory().check(name, true);
     }
 
     public boolean checkEmblem(String emblem) {
-        return guildFactory.check(emblem, false);
+        return getGuildFactory().check(emblem, false);
     }
 
     public MonsterTemplate getMonster(int id) {
-        return monsterFactory.get(id);
+        return getMonsterFactory().get(id);
     }
 
     public void updateTrunk(Trunk trunk) {
-        mapFactory.updateTrunk(trunk);
+        getMapFactory().updateTrunk(trunk);
     }
 
     public long getPlayerExperience(int level) {
@@ -178,12 +163,12 @@ public class GameManager implements Manager {
     }
 
     public long getGuildExperience(int level) {
-        if (level > 200) return -1;
-        return experience.getData().get(DataType.MOUNT).get(level);
+        if (level > 200) level = 200;
+        return experience.getData().get(DataType.GUILD).get(level);
     }
 
     public Animation getAnimation(int id) {
-        return spellFactory.getAnimations().get(id);
+        return getSpellFactory().getAnimations().get(id);
     }
 
     public long getMountExperience(int level) {
@@ -192,35 +177,19 @@ public class GameManager implements Manager {
     }
 
     public void save() {
-        try {
-            locker.lock();
-            exchangeNetwork.send("C2");
-            getOnlinePlayers().forEach(player -> player.send("Im1164"));
-            this.factorys.forEach((dataType, factory) -> factory.save());
-            exchangeNetwork.send("C1");
-            getOnlinePlayers().forEach(player -> player.send("Im1165"));
-        } finally {
-            locker.unlock();
-        }
+        exchangeNetwork.send("C2");
+        send("Im1164");
+        this.factoryManager.getFactorys().values().forEach(Factory::save);
+        exchangeNetwork.send("C1");
+        send("Im1165");
     }
 
     public void send(String packet) {
-        playerFactory.send(packet);
+        getPlayerFactory().send(packet);
     }
 
     public List<Player> getOnlinePlayers() {
-        return playerFactory.getOnlinePlayers();
-    }
-
-    public void sendToAdmins(String packet) {
-        admins.forEach(admin -> admin.getAccount().send(packet));
-    }
-
-    public Player getPlayer(java.lang.Object object) {
-        if(object instanceof Integer)
-            return playerFactory.get(object);
-        else
-            return playerFactory.getByName((String)object);
+        return getPlayerFactory().getOnlinePlayers();
     }
 
     public String getAdminsName() {
@@ -228,25 +197,6 @@ public class GameManager implements Manager {
         String[] name = {" ["};
         admins.forEach(admin -> name[0] += admin.getAccount().getPseudo() + "(" + admin.getRank().id + ")/");
         return name[0].substring(0, name[0].length() - 1) + "]";
-    }
-
-    public void mute(Player muted, Player player, int time, String reason) {
-        String message = "Le joueur <b>" + muted.getPacketName() + "</b> s'est fait muter " +
-                "pour <b>" + time + "</b> minutes " +
-                "par <b>" + player.getName() + "</b>" +
-                "pour la raison suivante : <b>" + reason + "</b>";
-        send("cs<font color='#000000'>" + message + "</font>");
-    }
-
-    public void ban(Player muted, Player player, int time, String reason) {
-
-    }
-
-    private Map<DataType, Factory<?>> getFactorys(Factory... a) {
-        Map<DataType, Factory<?>> factorys = new ConcurrentHashMap<>();
-        for (Factory factory : a)
-            factorys.put(factory.getType(), factory);
-        return factorys;
     }
 
     @Override
@@ -257,11 +207,44 @@ public class GameManager implements Manager {
     private void scheduleActions() {
         this.scheduler.scheduleAtFixedRate(() -> save(), 1, 1, TimeUnit.HOURS);
 
-        this.scheduler.scheduleAtFixedRate(() -> this.accountFactory.getElements().values().forEach(account -> {
+        this.scheduler.scheduleAtFixedRate(() -> getAccountFactory().getElements().values().forEach(account -> {
             if ((System.currentTimeMillis() - account.getClient().getSession().getLastWriteTime() / 1000 > 60 * 1000)) {
-                account.send("M01");
+                account.send("M01|");
                 account.getClient().getSession().close(true);
             }
         }), 10, 10, TimeUnit.MINUTES);
+    }
+
+
+    public MapFactory getMapFactory() {
+        return (MapFactory) this.factoryManager.get(DataType.MAPS);
+    }
+
+    public ObjectFactory getObjectFactory() {
+        return (ObjectFactory) this.factoryManager.get(DataType.OBJECT);
+    }
+
+    private PlayerFactory getPlayerFactory() {
+        return (PlayerFactory) this.factoryManager.get(DataType.PLAYER);
+    }
+
+    private SpellFactory getSpellFactory() {
+        return (SpellFactory) this.factoryManager.get(DataType.SPELL);
+    }
+
+    private AccountFactory getAccountFactory() {
+        return (AccountFactory) this.factoryManager.get(DataType.ACCOUNT);
+    }
+
+    private NpcFactory getNpcFactory() {
+        return (NpcFactory) this.factoryManager.get(DataType.NPC);
+    }
+
+    private GuildFactory getGuildFactory() {
+        return (GuildFactory) this.factoryManager.get(DataType.GUILD);
+    }
+
+    private MonsterFactory getMonsterFactory() {
+        return (MonsterFactory) this.factoryManager.get(DataType.MONSTER);
     }
 }

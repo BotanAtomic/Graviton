@@ -1,4 +1,4 @@
-package graviton.factory;
+package graviton.factory.type;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.inject.Inject;
@@ -8,6 +8,7 @@ import graviton.api.Factory;
 import graviton.api.InjectSetting;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.GameManager;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
@@ -67,17 +68,16 @@ public class PlayerFactory extends Factory<Player> {
     private Database gameDatabase;
 
     @Inject
-    public PlayerFactory(GameManager gameManager, @Named("database.login") Database database) {
+    public PlayerFactory(GameManager gameManager, @Named("database.login") Database database,FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
         this.gameManager = gameManager;
         this.players = new ConcurrentHashMap<>();
         this.locker = new ReentrantLock();
     }
 
     public ArrayList<Player> load(Account account) {
-        ArrayList<Player> players = database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == serverId).map(record -> new Player(account, record, injector)).collect(Collectors.toCollection(ArrayList::new));
-        return players;
-        //return database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (serverId)).map(record -> new Player(account, record, injector)).collect(Collectors.toList());
+        return database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (serverId)).map(record -> new Player(account, record, injector)).collect(Collectors.toCollection(ArrayList::new));
     }
 
     public int getNextId() {
@@ -160,7 +160,6 @@ public class PlayerFactory extends Factory<Player> {
         return onlinePlayers;
     }
 
-    @Override
     public Player get(java.lang.Object object) {
         return this.players.get(object);
     }
@@ -172,12 +171,7 @@ public class PlayerFactory extends Factory<Player> {
     }
 
     public void send(String packet) {
-        try {
-            locker.lock();
-            getOnlinePlayers().forEach(player -> player.send(packet));
-        } finally {
-            locker.unlock();
-        }
+        getOnlinePlayers().forEach(player -> player.send(packet));
     }
 
     @Override

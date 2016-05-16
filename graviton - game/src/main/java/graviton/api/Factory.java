@@ -27,8 +27,6 @@ public abstract class Factory<T> {
 
     public abstract Map<Integer, T> getElements();
 
-    public abstract T get(Object object);
-
     public abstract void configure();
 
     public abstract void save();

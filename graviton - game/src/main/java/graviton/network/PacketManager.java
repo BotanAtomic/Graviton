@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import graviton.api.InjectSetting;
 import graviton.api.PacketParser;
 import graviton.common.Utils;
-import graviton.factory.PlayerFactory;
+import graviton.factory.type.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.action.player.ActionManager;
 import graviton.game.client.player.Player;
@@ -137,17 +137,17 @@ public class PacketManager {
                 client.getCurrentPlayer().getGroup().kick(client.getCurrentPlayer(), gameManager.getPlayer(Integer.parseInt(packet)));
         });
 
-        packets.put("FD", (client, packet) -> client.getAccount().removeInList(packet,true));
+        packets.put("FD", (client, packet) -> client.getAccount().removeInList(packet, true));
 
-        packets.put("iD", (client, packet) -> client.getAccount().removeInList(packet,false));
+        packets.put("iD", (client, packet) -> client.getAccount().removeInList(packet, false));
 
         packets.put("FL", (client, packet) -> client.send(client.getAccount().getListPacket(true)));
 
         packets.put("iL", (client, packet) -> client.send(client.getAccount().getListPacket(false)));
 
-        packets.put("FA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet),true));
+        packets.put("FA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet), true));
 
-        packets.put("iA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet),false));
+        packets.put("iA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet), false));
 
         packets.put("Ba", (client, packet) -> {
             if (client.getAccount().getRank().id == Rank.PLAYER.id)
@@ -232,6 +232,7 @@ public class PacketManager {
                 client.getAccount().setClient(client);
                 client.getAccount().setNetworkAddress(client.getSession().getLocalAddress().toString().replace("/", "").split(":")[0]);
                 client.send("ATK" + (crypted ? client.generateKey() : "0"));
+                client.getAccount().setPlayersCachePacket(client.getAccount().getPlayersPacket());
             } else {
                 client.send("ATE");
             }
@@ -273,12 +274,18 @@ public class PacketManager {
         });
 
         /** Without argument **/
-
-        packets.put("Ai", (client, packet) -> client.send(client.getAccount().getPlayersPacket()));
+        packets.put("Ai", (client, packet) -> {
+            if (client.getAccount().getPlayersCachePacket().split("\\|")[1] == "0")
+                client.getAccount().setPlayersCachePacket(client.getAccount().getPlayersPacket());
+            else
+                System.err.println("Good packet");
+        });
 
         packets.put("AL", (client, packet) -> {
-            if (packet.isEmpty()) return;
-            client.send(client.getAccount().getPlayersPacket());
+            if (packet.isEmpty())
+                client.send(client.getAccount().getPlayersCachePacket());
+            else
+                client.send(client.getAccount().getPlayersPacket());
         });
 
         packets.put("AV", (client, packet) -> client.send("AV0"));

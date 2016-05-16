@@ -1,10 +1,11 @@
-package graviton.factory;
+package graviton.factory.type;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.creature.monster.MonsterTemplate;
 import org.jooq.Record;
 
@@ -20,8 +21,9 @@ public class MonsterFactory extends Factory<MonsterTemplate> {
     private final Map<Integer, MonsterTemplate> monsters;
 
     @Inject
-    public MonsterFactory(@Named("database.game") Database database) {
+    public MonsterFactory(@Named("database.game") Database database,FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
         this.monsters = new ConcurrentHashMap<>();
     }
 
@@ -45,7 +47,6 @@ public class MonsterFactory extends Factory<MonsterTemplate> {
         return this.monsters;
     }
 
-    @Override
     public MonsterTemplate get(Object object) {
         return monsters.get(object) == null ? load((int) object) : monsters.get(object);
     }

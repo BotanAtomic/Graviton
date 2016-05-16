@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
 import graviton.common.Scanner;
-import graviton.factory.AccountFactory;
+import graviton.factory.type.AccountFactory;
 import graviton.game.GameManager;
 import graviton.network.game.GameNetwork;
 import lombok.Getter;

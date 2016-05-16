@@ -69,14 +69,13 @@ public class Trunk {
 
     public void open(Player player) {
         if (this.userId != 0) {
-            if(gameManager.getPlayer(userId) != null)
+            if (gameManager.getPlayer(userId) != null)
                 player.send("Im120");
             else {
                 userId = 0;
                 open(player);
             }
-        }
-        else {
+        } else {
             player.send("ECK5");
             player.send("EL" + getPacket());
             this.userId = player.getId();
@@ -103,9 +102,13 @@ public class Trunk {
     }
 
     private String getPacket() {
+        short i = 0;
         StringBuilder packet = new StringBuilder();
-        for (Object object : this.objects.values())
+        for (Object object : this.objects.values()) {
+            if (i >= 200) break; //TODO : add the im packet to limitation
             packet.append("O").append(object.parseItem()).append(";");
+            i++;
+        }
         if (this.kamas != 0)
             packet.append("G").append(this.kamas);
         return packet.toString();

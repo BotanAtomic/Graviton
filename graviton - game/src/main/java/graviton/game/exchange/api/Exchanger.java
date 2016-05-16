@@ -12,7 +12,7 @@ import java.util.Map;
 public class Exchanger {
     private final Player creature;
     private long kamas = 0;
-    private boolean ok;
+    private boolean ready = false;
 
     private final Map<Integer,Integer> objects = new HashMap<>();
 
@@ -36,12 +36,12 @@ public class Exchanger {
         this.kamas = kamas;
     }
 
-    public boolean isOk() {
-        return ok;
+    public boolean isReady() {
+        return ready;
     }
 
-    public void setOk(boolean ok) {
-        this.ok = ok;
+    public void setReady(boolean ready) {
+        this.ready = ready;
     }
 
 

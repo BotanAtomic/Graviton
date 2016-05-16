@@ -5,6 +5,7 @@ package graviton.common;
  * Created by Botan on 26/09/2015.
  */
 
+
 /**
  * Fucking static class
  **/
@@ -15,13 +16,6 @@ public class Utils {
 
     public static char getHashedValueByInteger(int c) {
         return HASH[c];
-    }
-
-    public static String generateKey() {
-        String key = "";
-        for(int i = 0; i <32;i++)
-            key = key.concat(String.valueOf(HASH[(int)Math.random()*HASH.length]));
-        return key;
     }
 
 

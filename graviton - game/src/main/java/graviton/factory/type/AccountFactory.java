@@ -1,4 +1,4 @@
-package graviton.factory;
+package graviton.factory.type;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -6,6 +6,7 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.client.Account;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
@@ -29,8 +30,9 @@ public class AccountFactory extends Factory<Account> {
     PlayerFactory playerFactory;
 
     @Inject
-    public AccountFactory(@Named("database.login") Database database) {
+    public AccountFactory(@Named("database.login") Database database, FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
         this.accounts = new ConcurrentHashMap<>();
     }
 
@@ -59,7 +61,6 @@ public class AccountFactory extends Factory<Account> {
         return this.accounts;
     }
 
-    @Override
     public Account get(Object object) {
         if (!this.accounts.containsKey(object))
             return load((int) object);

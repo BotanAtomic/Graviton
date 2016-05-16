@@ -1,10 +1,11 @@
-package graviton.factory;
+package graviton.factory.type;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.GameManager;
 import graviton.game.guild.Guild;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +23,9 @@ public class GuildFactory extends Factory<Guild> {
     private Map<Integer, Guild> guilds;
 
     @Inject
-    public GuildFactory(@Named("database.game") Database database) {
+    public GuildFactory(@Named("database.game") Database database,FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
     }
 
     public boolean check(String arguments, boolean name) {
@@ -42,7 +44,6 @@ public class GuildFactory extends Factory<Guild> {
         return this.guilds;
     }
 
-    @Override
     public Guild get(Object object) {
         return null;
     }

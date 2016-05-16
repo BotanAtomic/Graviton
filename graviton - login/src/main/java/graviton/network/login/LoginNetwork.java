@@ -61,7 +61,8 @@ public class LoginNetwork extends NetworkService implements IoHandler {
     @Override
     public void sessionClosed(IoSession session) throws Exception {
         LoginClient client = (LoginClient) session.getAttribute("client");
-        client.kick();
+        if(client != null)
+            client.kick();
         log.info("[Session {}] closed", session.getId());
     }
 

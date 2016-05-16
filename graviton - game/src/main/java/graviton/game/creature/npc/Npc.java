@@ -23,6 +23,7 @@ public class Npc implements Creature {
 
     private Position position;
 
+
     public Npc(int template,Maps maps,int cell,int orientation,Injector injector) {
         injector.injectMembers(this);
         this.id = IdType.NPC.MAXIMAL_ID - maps.getId()* 1000 - cell;

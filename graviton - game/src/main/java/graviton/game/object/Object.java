@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Pair;
 import graviton.common.Parameter;
-import graviton.factory.ObjectFactory;
+import graviton.factory.type.ObjectFactory;
 import graviton.game.GameManager;
 import graviton.game.statistics.Statistics;
 import lombok.Data;

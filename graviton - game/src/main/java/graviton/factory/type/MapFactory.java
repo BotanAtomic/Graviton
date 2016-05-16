@@ -1,4 +1,4 @@
-package graviton.factory;
+package graviton.factory.type;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -6,6 +6,7 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.action.Action;
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
@@ -27,14 +28,15 @@ import static graviton.database.utils.game.Tables.*;
 @Slf4j
 public class MapFactory extends Factory<Maps> {
     private final Map<Integer, Maps> maps;
-    @Getter
     private final List<Zaap> zaaps;
+
     @Inject
     Injector injector;
 
     @Inject
-    public MapFactory(@Named("database.game") Database database) {
+    public MapFactory(@Named("database.game") Database database, FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
         this.maps = new ConcurrentHashMap<>();
         this.zaaps = new CopyOnWriteArrayList<>();
     }
@@ -49,11 +51,17 @@ public class MapFactory extends Factory<Maps> {
         return maps;
     }
 
-    @Override
     public Maps get(Object object) {
         if (maps.containsKey(object))
             return maps.get(object);
         return load((int) object);
+    }
+
+    public Zaap getZaap(int map) {
+        for (Zaap zaap : this.zaaps)
+            if (zaap.getMap().getId() == map)
+                return zaap;
+        return null;
     }
 
     private Maps load(int id) {
@@ -64,15 +72,17 @@ public class MapFactory extends Factory<Maps> {
             this.maps.put(id, finalMap);
             loadTrunks(finalMap);
             return finalMap;
+        } else {
+            log.error("unknown map {}", id);
+            return null;
         }
-        return null;
     }
 
     private void loadTrunks(Maps maps) {
-        for (Record record : database.getResult(TRUNKS, TRUNKS.MAPID.equal(maps.getId()))) {
+        database.getResult(TRUNKS, TRUNKS.MAPID.equal(maps.getId())).forEach(record -> {
             Cell cell = maps.getCell(record.getValue(TRUNKS.CELLID));
             cell.setTrunk(new Trunk(record.getValue(TRUNKS.ID), record.getValue(TRUNKS.KAMAS), maps, cell, record.getValue(TRUNKS.OBJECT), injector));
-        }
+        });
     }
 
     public void updateTrunk(Trunk trunk) {
@@ -82,27 +92,28 @@ public class MapFactory extends Factory<Maps> {
 
     public Maps getByPosition(int x1, int y1) {
         String position[];
-        Result<Record> result = database.getResult(MAPS, MAPS.MAPPOS.contains(x1 + "," + y1));
-        for (Record record : result) {
+        Record record = database.getResult(MAPS, MAPS.MAPPOS.contains(x1 + "," + y1)).get(0);
+        if (record != null) {
             position = record.getValue(MAPS.MAPPOS).split(",");
-            try {
-                if (x1 == Integer.parseInt(position[0]) && y1 == Integer.parseInt(position[1]))
-                    return get(record.getValue(MAPS.ID));
-            } catch (Exception e) {
-                log.error("parsing result for loading map by position {}", e);
-            }
+            if (x1 == Integer.parseInt(position[0]) && y1 == Integer.parseInt(position[1]))
+                return get(record.getValue(MAPS.ID));
         }
         return null;
     }
 
     @Override
     public void configure() {
-        Map<Integer, Integer> allZaaps = (Map<Integer, Integer>) decodeObject("zaaps");
-        this.zaaps.addAll(allZaaps.keySet().stream().map(i -> new Zaap(get(i), allZaaps.get(i))).collect(Collectors.toList()));
+        Map<Integer, Integer> zaaps = (Map<Integer, Integer>) decodeObject("zaaps");
+        this.zaaps.addAll(zaaps.keySet().stream().map(i -> new Zaap(get(i), zaaps.get(i))).collect(Collectors.toList()));
     }
 
     @Override
     public void save() {
 
     }
+
+    public List<Zaap> getZaaps() {
+        return zaaps;
+    }
+
 }

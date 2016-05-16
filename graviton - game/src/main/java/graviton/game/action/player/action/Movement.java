@@ -40,6 +40,7 @@ public class Movement extends Pathfinding implements Action {
         }
         this.finalPathfinding = this.initialPathfinding = arguments;
         if (player.getActionManager().getStatus() != ActionManager.Status.WAITING) {
+            System.err.println(player.getActionManager().getStatus());
             player.send("GA;0");
             return false;
         }

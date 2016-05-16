@@ -3,7 +3,7 @@ package graviton.game.maps;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Utils;
-import graviton.factory.NpcFactory;
+import graviton.factory.type.NpcFactory;
 import graviton.game.GameManager;
 import graviton.game.client.player.Player;
 import graviton.game.creature.Creature;

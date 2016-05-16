@@ -11,7 +11,8 @@ import graviton.api.InjectSetting;
 import graviton.common.Scanner;
 import graviton.core.Manager;
 import graviton.database.Database;
-import graviton.factory.*;
+import graviton.factory.FactoryManager;
+import graviton.factory.type.*;
 import graviton.game.GameManager;
 import graviton.game.action.player.CommandManager;
 import graviton.network.NetworkManager;
@@ -47,6 +48,7 @@ public class DefaultModule extends AbstractModule {
         bind(ExchangeNetwork.class).asEagerSingleton();
 
         /** Factory **/
+        bind(FactoryManager.class).asEagerSingleton();
         bind(PlayerFactory.class).asEagerSingleton();
         bind(AccountFactory.class).asEagerSingleton();
         bind(MapFactory.class).asEagerSingleton();

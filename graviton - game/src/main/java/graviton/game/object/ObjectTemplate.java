@@ -3,7 +3,7 @@ package graviton.game.object;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Parameter;
-import graviton.factory.ObjectFactory;
+import graviton.factory.type.ObjectFactory;
 import graviton.game.object.panoply.PanoplyTemplate;
 import graviton.game.statistics.Statistics;
 import lombok.Data;
@@ -48,6 +48,7 @@ public class ObjectTemplate {
     }
 
     public String getStatistics() {
+        System.err.println(String.valueOf(this.id).concat(";").concat(statistics));
         return String.valueOf(this.id).concat(";").concat(statistics);
     }
 

@@ -35,8 +35,8 @@ public class FloodChecker {
         long difference = System.currentTimeMillis() - channels.get(channel);
 
         if (channel == Channel.BASIC) {
-            if (difference < 3000) {
-                if (message > 4) {
+            if (difference < 1000) {
+                if (message > 2) {
                     player.send("M10");
                     return false;
                 }

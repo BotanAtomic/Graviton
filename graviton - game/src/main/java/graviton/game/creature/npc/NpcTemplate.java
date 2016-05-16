@@ -36,16 +36,14 @@ public class NpcTemplate {
         this.customArt = customArt;
         this.extraClip = extraClip;
         this.initQuestion = initQuestion;
-        if (!objects.isEmpty() || !objects.equals("-1"))
+        if (!objects.isEmpty())
             this.saleObjects = configureObjects(objects, gameManager);
     }
 
     private List<ObjectTemplate> configureObjects(String data, GameManager gameManager) {
         List<ObjectTemplate> objects = new CopyOnWriteArrayList<>();
-        for (String object : data.split(",")) {
-            if(object.isEmpty()) continue;
+        for (String object : data.split(","))
             objects.add(gameManager.getObjectTemplate(Integer.parseInt(object)));
-        }
         buildSellObjectsPacket(objects);
         return objects;
     }
