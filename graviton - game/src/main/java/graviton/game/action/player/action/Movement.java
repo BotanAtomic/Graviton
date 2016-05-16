@@ -40,10 +40,12 @@ public class Movement extends Pathfinding implements Action {
         }
         this.finalPathfinding = this.initialPathfinding = arguments;
         if (player.getActionManager().getStatus() != ActionManager.Status.WAITING) {
+            System.err.println(player.getActionManager().getStatus());
             player.send("GA;0");
             return false;
         }
         AtomicReference<String> pathRef = new AtomicReference<>(arguments);
+
         int result = isValidPathfinding(player.getMap(), player.getCell().getId(), pathRef);
         if (result == 0) {
             player.send("GA;0");
@@ -51,6 +53,7 @@ public class Movement extends Pathfinding implements Action {
         }
         arguments = result == -1000 ? Utils.getHashedValueByInteger(player.getOrientation()) + cellToCode(player.getCell().getId()) : pathRef.get();
         player.getMap().send("GA" + id + ";" + action + ";" + player.getId() + ";" + "a" + cellToCode(player.getCell().getId()) + arguments);
+
         this.finalPathfinding = arguments;
         player.getActionManager().setStatus(ActionManager.Status.MOVING);
 
@@ -58,7 +61,6 @@ public class Movement extends Pathfinding implements Action {
 
         if (newCell.getAction() == null)
             return true;
-
         newCell.getAction().stream().filter(action -> action.getAction() == ActionType.TELEPORT).forEach(action -> {
             player.getGameManager().getMapFactory().get(Integer.parseInt(action.getArguments().split(",")[0]));
             teleportation = true;

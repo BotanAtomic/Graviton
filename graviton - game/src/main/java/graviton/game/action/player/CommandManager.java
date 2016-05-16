@@ -8,6 +8,7 @@ import graviton.game.client.player.Player;
 import graviton.game.common.Command;
 import graviton.game.object.ObjectTemplate;
 import graviton.game.object.panoply.PanoplyTemplate;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
@@ -15,6 +16,8 @@ import java.util.*;
 /**
  * Created by Botan on 18/10/2015 [Game]
  */
+
+@Slf4j
 public class CommandManager implements Manager { //TODO : create differents class for command
     @Inject
     GameManager gameManager;
@@ -55,6 +58,18 @@ public class CommandManager implements Manager { //TODO : create differents clas
 
         playerCommands.put("send", (player, arguments) -> player.send(arguments[1]));
 
+        playerCommands.put("job", (player, arguments) -> {
+            int job = 0;
+
+            try {
+                job = Integer.parseInt(arguments[1]);
+            } catch (Exception e) {
+
+            }
+
+            player.learnJob((byte)job);
+        });
+
         this.playerCommands = Collections.unmodifiableMap(playerCommands);
 
         adminCommand.put("teleport", (player, arguments) -> {
@@ -75,12 +90,25 @@ public class CommandManager implements Manager { //TODO : create differents clas
                 try {
                     quantity = Integer.parseInt(arguments[2]);
                 } catch (Exception e) {
+                    player.send("BAT1Quantité incorrect");
                 }
                 player.addObject(template.createObject(quantity, true), true);
-                player.send("BAT2L'objet " + template.getName() + " à bien ete ajouté à l'inventaire " + quantity + " fois");
+                player.send("BAT2L'objet " + template.getName() + " à  bien ete ajouté à  l'inventaire " + quantity + " fois");
             } catch (Exception e) {
                 player.send("BAT1L'objet n'existe pas");
             }
+        });
+
+        adminCommand.put("kamas", (player, arguments) -> {
+                long kamas = 10000;
+                try {
+                    kamas = Long.parseLong(arguments[1]);
+                } catch (Exception e) {
+                    player.send("BAT1Quantité incorrect");
+                }
+
+                player.addKamas(kamas);
+                player.send("BAT2Vous venez de recevoir " + kamas + " kamas");
         });
 
         adminCommand.put("panoply", (player, arguments) -> {
@@ -92,10 +120,14 @@ public class CommandManager implements Manager { //TODO : create differents clas
                     player.addObject(template.createObject(1, true), true);
                 }
 
-                player.send("BAT2La panoplie " + panoply.getName() + " à bien été ajoutée à l'inventaire");
+                player.send("BAT2La panoplie " + panoply.getName() + " à  bien été ajoutée à  l'inventaire");
             } catch (Exception e) {
                 player.send("BAT1La panoplie n'existe pas");
             }
+        });
+
+        adminCommand.put("send", (player, arguments) -> {
+            player.send(arguments[1]);
         });
 
         adminCommand.put("stats", (player, arguments) -> {
@@ -121,6 +153,8 @@ public class CommandManager implements Manager { //TODO : create differents clas
         });
 
         this.adminCommand = Collections.unmodifiableMap(adminCommand);
+        log.info("{} player commands loaded", playerCommands.size());
+        log.info("{} admin commands loaded", adminCommand.size());
     }
 
     @Override

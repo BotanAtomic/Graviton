@@ -72,18 +72,18 @@ public class Alignement {
     }
 
     public enum Type {
-        NEUTRE(0),
-        BONTARIEN(1),
-        BRAKMARIEN(2),
-        MERCENAIRE(3);
+        NEUTRE((byte)0),
+        BONTARIEN((byte)1),
+        BRAKMARIEN((byte)2),
+        MERCENAIRE((byte)3);
 
-        private final int id;
+        private final byte id;
 
-        Type(int id) {
+        Type(byte id) {
             this.id = id;
         }
 
-        public int getId() {
+        public byte getId() {
             return id;
         }
     }

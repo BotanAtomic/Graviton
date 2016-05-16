@@ -33,6 +33,7 @@ public class GameNetwork implements IoHandler, NetworkService {
     private Injector injector;
     @Inject
     private PacketManager packetManager;
+
     @InjectSetting("server.port")
     private int port;
 
@@ -97,11 +98,13 @@ public class GameNetwork implements IoHandler, NetworkService {
     }
 
     public void parsePacket(GameClient client, String packet) {
-        String[] header = {packet.substring(0, 2), packet.substring(2)};
+        short packetId = (short)((packet.charAt(0) - packet.charAt(1))*(packet.charAt(1) + packet.charAt(0)));
+        String data = packet.substring(2);
+
         try {
-            packetManager.getPackets().get(header[0]).parse(client, header[1]);
-        } catch (NullPointerException e) {
-            if (packetManager.getPackets().containsKey(header[0]))
+            packetManager.getPackets().get(packetId).parse(client, data);
+        } catch (Exception e) {
+            if (packetManager.getPackets().containsKey(packetId))
                 log.error("unable to parse packet {}", packet , e);
             else
                 log.error("Unknown packet {}", packet);
@@ -130,6 +133,7 @@ public class GameNetwork implements IoHandler, NetworkService {
 
     @Override
     public void start() {
+        log.info("Listening on port {}", port);
         try {
             acceptor.bind(new InetSocketAddress(port));
         } catch (IOException e) {

@@ -3,6 +3,8 @@ package graviton.game.action.player.action;
 import graviton.api.Action;
 import graviton.game.client.player.Player;
 import graviton.game.action.player.ActionManager;
+import graviton.game.job.Job;
+import graviton.game.job.actions.JobAction;
 import graviton.game.maps.Cell;
 
 /**
@@ -25,7 +27,16 @@ public class MapAction implements Action {
     public boolean start() {
         cell = player.getMap().getCell(Integer.parseInt(argument.split(";")[0]));
         action = Integer.parseInt(argument.split(";")[1]);
-        player.getMap().getCell(Integer.parseInt(argument.split(";")[0])).startAction(player, id, action);
+
+        if(player.getMap().getDistance(cell.getId(), player.getCell().getId()) > 2) {
+            player.getActionManager().resetActions();
+            return true;
+        }
+
+        player.getJobs().values().forEach(job -> job.getJobActions().stream().filter(jobAction -> action == jobAction.getId()).forEach(action -> action.start(player, this.id, cell.getInteractiveObject())));
+
+        if (!player.isBusy())
+            player.getMap().getCell(Integer.parseInt(argument.split(";")[0])).startAction(player, id, action);
         return true;
     }
 
@@ -41,6 +52,10 @@ public class MapAction implements Action {
 
     @Override
     public void onSuccess(String args) {
+        if (player.getActionManager().getStatus() == ActionManager.Status.WORKING) {
+            player.getActionManager().getCurrentJobAction().stop(player, cell.getInteractiveObject());
+            return;
+        }
         cell.finishAction(player, action);
     }
 

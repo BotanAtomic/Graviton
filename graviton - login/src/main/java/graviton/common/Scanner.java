@@ -20,9 +20,9 @@ public class Scanner extends Thread implements Manageable {
     private final GlobalManager globalManager;
     private final Date startTime = new Date();
     private final java.util.Scanner scanner;
+
     @Inject
     ApplicationNetwork network;
-
 
     @Inject
     public Scanner(GlobalManager globalManager) {
@@ -39,21 +39,50 @@ public class Scanner extends Thread implements Manageable {
         }
     }
 
+    /**
+     * long totalMemory = Runtime.getRuntime().totalMemory() / 1024 / 1024;
+     * long freeMemory = Runtime.getRuntime().freeMemory() / 1024 / 1024;
+     * <p>
+     * <p>
+     * StringBuilder builder = new StringBuilder("\n\n<u>Statistiques du serveur</u>\n\n");
+     * <p>
+     * builder.append((gameManager.getElements(DataType.ACCOUNT).size()) + " compte(s) chargé(s)\n");
+     * builder.append((gameManager.getElements(DataType.PLAYER).size()) + " personnage(s) chargé(s)\n");
+     * builder.append((gameManager.getElements(DataType.MAPS).size()) + " carte(s) chargé(s)\n\n");
+     * <p>
+     * builder.append("Mémoire maximale : " + totalMemory + " Mb\n");
+     * builder.append("Mémoire libre : " + freeMemory + " Mb\n");
+     * builder.append("Mémoire utilisée : " + (totalMemory - freeMemory) + " Mb\n\n");
+     * <p>
+     * builder.append("<u>" + Thread.activeCount() + " threads actifs </u>\n");
+     * Thread.getAllStackTraces().keySet().forEach(thread -> builder.append(thread + " (".concat(thread.getState().name()).concat(")\n")));
+     * <p>
+     * player.getAccount().getClient().send("BAT0".concat(builder.toString()));
+     *
+     * @param line
+     */
+
     private void execute(String line) {
         if (line.equalsIgnoreCase("restart")) {
             System.exit(0);
         } else if (line.equalsIgnoreCase("infos")) {
+            long totalMemory = Runtime.getRuntime().totalMemory() / 1024 / 1024;
+            long freeMemory = Runtime.getRuntime().freeMemory() / 1024 / 1024;
             Period period = new Interval(startTime.getTime(), new Date().getTime()).toPeriod();
-            double currentMemory = (((double) (Runtime.getRuntime().totalMemory() / 1024) / 1024)) - (((double) (Runtime.getRuntime().freeMemory() / 1024) / 1024));
             System.out.println(" ______________________________________________");
-            System.out.println("| Total server : " + (globalManager.getServers().size()) + globalManager.getServerName(false));
-            System.out.println("| Number of connected servers : " + globalManager.getExchangeClients().size() + globalManager.getServerName(true));
-            System.out.println("| Number of connected clients on the manager : " + globalManager.getLoginClients().size());
-            System.out.println("| Application is connectedClient : " + network.applicationIsConnected());
+            System.out.println("| Servers : " + (globalManager.getServers().size()) + globalManager.getServerName(false));
+            System.out.println("| Connected servers : " + globalManager.getExchangeClients().size() + globalManager.getServerName(true));
+            System.out.println("| Connected clients : " + globalManager.getLoginClients().size());
+            System.out.println("| Application : " + network.applicationIsConnected());
             System.out.println("| Process PID : " + ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
-            System.out.println("| Client who passed and connectedClient : " + globalManager.getConnectedClient().size());
-            System.out.println("| Memory usage: " + Double.toString(currentMemory).substring(0, 4) + " Mb / " + Double.toString(currentMemory / 8).substring(0, 4) + " Mo");
+            System.out.println("| Transfer to server  : " + globalManager.getConnectedClient().size());
+            System.out.println("| Max memory : " + +totalMemory + " Mb");
+            System.out.println("| Free memory : " + +freeMemory + " Mb");
+            System.out.println("| Memory usage : " + (totalMemory - freeMemory) + " Mb");
+            System.out.println("| Active thread : " + Thread.activeCount());
             System.out.println("| Uptime : " + period.getDays() + "d " + period.getHours() + "h " + period.getMinutes() + "m " + period.getSeconds() + "s");
+        } else if (line.equalsIgnoreCase("thread")) {
+            Thread.getAllStackTraces().keySet().forEach(thread -> System.out.println(thread + " (".concat(thread.getState().name()).concat(")")));
         } else {
             System.err.println("Command not found");
         }

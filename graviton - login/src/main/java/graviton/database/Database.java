@@ -62,18 +62,12 @@ public class Database implements Manageable {
 
     /** Data **/
 
-    public boolean isGoodAccount(String username, String password, LoginClient client) {
-        Record record = getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(username));
-        if (record != null)
-            if (encrypt(record.getValue(ACCOUNTS.PASSWORD), client.getKey()).equals(password))
-                return true;
-        return false;
-    }
-
-    public final Account loadAccount(String arguments) {
+    public final Account loadAccount(String arguments, String password,String key) {
         Record record = getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(arguments));
 
         if (record != null) {
+            if(!encrypt(record.getValue(ACCOUNTS.PASSWORD),key).equals(password))
+                return null;
             globalManager.checkAccount(record.getValue(ACCOUNTS.ID));
             return new Account(record.getValue(ACCOUNTS.ID),
                     record.getValue(ACCOUNTS.ACCOUNT), record.getValue(ACCOUNTS.PASSWORD),
@@ -82,7 +76,7 @@ public class Database implements Manageable {
         return null;
     }
 
-    public final Account loadAccount(String account, String password) {
+    public final Account loadApplicationAccount(String account, String password) {
         Record record = getRecord(ACCOUNTS, ACCOUNTS.ACCOUNT.equal(account), ACCOUNTS.PASSWORD.equal(password));
         if (record != null)
             return new Account(record.getValue(ACCOUNTS.ACCOUNT), record.getValue(ACCOUNTS.RANK), injector);

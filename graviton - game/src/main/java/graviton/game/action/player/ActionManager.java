@@ -4,6 +4,8 @@ import graviton.api.Action;
 import graviton.game.client.player.Player;
 import graviton.game.action.player.action.MapAction;
 import graviton.game.action.player.action.Movement;
+import graviton.game.job.actions.JobAction;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -13,15 +15,15 @@ import java.util.ArrayList;
 /**
  * Created by Botan on 09/10/2015.
  */
+@Data
 @Slf4j
 public class ActionManager {
-    @Getter
     private final ArrayList<Action> currentActions;
     private final Player player;
-    @Setter
     private Status status;
-    @Setter
     private boolean isAway;
+
+    private JobAction currentJobAction;
 
     public ActionManager(Player player) {
         this.player = player;
@@ -80,6 +82,7 @@ public class ActionManager {
         currentActions.forEach(Action::cancel);
         currentActions.clear();
         setStatus(Status.WAITING);
+        this.currentJobAction = null;
     }
 
     private int nextActionId() {
@@ -104,7 +107,7 @@ public class ActionManager {
         EXCHANGING,
         AWAY,
         GHOST,
-        CRAFTING,
+        WORKING,
         DIALOG
     }
 }

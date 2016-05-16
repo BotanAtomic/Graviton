@@ -1,6 +1,5 @@
-package graviton.factory;
+package graviton.factory.type;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Named;
@@ -8,6 +7,7 @@ import graviton.api.Factory;
 import graviton.api.InjectSetting;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.GameManager;
 import graviton.game.client.Account;
 import graviton.game.client.player.Player;
@@ -24,12 +24,10 @@ import graviton.game.statistics.Statistics;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.jooq.Record;
 import org.jooq.UpdateSetFirstStep;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -43,12 +41,12 @@ import static graviton.database.utils.login.Tables.PLAYERS;
 @Slf4j
 public class PlayerFactory extends Factory<Player> {
     private final Map<Integer, Player> players;
-    private final ReentrantLock locker;
+
     @Inject
     Injector injector;
+
     private GameManager gameManager;
     private Map<Classe, Map<Integer, Integer>> classData;
-
     private Map<Packets, Packet> packets;
 
     @InjectSetting("server.id")
@@ -67,17 +65,15 @@ public class PlayerFactory extends Factory<Player> {
     private Database gameDatabase;
 
     @Inject
-    public PlayerFactory(GameManager gameManager, @Named("database.login") Database database) {
+    public PlayerFactory(GameManager gameManager, @Named("database.login") Database database, FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
         this.gameManager = gameManager;
         this.players = new ConcurrentHashMap<>();
-        this.locker = new ReentrantLock();
     }
 
     public ArrayList<Player> load(Account account) {
-        ArrayList<Player> players = database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == serverId).map(record -> new Player(account, record, injector)).collect(Collectors.toCollection(ArrayList::new));
-        return players;
-        //return database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (serverId)).map(record -> new Player(account, record, injector)).collect(Collectors.toList());
+        return database.getResult(PLAYERS, PLAYERS.ACCOUNT.equal(account.getId())).stream().filter(record -> record.getValue(PLAYERS.SERVER) == (serverId)).map(record -> new Player(account, record, injector)).collect(Collectors.toCollection(ArrayList::new));
     }
 
     public int getNextId() {
@@ -98,7 +94,7 @@ public class PlayerFactory extends Factory<Player> {
     }
 
     public boolean create(Player player) {
-        int id = database.getDSLContext().insertInto(PLAYERS, PLAYERS.ID, PLAYERS.ACCOUNT, PLAYERS.NAME, PLAYERS.SEX, PLAYERS.GFX, PLAYERS.CLASS,
+        return database.getDSLContext().insertInto(PLAYERS, PLAYERS.ID, PLAYERS.ACCOUNT, PLAYERS.NAME, PLAYERS.SEX, PLAYERS.GFX, PLAYERS.CLASS,
                 PLAYERS.COLORS, PLAYERS.SPELLS, PLAYERS.SPELLPOINTS, PLAYERS.CAPITAL, PLAYERS.LEVEL, PLAYERS.EXPERIENCE, PLAYERS.POSITION, PLAYERS.SERVER)
                 .values(player.getId(),
                         player.getAccount().getId(),
@@ -113,8 +109,7 @@ public class PlayerFactory extends Factory<Player> {
                         player.getLevel(),
                         player.getExperience(),
                         player.getMap().getId() + ";" + player.getPosition().getCell().getId(),
-                        serverId).execute();
-        return id > 0;
+                        serverId).execute() > 0;
     }
 
     public void update(Player player) {
@@ -131,6 +126,9 @@ public class PlayerFactory extends Factory<Player> {
         firstStep.set(PLAYERS.POSITION, player.getMap().getId() + ";" + player.getCell().getId());
         firstStep.set(PLAYERS.ALIGNEMENT, player.parseAlignement());
         firstStep.set(PLAYERS.KAMAS, player.getKamas());
+        firstStep.set(PLAYERS.JOBS, player.parseJobs());
+        if (player.getGuild() != null)
+            firstStep.set(PLAYERS.GUILD, player.getGuild().getId());
         firstStep.set(PLAYERS.SPELLPOINTS, player.getGfx()).where(PLAYERS.ID.equal(player.getId())).execute();
     }
 
@@ -160,7 +158,6 @@ public class PlayerFactory extends Factory<Player> {
         return onlinePlayers;
     }
 
-    @Override
     public Player get(java.lang.Object object) {
         return this.players.get(object);
     }
@@ -172,12 +169,7 @@ public class PlayerFactory extends Factory<Player> {
     }
 
     public void send(String packet) {
-        try {
-            locker.lock();
-            getOnlinePlayers().forEach(player -> player.send(packet));
-        } finally {
-            locker.unlock();
-        }
+        getOnlinePlayers().forEach(player -> player.send(packet));
     }
 
     @Override
@@ -355,17 +347,31 @@ public class PlayerFactory extends Factory<Player> {
         packets.put(Packets.OS, player -> {
             player.getStatistics().get(StatsType.PANOPLY).getEffects().clear();
             StringBuilder builder = new StringBuilder();
-            List<Integer> equippedObject;
-            for (PanoplyTemplate panoplyTemplate : player.getPanoplys()) {
-                equippedObject = player.getNumberOfEquippedObject(panoplyTemplate.getId());
+
+            player.getPanoplys().forEach(panoplyTemplate -> {
+                final List<Integer> equippedObject = player.getListOfEquippedObject(panoplyTemplate.getId());
                 builder.append("OS").append("+").append(panoplyTemplate.getId()).append("|");
-                for (Integer objectTemplate : equippedObject)
-                    builder.append(objectTemplate).append(equippedObject.indexOf(objectTemplate) == (equippedObject.size() - 1) ? "" : ";");
+                equippedObject.forEach(objectTemplate -> builder.append(objectTemplate).append(equippedObject.indexOf(objectTemplate) == (equippedObject.size() - 1) ? "" : ";"));
                 builder.append("|").append(panoplyTemplate.getStatistics(equippedObject.size(), player).toString()).append("\n");
-            }
+
+            });
             return builder.toString();
         });
 
+        packets.put(Packets.JOB, player -> {
+            StringBuilder builder = new StringBuilder();
+            player.getJobs().values().forEach(job -> {
+                builder.append("JS").append(job.getJS()).append("\n");
+                builder.append("JX|").append(job.getTemplate().getId()).append(";").append(job.getLevel()).append(";").append(job.getExperience(true)).append(";").append("\n");
+                builder.append("JO").append(job.getPosition()).append("|0|0").append("\n");
+                player.getEquippedObjects().forEach(object -> {
+                    if (job.getTemplate().isValidTool(object.getTemplate().getId()))
+                        builder.append("OT").append(job.getTemplate().getId()).append("\n");
+                });
+            });
+            return builder.toString();
+        });
+        log.info("{} players packet loaded", packets.size());
         this.packets = Collections.unmodifiableMap(packets);
     }
 }

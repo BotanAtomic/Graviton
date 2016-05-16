@@ -50,7 +50,7 @@ public class ApplicationNetwork extends NetworkService implements IoHandler {
 
     @Override
     public void sessionOpened(IoSession session) throws Exception {
-        log.info("[Application {}] connectedClient", session.getId());
+        log.info("[Application {}] connected", session.getId());
     }
 
     @Override
@@ -105,7 +105,7 @@ public class ApplicationNetwork extends NetworkService implements IoHandler {
                 break;
             case 'C':
                 String[] args = finalPacket.split(";");
-                Account account = database.loadAccount(args[0], args[1]);
+                Account account = database.loadApplicationAccount(args[0], args[1]);
                 if (account != null) {
                     if (account.getRank() < 4) {
                         send("K");
@@ -161,6 +161,6 @@ public class ApplicationNetwork extends NetworkService implements IoHandler {
     }
 
     public String applicationIsConnected() {
-        return client == null ? "no" : "yes";
+        return client == null ? "disconnected" : "connected";
     }
 }

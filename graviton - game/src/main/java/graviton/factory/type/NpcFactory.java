@@ -1,4 +1,4 @@
-package graviton.factory;
+package graviton.factory.type;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -6,12 +6,11 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.GameManager;
 import graviton.game.action.Action;
-import graviton.game.creature.npc.Npc;
-import graviton.game.creature.npc.NpcAnswer;
-import graviton.game.creature.npc.NpcQuestion;
-import graviton.game.creature.npc.NpcTemplate;
+import graviton.game.creature.npc.*;
+import graviton.game.creature.npc.exchange.NpcTemplateExchange;
 import graviton.game.maps.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
@@ -38,8 +37,9 @@ public class NpcFactory extends Factory<NpcTemplate> {
     GameManager gameManager;
 
     @Inject
-    public NpcFactory(@Named("database.game") Database database) {
+    public NpcFactory(@Named("database.game") Database database, FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
         this.templates = new ConcurrentHashMap<>();
         this.answers = new ConcurrentHashMap<>();
         this.questions = new ConcurrentHashMap<>();
@@ -59,8 +59,14 @@ public class NpcFactory extends Factory<NpcTemplate> {
         NpcTemplate npcTemplate = null;
         Record record = database.getRecord(NPC_TEMPLATE, NPC_TEMPLATE.ID.equal(id));
         if (record != null) {
+            String exchange = record.getValue(NPC_TEMPLATE.EXCHANGES);
+
             int[] colors = {record.getValue(NPC_TEMPLATE.COLOR1), record.getValue(NPC_TEMPLATE.COLOR2), record.getValue(NPC_TEMPLATE.COLOR3)};
-            npcTemplate = new NpcTemplate(gameManager,id, record.getValue(NPC_TEMPLATE.GFX), record.getValue(NPC_TEMPLATE.SEX), colors, record.getValue(NPC_TEMPLATE.ACCESSORIES), record.getValue(NPC_TEMPLATE.EXTRACLIP), record.getValue(NPC_TEMPLATE.CUSTOMARTWORK), Integer.parseInt(record.getValue(NPC_TEMPLATE.INITQUESTION)),record.getValue(NPC_TEMPLATE.SALES));
+            if (exchange.isEmpty())
+                npcTemplate = new NpcTemplate(gameManager, id, record.getValue(NPC_TEMPLATE.GFX), record.getValue(NPC_TEMPLATE.SEX), colors, record.getValue(NPC_TEMPLATE.ACCESSORIES), record.getValue(NPC_TEMPLATE.EXTRACLIP), record.getValue(NPC_TEMPLATE.CUSTOMARTWORK), Integer.parseInt(record.getValue(NPC_TEMPLATE.INITQUESTION)), record.getValue(NPC_TEMPLATE.SALES));
+            else
+                npcTemplate = new NpcTemplateExchange(gameManager, id, record.getValue(NPC_TEMPLATE.GFX), record.getValue(NPC_TEMPLATE.SEX), colors, record.getValue(NPC_TEMPLATE.ACCESSORIES), record.getValue(NPC_TEMPLATE.EXTRACLIP), record.getValue(NPC_TEMPLATE.CUSTOMARTWORK), Integer.parseInt(record.getValue(NPC_TEMPLATE.INITQUESTION)), record.getValue(NPC_TEMPLATE.SALES), exchange);
+
             this.templates.put(id, npcTemplate);
         }
         return npcTemplate;
@@ -70,7 +76,6 @@ public class NpcFactory extends Factory<NpcTemplate> {
         return database.getResult(NPCS, NPCS.MAP.equal(maps.getId())).stream().map(record -> new Npc(record.getValue(NPCS.TEMPLATE), maps, record.getValue(NPCS.CELL), record.getValue(NPCS.ORIENTATION), injector)).collect(Collectors.toList());
     }
 
-    @Override
     public NpcTemplate get(Object object) {
         if (templates.containsKey(object))
             return templates.get(object);

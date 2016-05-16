@@ -35,7 +35,7 @@ public class InteractiveObject {
         this.cell = cell;
         this.state = State.FULL;
         this.template = gameManager.getInteractiveObjectTemplates(id);
-        this.walkable = this.template != null && (this.template.isWalkable() || this.state == State.EMPTY);
+        this.walkable = this.template != null && (this.template.isWalkable());
         if (template == null) return;
         if (template.getRespawnTime() == -1) return;
 

@@ -33,11 +33,11 @@ public abstract class Pathfinding {
         return steps;
     }
 
-    private String[] validSinglePath(int CurrentPos, String Path, Maps map) {
-        char dir = Path.charAt(0);
+    private String[] validSinglePath(int CurrentPos, String path, Maps map) {
+        char dir = path.charAt(0);
         int newStep;
         String[] result = new String[3];
-        int dirCaseID = codeToCell(Path.substring(1));
+        int dirCaseID = codeToCell(path.substring(1));
         int lastPos = CurrentPos;
         for (newStep = 0; newStep <= 64; newStep++) {
             result[1] = Integer.toString(lastPos);

@@ -1,4 +1,4 @@
-package graviton.factory;
+package graviton.factory.type;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -6,6 +6,7 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.maps.object.InteractiveObjectTemplate;
 import graviton.game.object.Object;
 import graviton.game.object.ObjectTemplate;
@@ -39,8 +40,9 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
 
 
     @Inject
-    public ObjectFactory(@Named("database.game") Database database) {
+    public ObjectFactory(@Named("database.game") Database database,FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
         this.objectsTemplate = new ConcurrentHashMap<>();
         this.interactiveObjectTemplate = new ConcurrentHashMap<>();
         this.panoply = new ConcurrentHashMap<>();
@@ -100,7 +102,6 @@ public class ObjectFactory extends Factory<ObjectTemplate> {
         return this.objectsTemplate;
     }
 
-    @Override
     public ObjectTemplate get(java.lang.Object object) {
         if (!this.objectsTemplate.containsKey(object))
             return loadTemplate((int) object);

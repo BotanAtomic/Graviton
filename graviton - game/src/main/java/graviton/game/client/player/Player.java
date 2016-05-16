@@ -2,7 +2,7 @@ package graviton.game.client.player;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import graviton.factory.PlayerFactory;
+import graviton.factory.type.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.action.player.ActionManager;
 import graviton.game.action.player.CommandManager;
@@ -20,6 +20,8 @@ import graviton.game.enums.Classe;
 import graviton.game.enums.IdType;
 import graviton.game.enums.StatsType;
 import graviton.game.exchange.api.Exchange;
+import graviton.game.exchange.job.BreakerExchange;
+import graviton.game.exchange.npc.NpcExchange;
 import graviton.game.exchange.player.PlayerExchange;
 import graviton.game.fight.Fight;
 import graviton.game.fight.Fightable;
@@ -28,6 +30,7 @@ import graviton.game.group.Group;
 import graviton.game.guild.Guild;
 import graviton.game.guild.GuildMember;
 import graviton.game.job.Job;
+import graviton.game.job.JobsTemplate;
 import graviton.game.maps.Cell;
 import graviton.game.maps.Maps;
 import graviton.game.maps.Zaap;
@@ -97,7 +100,7 @@ public class Player implements Creature, Fightable {
 
     private Mount mount;
 
-    private Map<Integer, Job> jobs;
+    private Map<Byte, Job> jobs;
 
     public Player(Account account, Record record, Injector injector) {
         injector.injectMembers(this);
@@ -129,6 +132,11 @@ public class Player implements Creature, Fightable {
         this.online = false;
         this.configureSpells(record.getValue(PLAYERS.SPELLS));
         this.configureJob(record.getValue(PLAYERS.JOBS));
+        this.guild = (record.get(PLAYERS.GUILD) == null || record.get(PLAYERS.GUILD) == 0) ? null : gameManager.getGuildFactory().get(record.get(PLAYERS.GUILD));
+
+        if(guild != null)
+            guild.getMembers().get(id).attributePlayer(this);
+
         this.zaaps.addAll(gameManager.getZaaps());
         this.actionManager = new ActionManager(this);
         String items = record.getValue(PLAYERS.ITEMS);
@@ -180,6 +188,14 @@ public class Player implements Creature, Fightable {
     private void configureJob(String data) {
         this.jobs = new HashMap<>();
         if (data == null || data.isEmpty()) return;
+
+        byte position = 0;
+
+        for (String job : data.split(";")) {
+            this.jobs.put(position, new Job(position, Byte.parseByte(job.split(",")[0]), Long.parseLong(job.split(",")[1]), this));
+            position++;
+        }
+
     }
 
     private void configureStatistics(Record record) {
@@ -206,31 +222,29 @@ public class Player implements Creature, Fightable {
 
     public void joinGame() {
         account.setCurrentPlayer(this);
-        try {
-            send(getPacket(Packets.ASK));
-            send(getPacket(Packets.OS));
-            send(getPacket(Packets.As));
-            this.position.getMap().addCreature(this);
-
-            if (this.mount != null)
-                send("Re+" + this.mount.getPacket());
-            send("Rx" + (this.mount == null ? 0 : this.mount.getExperience()));
-
-            send(getPacket(Packets.SL));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void createGame() {
-        send("GCK|1|" + this.name);
+        send(getPacket(Packets.ASK));
+        send(getPacket(Packets.OS));
+        send(getPacket(Packets.As));
         send("al|");
         send("FO+");
         send("ILS2000");
         send("ZS" + this.alignement.getType().getId());
         send("cC+*%!p$?^#i^@^:");
-        //TODO : Gs guild packet
+
+        if(this.guild != null)
+            send("gS" + guild.getName() + "|" + guild.getEmblem().replace(',', '|') + "|" + guild.getMembers().get(id).getRights());
+
         send("eL7667711|0");
+
+        if (this.mount != null)
+            send("Re+" + this.mount.getPacket());
+
+        send("Rx" + (this.mount == null ? 0 : this.mount.getExperience()));
+    }
+
+    public void createGame() {
+        send("GCK|1|" + this.name);
+        this.position.getMap().addCreature(this);
         refreshPods();
         send("AR6bk");
         this.account.update();
@@ -239,6 +253,9 @@ public class Player implements Creature, Fightable {
         sendText("Bienvenue sur Horus", "000000");
         this.online = true;
         this.account.setOnline();
+
+        send(getPacket(Packets.JOB));
+        send(getPacket(Packets.SL));
     }
 
     private void configureSpells(String data) {
@@ -265,38 +282,39 @@ public class Player implements Creature, Fightable {
 
     }
 
-    public boolean addObject(Object newObject, boolean save) {
-        final boolean[] value = {true};
+    public void addObject(Object newObject, boolean save) {
         Object sameObject = getSameObject(newObject);
-
         if (sameObject != null) {
             sameObject.setQuantity(sameObject.getQuantity() + newObject.getQuantity());
             this.gameManager.updateObject(sameObject);
             this.send("OQ" + sameObject.getId() + "|" + sameObject.getQuantity());
-            value[0] = false;
         } else {
             this.objects.put(newObject.getId(), newObject);
             this.send("OAKO" + newObject.parseItem());
-        }
-        if (save) {
-            this.gameManager.saveObject(newObject);
-            this.save();
+            if (save) {
+                this.gameManager.saveObject(newObject);
+                this.save();
+            }
         }
         this.refreshPods();
-        return value[0];
     }
 
-    public List<Integer> getNumberOfEquippedObject(int panoply) {
-        return getEquippedObjects().stream().filter(object -> object.getTemplate().getPanoplyTemplate() != null && object.getTemplate().getPanoplyTemplate().getId() == panoply).map(object -> object.getTemplate().getId()).collect(Collectors.toList());
+    public List<Integer> getListOfEquippedObject(int panoply) {
+        return getEquippedObjectsWithPanoply().stream().filter(object -> object.getTemplate().getPanoplyTemplate() != null && object.getTemplate().getPanoplyTemplate().getId() == panoply).map(object -> object.getTemplate().getId()).collect(Collectors.toList());
     }
 
-    public List<Object> getEquippedObjects() {
+    public List<Object> getEquippedObjectsWithPanoply() {
         return this.objects.values().stream().filter(allObject -> allObject.getTemplate().getPanoplyTemplate() != null && allObject.getObjectPosition() != ObjectPosition.NO_EQUIPED).map(object -> object).collect(Collectors.toList());
     }
 
+    public List<Object> getEquippedObjects() {
+        return this.objects.values().stream().filter(allObject -> allObject.getShortcut() == 0 && allObject.getObjectPosition() != ObjectPosition.NO_EQUIPED).map(object -> object).collect(Collectors.toList());
+    }
+
+
     public List<PanoplyTemplate> getPanoplys() {
         List<PanoplyTemplate> templates = new ArrayList<>();
-        getEquippedObjects().stream().filter(object -> !templates.contains(object.getTemplate().getPanoplyTemplate())).forEach(object -> templates.add(object.getTemplate().getPanoplyTemplate()));
+        getEquippedObjectsWithPanoply().stream().filter(object -> !templates.contains(object.getTemplate().getPanoplyTemplate())).forEach(object -> templates.add(object.getTemplate().getPanoplyTemplate()));
         return templates;
     }
 
@@ -388,6 +406,11 @@ public class Player implements Creature, Fightable {
                 this.setObjectQuantity(sameObject, sameObject.getQuantity() + quantity);
                 System.err.println(packet + " STAPE 2");
             } else if (sameObject == null || equipable) {
+                if (object.getTemplate().getLevel() > this.level) {
+                    send("OAEL");
+                    return;
+                }
+
                 Object equipped;
                 if ((equipped = getObjectByPosition(position)) != null) {
                     removeObject(equipped.getId(), true);
@@ -408,20 +431,28 @@ public class Player implements Creature, Fightable {
                 this.send("OAKO" + newObject.parseItem());
                 System.err.println(packet + " STAPE 3 OK");
             }
-            this.save();
             System.err.println(packet + " STAPE 4");
         } else {
             object.changePlace(ObjectPosition.get(position), position >= 35 && position <= 57 ? position : 0);
             this.send("OM" + object.getId() + "|" + (object.getPosition().getKey() == ObjectPosition.NO_EQUIPED ? object.getPosition().getValue() == 0 ? "" : object.getPosition().getValue() : object.getPosition().getKey().id));
             System.err.println(packet + " STAPE 5 OK");
         }
-
+        this.save();
         if (!(position >= 35 && position <= 57)) {
             if (position != -1) {
+                this.jobs.values().forEach(job -> {
+                    if (job.getTemplate().isValidTool(object.getTemplate().getId()))
+                        send("OT" + job.getTemplate().getId());
+                });
                 this.statistics.get(StatsType.STUFF).accumulateStatistics(object.getStatistics());
-            } else if (position == -1)
+            } else if (position == -1) {
+                this.jobs.values().forEach(job -> {
+                    if (job.getTemplate().isValidTool(object.getTemplate().getId()))
+                        send("OT");
+                });
                 this.statistics.get(StatsType.STUFF).removeStatistics(object.getStatistics());
-            if (object.getTemplate().getPanoplyTemplate() != null && this.getNumberOfEquippedObject(object.getTemplate().getPanoplyTemplate().getId()).isEmpty())
+            }
+            if (object.getTemplate().getPanoplyTemplate() != null && this.getListOfEquippedObject(object.getTemplate().getPanoplyTemplate().getId()).isEmpty())
                 send("OS-" + object.getTemplate().getPanoplyTemplate().getId());
             if (object.getTemplate().getType() == ObjectType.COIFFE || object.getTemplate().getType() == ObjectType.CAPE || object.getTemplate().getType() == ObjectType.FAMILIER)
                 this.getMap().send("Oa" + this.id + "|" + getPacket(Packets.GMS));
@@ -553,7 +584,7 @@ public class Player implements Creature, Fightable {
         return value[0];
     }
 
-    public void sendGuildInfos(char e) {
+    public void sendGuildInformations(char e) {
         switch (e) {
             case 'M':
                 this.send("gIM+" + guild.getMembersGm());
@@ -585,9 +616,15 @@ public class Player implements Creature, Fightable {
             return;
         }
 
-        this.guild = new Guild(arguements[4], compiledEmblem);
-        this.guild.addMember(new GuildMember(this, 1, 1));
+        this.guild = new Guild(gameManager.getGuildFactory().getNextId(), arguements[4], compiledEmblem);
+        GuildMember member = new GuildMember(id, guild, name, alignement.getType().getId(), gfx, level, "", 1, 1) {{
+            attributePlayer(Player.this);
+        }};
+        this.guild.addMember(member);
+        this.guild.sendPacket(member);
+        gameManager.getGuildFactory().createGuild(this.guild, member);
         this.refresh();
+        this.save();
     }
 
     public void speak(String packet, String canal) {
@@ -634,6 +671,80 @@ public class Player implements Creature, Fightable {
         this.askedCreature = 0;
         this.send("DV");
         this.setActionState(ActionManager.Status.WAITING);
+    }
+
+    private boolean haveJob(int id) {
+        for (Job job : this.jobs.values())
+            if (job.getTemplate().getId() == id)
+                return true;
+
+        return false;
+    }
+
+    public String parseJobs() {
+        StringBuilder builder = new StringBuilder();
+        this.jobs.values().forEach(job -> builder.append(job.getTemplate().getId()).append(",").append(job.getExperience(false)).append(";"));
+        return builder.toString().substring(0, builder.length() > 0 ? builder.length() - 1 : builder.length());
+    }
+
+    private boolean checkJob(List<Job> basics, JobsTemplate template) {
+        final Boolean[] value = {true};
+
+        if ((template.isBasic() && basics.size() > 2) || jobs.size() == 6) {
+            send("Im19");
+            return false;
+        }
+
+        basics.stream().filter(job -> job.getLevel() < 30).forEach(job -> value[0] = false);
+
+        if (!value[0])
+            send("Im18;30");
+
+        return value[0];
+    }
+
+    public void learnJob(byte id) {
+        System.err.println(id);
+        JobsTemplate template = JobsTemplate.get(id);
+
+        if (template == null)
+            return;
+
+        if (haveJob(id)) {
+            send("Im111");
+            return;
+        }
+
+        if (!checkJob(this.jobs.values().stream().filter(job -> job.getTemplate().isBasic()).collect(Collectors.toList()), template))
+            return;
+
+        if (template.getId() == JobsTemplate.TAILLEUR.getId()) {
+            if (!hasObject(966)) { //manuel
+                send("Im14");
+                return;
+            }
+            send("Im022;966~1");
+            removeObject(966, 1);
+        }
+        byte position;
+
+        if (template.isBasic())
+            position = jobs.get(2) == null ? (byte) 2 : jobs.get(1) == null ? (byte) 1 : (byte) 0;
+        else
+            position = jobs.get(5) == null ? (byte) 5 : jobs.get(4) == null ? (byte) 4 : (byte) 3;
+
+        Job job = new Job(position, template, this);
+        this.jobs.put(position, job);
+
+        send("Im02;" + template.getId());
+        send("JS".concat(job.getJS()));
+        send("JX".concat("|").concat(String.valueOf(template.getId())).concat(";1;").concat(job.getExperience(true)).concat(";"));
+        send("JO" + position + "|0|0");
+
+        if (template.isValidTool(getObjectByPosition(1).getTemplate().getId()))
+            send("OT" + template.getId());
+
+        save();
     }
 
     public void createGroup(Player player) {
@@ -692,34 +803,47 @@ public class Player implements Creature, Fightable {
 
     public void askExchange(String packet) {
         String[] data = packet.split("\\|");
-        switch (Integer.parseInt(data[0])) {
+        assert this.exchange != null;
 
-            case 0:
-                Npc npc = (Npc) getMap().getCreatures(IdType.NPC).get(Integer.parseInt(data[1]));
-                assert npc != null;
-                send("ECK0|".concat(String.valueOf(npc.getId())));
-                send("EL".concat(npc.getTemplate().getSellObjectsPacket()));
+        switch (Byte.parseByte(data[0])) {
+            case 0: //npc
+                startNpcPurchase(Integer.parseInt(data[1]));
                 break;
-
-            case 1:
-                Player target = factory.get(Integer.parseInt(packet.substring(2)));
-                if (target == null || target.getMap() != this.getMap() || !target.isOnline() || target.isBusy()) {
-                    send("EREE");
-                    return;
-                }
-                packet = "ERK" + id + "|" + target.getId() + "|1";
-                send(packet);
-                target.send(packet);
-                new PlayerExchange(this, target);
-                askedCreature = target.getId();
-                target.setAskedCreature(id);
+            case 1: //player
+                startPlayerExchange(packet);
                 break;
-
-            case 11: {
-
+            case 2: //npc exchange
+                startNpcExchange(Integer.parseInt(data[1]));
                 break;
-            }
         }
+    }
+
+    private void startNpcExchange(int id) {
+        Npc npc = (Npc) getMap().getCreatures(IdType.NPC).get(id);
+        assert npc != null;
+        send("ECK2|".concat(String.valueOf(npc.getId())));
+        this.exchange = new NpcExchange(this, npc);
+    }
+
+    private void startNpcPurchase(int id) {
+        Npc npc = (Npc) getMap().getCreatures(IdType.NPC).get(id);
+        assert npc != null;
+        send("ECK0|".concat(String.valueOf(npc.getId())));
+        send("EL".concat(npc.getTemplate().getSellObjectsPacket()));
+    }
+
+    private void startPlayerExchange(String packet) {
+        Player target = factory.get(Integer.parseInt(packet.substring(2)));
+        if (target == null || target.getMap() != this.getMap() || !target.isOnline() || target.isBusy()) {
+            send("EREE");
+            return;
+        }
+        packet = "ERK" + id + "|" + target.getId() + "|1";
+        send(packet);
+        target.send(packet);
+        new PlayerExchange(this, target);
+        askedCreature = target.getId();
+        target.setAskedCreature(id);
     }
 
     public void startExchange() {
@@ -730,7 +854,7 @@ public class Player implements Creature, Fightable {
     }
 
     public void doExchangeAction(String packet) {
-        String[] informations = packet.substring(2).split("\\|");
+        String[] informations = packet.contains("|") ? packet.substring(2).split("\\|") : null;
         switch (packet.charAt(0)) {
             case 'O':
                 if (packet.charAt(1) == '+') {
@@ -747,15 +871,18 @@ public class Player implements Creature, Fightable {
                         quantity = object.getQuantity() - quantityInExchange;
 
                     exchange.addObject(id, quantity, this.id);
-                } else {
-                    int id = Integer.parseInt(informations[0]);
-                    int quantity = Integer.parseInt(informations[1]);
+                } else
+                    exchange.removeObject(Integer.parseInt(informations[0]), Integer.parseInt(informations[1]), this.id);
 
-                    exchange.removeObject(id, quantity, this.id);
-                }
                 break;
             case 'G':// Kamas
                 exchange.editKamas(id, Integer.parseInt(packet.substring(1)));
+                break;
+            case 'R':// Repeat (for job only)
+                exchange.toogleOk(-Integer.parseInt(packet.substring(1)));
+                break;
+            case 'r': //stop craft
+                ((BreakerExchange) exchange).stopCraft();
                 break;
         }
     }
@@ -878,14 +1005,10 @@ public class Player implements Creature, Fightable {
     }
 
     public void sendText(String... arguments) {
-        String message = arguments[0];
-        String color;
-        try {
-            color = arguments[1];
-        } catch (ArrayIndexOutOfBoundsException e) {
-            color = "000000";
-        }
-        send("cs<font color='#" + color + "'>" + message + "</font>");
+        if (arguments.length > 1)
+            send("cs<font color='#" + arguments[1] + "'>" + arguments[0] + "</font>");
+        else
+            send("cs<font color='#000000'>" + arguments[0] + "</font>");
     }
 
     public boolean checkAttribut(String attribut) {

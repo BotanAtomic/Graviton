@@ -44,18 +44,18 @@ public class LoginClient implements Client {
         switch (status) {
             case 1:
                 String[] args = packet.split("\n");
+
                 log.info("[Session {}] checking username [{}] & password [{}]", id, args[0], args[1]);
-                if (!database.isGoodAccount(args[0], args[1], this)) {
+
+                this.account = database.loadAccount(args[0], args[1], key);
+
+                if (this.account == null) {
                     send("AlEf");
+                    status = 0;
                     session.close(true);
                     return;
                 }
-                this.account = database.loadAccount(args[0]);
-
-                if (account != null)
-                    this.account.setClient(this);
-                else
-                    session.close(true);
+                this.account.setClient(this);
                 status = 3;
                 break;
             case 2:
@@ -93,6 +93,8 @@ public class LoginClient implements Client {
                         log.info("[Login] Packet server not found -> {}", packet);
                 }
                 break;
+            default:
+                session.close(true);
         }
     }
 
@@ -139,22 +141,17 @@ public class LoginClient implements Client {
 
     private void selectServer(int serverID) {
         Server server = globalManager.getServers().get(serverID);
-        if (server == null) {
-            send("AXEr");
-            session.close(true);
-            return;
-        }
-        if (server.getState() != 1) {
-            send("AXEd");
+        if (server == null || server.getState() != 1) {
+            send(server == null ? "AXEr" : "AXEd");
             session.close(true);
             return;
         }
         server.send("+" + account.getId());
-        StringBuilder sb = new StringBuilder();
-        sb.append("AYK").append(server.getIp());
-        sb.append(":").append(server.getPort()).append(";");
-        sb.append(account.getId());
-        send(sb.toString());
+        StringBuilder builder = new StringBuilder();
+        builder.append("AYK").append(server.getIp());
+        builder.append(":").append(server.getPort()).append(";");
+        builder.append(account.getId());
+        send(builder.toString());
         globalManager.getConnectedClient().put(account.getId(), serverID);
     }
 

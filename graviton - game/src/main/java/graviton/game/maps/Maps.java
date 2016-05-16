@@ -3,7 +3,7 @@ package graviton.game.maps;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Utils;
-import graviton.factory.NpcFactory;
+import graviton.factory.type.NpcFactory;
 import graviton.game.GameManager;
 import graviton.game.client.player.Player;
 import graviton.game.creature.Creature;
@@ -12,6 +12,7 @@ import graviton.game.creature.monster.MonsterGroup;
 import graviton.game.creature.npc.Npc;
 import graviton.game.enums.IdType;
 import graviton.game.fight.Fight;
+import graviton.game.maps.object.InteractiveObject;
 import lombok.Data;
 import org.jooq.Record;
 
@@ -230,6 +231,10 @@ public class Maps {
 
     public void sendGdf(Player player) {
         this.cells.values().stream().filter(cell -> cell.getInteractiveObject() != null).forEach(cell1 -> player.send(cell1.getInteractiveObject().getGDF()));
+    }
+
+    public void sendGdf(InteractiveObject object) {
+        this.creatures.values().forEach(creature -> creature.send(object.getGDF()));
     }
 
     public void refreshCreature(Creature creature) {

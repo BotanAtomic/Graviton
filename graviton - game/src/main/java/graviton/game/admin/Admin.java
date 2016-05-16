@@ -23,20 +23,6 @@ public class Admin {
         gameManager.getAdmins().add(this);
     }
 
-    public boolean ban(Account account, String time, boolean banIp) {
-        if (rank.id < Rank.MANAGER.id) return false;
-        //TODO : ban
-        return true;
-    }
-
-    public void mute(Account account, int time, String reason) {
-        account.mute(time, this.account.getCurrentPlayer(), reason);
-    }
-
-    public void launchCommand(String command) {
-
-    }
-
     public void remove() {
         gameManager.getAdmins().remove(this);
     }

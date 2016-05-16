@@ -1,10 +1,11 @@
-package graviton.factory;
+package graviton.factory.type;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.spells.Animation;
 import graviton.game.spells.SpellTemplate;
 import lombok.Getter;
@@ -28,8 +29,9 @@ public class SpellFactory extends Factory<SpellTemplate> {
     private final Map<Integer, SpellTemplate> spells;
 
     @Inject
-    public SpellFactory(@Named("database.game") Database database) {
+    public SpellFactory(@Named("database.game") Database database,FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
         this.spells = new ConcurrentHashMap<>();
         this.animations = new ConcurrentHashMap<>();
     }
@@ -39,7 +41,6 @@ public class SpellFactory extends Factory<SpellTemplate> {
         return spells;
     }
 
-    @Override
     public SpellTemplate get(Object object) {
         return spells.get(object);
     }

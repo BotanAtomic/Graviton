@@ -55,10 +55,6 @@ public class TrunkExchange implements Exchange {
 
     @Override
     public void addObject(int idObject, int quantity, int idPlayer) {
-        if (trunk.getObjects().size() >= 50) {
-            exchanger.sendText("Le coffre est rempli, impossible d'y ajouter un nouvel objet.");
-            return;
-        }
         String packet = "O+";
         Object object = exchanger.getObjects().get(idObject);
         Object trunkObject = getSameObject(object);

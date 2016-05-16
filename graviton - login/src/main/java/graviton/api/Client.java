@@ -13,14 +13,9 @@ public interface Client {
 
     void kick();
 
-    IoSession getSession();
-
     void send(String packet);
 
     default IoBuffer cryptPacket(String packet) {
-        IoBuffer ioBuffer = IoBuffer.allocate(2048);
-        ioBuffer.put(packet.getBytes());
-        ioBuffer.flip();
-        return ioBuffer;
+        return IoBuffer.allocate(2048).put(packet.getBytes()).flip();
     }
 }

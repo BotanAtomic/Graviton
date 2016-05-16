@@ -3,8 +3,8 @@ package graviton.game.client;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import graviton.common.Pair;
-import graviton.factory.AccountFactory;
-import graviton.factory.PlayerFactory;
+import graviton.factory.type.AccountFactory;
+import graviton.factory.type.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.action.player.CommandManager;
 import graviton.game.admin.Admin;
@@ -58,10 +58,11 @@ public class Account {
 
     private Admin admin;
 
+    private String playersCachePacket;
+
     public Account(Record record, PlayerFactory playerFactory, AccountFactory accountFactory, Injector injector) {
-        injector.injectMembers(this);
         this.id = record.getValue(ACCOUNTS.ID);
-        accountFactory.getElements().put(id, this);
+        this.players = playerFactory.load(this);
         this.playerFactory = playerFactory;
         this.accountFactory = accountFactory;
         this.injector = injector;
@@ -70,11 +71,13 @@ public class Account {
         this.friends = convertToList(record.getValue(ACCOUNTS.FRIENDS));
         this.enemies = convertToList(record.getValue(ACCOUNTS.ENEMIES));
         this.rank = Rank.values()[record.getValue(ACCOUNTS.RANK)];
-        this.bank = new Trunk(record.getValue(ACCOUNTS.BANK), injector);
+        this.bank = accountFactory.loadBank(id);
         this.informations = record.getValue(ACCOUNTS.INFORMATIONS);
         if (rank != Rank.PLAYER)
             this.admin = new Admin(this, injector);
-        this.players = playerFactory.load(this);
+        accountFactory.getElements().put(id, this);
+        injector.injectMembers(this);
+        this.playersCachePacket = this.getPlayersPacket();
     }
 
     private List<Integer> convertToList(String data) {
@@ -117,6 +120,8 @@ public class Account {
 
     public void close() {
         if (currentPlayer != null) {
+            if(currentPlayer.getActionManager().getCurrentJobAction() != null)
+                currentPlayer.getActionManager().getCurrentJobAction().stop(currentPlayer,null);
             currentPlayer.save();
             currentPlayer.getPosition().getMap().removeCreature(currentPlayer);
             playerFactory.delete(currentPlayer.getId());
@@ -128,18 +133,15 @@ public class Account {
 
     public void setOnline() {
         this.online = true;
-        for (Integer i : friends) {
+        for (int i : friends) {
             Account account = accountFactory.getElements().get(i);
             if (account == null) return;
 
-            if (account.isOnline() && account.getFriends().contains(id))
+            if (account.isOnline() && account.getFriends().contains(id)) {
+                account.send(account.getListPacket(true));
                 account.send("Im0143;" + this.pseudo + " (" + currentPlayer.getPacketName() + ")");
+            }
         }
-    }
-
-    public void mute(int time, Player player, String reason) {
-        this.mute = new Pair<>(time, new Date());
-        manager.mute(currentPlayer, player, time, reason);
     }
 
     public boolean canSpeak() {
@@ -148,6 +150,7 @@ public class Account {
             int remainingTime = (this.mute.getKey() - period.getMinutes());
             if (period.getMinutes() < this.mute.getKey()) {
                 currentPlayer.sendText("A force de trop parler, vous en avez perdu la voix... Vous devriez vous taire pendant les " + remainingTime + (remainingTime > 1 ? " prochaines " : " prochaine ") + (remainingTime > 1 ? "minutes" : "minute"), "FF0000");
+                //TODO : replace by Im (CALL LOCOS AHAHA)
                 return false;
             }
             this.mute = null;

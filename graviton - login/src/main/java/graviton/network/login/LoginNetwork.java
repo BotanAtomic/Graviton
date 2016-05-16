@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.Random;
+import java.util.UUID;
 
 /**
  * Created by Botan on 06/07/2015.
@@ -61,7 +61,8 @@ public class LoginNetwork extends NetworkService implements IoHandler {
     @Override
     public void sessionClosed(IoSession session) throws Exception {
         LoginClient client = (LoginClient) session.getAttribute("client");
-        client.kick();
+        if(client != null)
+            client.kick();
         log.info("[Session {}] closed", session.getId());
     }
 
@@ -79,12 +80,13 @@ public class LoginNetwork extends NetworkService implements IoHandler {
 
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        LoginClient client = (LoginClient) session.getAttribute("client");
         String packet = message.toString();
-        if (packet.isEmpty() || packet.equals("1.29.2") || packet.equals("1.29.1"))
+
+        if (packet.startsWith("1.2"))
             return;
-        client.parsePacket(packet);
-        log.info("[Session {}] receive < {} [{}]", session.getId(), packet, client.getStatus());
+
+        ((LoginClient) session.getAttribute("client")).parsePacket(packet);
+        log.info("[Session {}] receive < {}", session.getId(), packet);
     }
 
     @Override
@@ -114,13 +116,7 @@ public class LoginNetwork extends NetworkService implements IoHandler {
     }
 
     private String generateKey() {
-        String alphabet = "abcdefghijklmnopqrstuvwxyz";
-        StringBuilder hashKey = new StringBuilder();
-        Random rand = new Random();
-
-        for (int i = 0; i < 32; i++)
-            hashKey.append(alphabet.charAt(rand.nextInt(alphabet.length())));
-        return hashKey.toString();
+        return UUID.randomUUID().toString().replace("-","");
     }
 
     public Collection<IoSession> getSessions() {

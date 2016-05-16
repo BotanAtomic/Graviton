@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import graviton.api.InjectSetting;
 import graviton.api.PacketParser;
 import graviton.common.Utils;
-import graviton.factory.PlayerFactory;
+import graviton.factory.type.PlayerFactory;
 import graviton.game.GameManager;
 import graviton.game.action.player.ActionManager;
 import graviton.game.client.player.Player;
@@ -14,9 +14,11 @@ import graviton.game.creature.npc.Npc;
 import graviton.game.creature.npc.NpcAnswer;
 import graviton.game.enums.IdType;
 import graviton.game.enums.Rank;
+import graviton.game.exchange.job.BreakerExchange;
 import graviton.game.maps.Maps;
 import graviton.game.object.ObjectTemplate;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.shorts.Short2ObjectOpenHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +41,7 @@ public class PacketManager {
     @Inject
     PlayerFactory playerFactory;
     @Getter
-    private Map<String, PacketParser> packets;
+    private Map<Short, PacketParser> packets;
 
     public PacketManager(String[] dictionary, String[] forbidden) {
         this.calendar = GregorianCalendar.getInstance();
@@ -48,20 +50,26 @@ public class PacketManager {
         load();
     }
 
+    private void addPacket(String packet, PacketParser packetParser) {
+        this.packets.put((short)((packet.charAt(0) - packet.charAt(1))*(packet.charAt(1) + packet.charAt(0))), packetParser);
+    }
+
     public void load() {
-        Map<String, PacketParser> packets = new Object2ObjectOpenHashMap(16, 1);
+        this.packets = new Short2ObjectOpenHashMap<>(16, 1);
 
-        packets.put("cC", (client, packet) -> client.send("cC" + packet));
+        addPacket("cC", (client, packet) -> client.send("cC" + packet));
 
-        packets.put("BA", (client, packet) -> client.getAccount().launchCommand(packet));
+        addPacket("BA", (client, packet) -> client.getAccount().launchCommand(packet));
 
-        packets.put("EK", (client, packet) -> client.getCurrentPlayer().getExchange().toogleOk(client.getCurrentPlayer().getId()));
+        addPacket("EK", (client, packet) -> client.getCurrentPlayer().getExchange().toogleOk(client.getCurrentPlayer().getId()));
 
-        packets.put("EM", (client, packet) -> client.getCurrentPlayer().doExchangeAction(packet));
+        addPacket("EM", (client, packet) -> client.getCurrentPlayer().doExchangeAction(packet));
 
-        packets.put("EA", (client, packet) -> client.getCurrentPlayer().startExchange());
+        addPacket("EL", (client, packet) -> ((BreakerExchange)client.getCurrentPlayer().getExchange()).setLastIngredients());
 
-        packets.put("EB", (client, packet) -> {
+        addPacket("EA", (client, packet) -> client.getCurrentPlayer().startExchange());
+
+        addPacket("EB", (client, packet) -> {
             String[] arguments = packet.split("\\|");
 
             ObjectTemplate template = gameManager.getObjectTemplate(Integer.parseInt(arguments[0]));
@@ -74,7 +82,7 @@ public class PacketManager {
             client.send("EBK");
         });
 
-        packets.put("EV", (client, packet) -> {
+        addPacket("EV", (client, packet) -> {
             if (client.getCurrentPlayer().getExchange() == null) {
                 client.send("EV");
                 client.getCurrentPlayer().save();
@@ -82,19 +90,19 @@ public class PacketManager {
                 client.getCurrentPlayer().getExchange().cancel();
         });
 
-        packets.put("ER", (client, packet) -> client.getCurrentPlayer().askExchange(packet));
+        addPacket("ER", (client, packet) -> client.getCurrentPlayer().askExchange(packet));
 
-        packets.put("Od", (client, packet) -> client.getCurrentPlayer().removeObject(packet));
+        addPacket("Od", (client, packet) -> client.getCurrentPlayer().removeObject(packet));
 
-        packets.put("OM", (client, packet) -> client.getCurrentPlayer().moveObject(packet));
+        addPacket("OM", (client, packet) -> client.getCurrentPlayer().moveObject(packet));
 
-        packets.put("DV", (client, packet) -> {
+        addPacket("DV", (client, packet) -> {
             client.send("DV");
             client.getCurrentPlayer().setAskedCreature(0);
             client.getCurrentPlayer().getActionManager().setStatus(ActionManager.Status.WAITING);
         });
 
-        packets.put("DC", (client, packet) -> {
+        addPacket("DC", (client, packet) -> {
             Creature creature = client.getCurrentPlayer().getMap().getCreatures(IdType.NPC).get(Integer.parseInt(packet));
             if (creature != null)
                 client.getCurrentPlayer().createDialog((Npc) creature);
@@ -102,7 +110,7 @@ public class PacketManager {
                 log.error("The NPC can not be found", packet);
         });
 
-        packets.put("DR", (client, packet) -> {
+        addPacket("DR", (client, packet) -> {
             try {
                 String[] informations = packet.split("\\|");
 
@@ -130,26 +138,26 @@ public class PacketManager {
             }
         });
 
-        packets.put("PV", (client, packet) -> {
+        addPacket("PV", (client, packet) -> {
             if (packet.isEmpty())
                 client.getCurrentPlayer().getGroup().removeMember(client.getCurrentPlayer());
             else
                 client.getCurrentPlayer().getGroup().kick(client.getCurrentPlayer(), gameManager.getPlayer(Integer.parseInt(packet)));
         });
 
-        packets.put("FD", (client, packet) -> client.getAccount().removeInList(packet,true));
+        addPacket("FD", (client, packet) -> client.getAccount().removeInList(packet, true));
 
-        packets.put("iD", (client, packet) -> client.getAccount().removeInList(packet,false));
+        addPacket("iD", (client, packet) -> client.getAccount().removeInList(packet, false));
 
-        packets.put("FL", (client, packet) -> client.send(client.getAccount().getListPacket(true)));
+        addPacket("FL", (client, packet) -> client.send(client.getAccount().getListPacket(true)));
 
-        packets.put("iL", (client, packet) -> client.send(client.getAccount().getListPacket(false)));
+        addPacket("iL", (client, packet) -> client.send(client.getAccount().getListPacket(false)));
 
-        packets.put("FA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet),true));
+        addPacket("FA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet), true));
 
-        packets.put("iA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet),false));
+        addPacket("iA", (client, packet) -> client.getAccount().addInList(client.getCurrentPlayer().getGameManager().getPlayer(packet), false));
 
-        packets.put("Ba", (client, packet) -> {
+        addPacket("Ba", (client, packet) -> {
             if (client.getAccount().getRank().id == Rank.PLAYER.id)
                 return;
             String[] arguments = packet.substring(1).trim().split(",");
@@ -158,20 +166,20 @@ public class PacketManager {
                 client.getCurrentPlayer().changePosition(map.getRandomCell());
         });
 
-        packets.put("GP", (client, packet) -> client.getCurrentPlayer().togglePvp(packet.charAt(0)));
+        addPacket("GP", (client, packet) -> client.getCurrentPlayer().togglePvp(packet.charAt(0)));
 
-        packets.put("WU", (client, packet) -> client.getCurrentPlayer().useZaap(Integer.parseInt(packet)));
+        addPacket("WU", (client, packet) -> client.getCurrentPlayer().useZaap(Integer.parseInt(packet)));
 
-        packets.put("AB", (client, packet) -> client.getCurrentPlayer().boostStatistics(Integer.parseInt(packet)));
+        addPacket("AB", (client, packet) -> client.getCurrentPlayer().boostStatistics(Integer.parseInt(packet)));
 
-        packets.put("GC", (client, packet) -> client.getCurrentPlayer().createGame());
+        addPacket("GC", (client, packet) -> client.getCurrentPlayer().createGame());
 
-        packets.put("SB", (client, packet) -> {
+        addPacket("SB", (client, packet) -> {
             if (!client.getCurrentPlayer().boostSpell(Integer.parseInt(packet)))
                 client.send("SUE");
         });
 
-        packets.put("SM", (client, packet) -> {
+        addPacket("SM", (client, packet) -> {
             String[] arguments = packet.split("\\|");
             Player player = client.getCurrentPlayer();
             int id = Integer.parseInt(arguments[0]);
@@ -180,7 +188,7 @@ public class PacketManager {
             client.send("BN");
         });
 
-        packets.put("PI", (client, packet) -> {
+        addPacket("PI", (client, packet) -> {
             Player target = client.getCurrentPlayer().getGameManager().getPlayer(packet);
 
             if (target == null) {
@@ -199,9 +207,9 @@ public class PacketManager {
             target.send(finalPacket);
         });
 
-        packets.put("GA", (client, packet) -> client.getCurrentPlayer().createAction(Integer.parseInt(packet.substring(0, 3)), packet.substring(3)));
+        addPacket("GA", (client, packet) -> client.getCurrentPlayer().createAction(Integer.parseInt(packet.substring(0, 3)), packet.substring(3)));
 
-        packets.put("GK", (client, packet) -> {
+        addPacket("GK", (client, packet) -> {
             if (client.getCurrentPlayer().getActionManager() == null || client.getCurrentPlayer().getActionManager().getCurrentActions().isEmpty())
                 return;
             int gameActionId;
@@ -214,19 +222,19 @@ public class PacketManager {
             }
         });
 
-        packets.put("gI", (client, packet) -> client.getCurrentPlayer().sendGuildInfos(packet.charAt(0)));
+        addPacket("gI", (client, packet) -> client.getCurrentPlayer().sendGuildInformations(packet.charAt(0)));
 
-        packets.put("gC", (client, packet) -> client.getCurrentPlayer().createGuild(packet));
+        addPacket("gC", (client, packet) -> client.getCurrentPlayer().createGuild(packet));
 
-        packets.put("eD", (client, packet) -> client.getCurrentPlayer().changeOrientation(Integer.parseInt(packet), true));
+        addPacket("eD", (client, packet) -> client.getCurrentPlayer().changeOrientation(Integer.parseInt(packet), true));
 
-        packets.put("eU", (client, packet) -> client.getCurrentPlayer().getMap().send("eUK" + client.getCurrentPlayer().getId() + "|" + packet));
+        addPacket("eU", (client, packet) -> client.getCurrentPlayer().getMap().send("eUK" + client.getCurrentPlayer().getId() + "|" + packet));
 
-        packets.put("BS", (client, packet) -> client.getCurrentPlayer().getMap().send("cS" + client.getCurrentPlayer().getId() + "|" + packet));
+        addPacket("BS", (client, packet) -> client.getCurrentPlayer().getMap().send("cS" + client.getCurrentPlayer().getId() + "|" + packet));
 
-        packets.put("BM", (client, packet) -> client.getCurrentPlayer().speak(packet.substring(0, packet.length() - 1), packet.substring(0, 1)));
+        addPacket("BM", (client, packet) -> client.getCurrentPlayer().speak(packet.substring(0, packet.length() - 1), packet.substring(0, 1)));
 
-        packets.put("AT", (client, packet) -> {
+        addPacket("AT", (client, packet) -> {
             client.setAccount(gameManager.getAccount(Integer.parseInt(packet)));
             if (client.getAccount() != null) {
                 client.getAccount().setClient(client);
@@ -237,7 +245,7 @@ public class PacketManager {
             }
         });
 
-        packets.put("AS", (client, packet) -> {
+        addPacket("AS", (client, packet) -> {
             try {
                 client.getAccount().getPlayer(Integer.parseInt(packet)).joinGame();
             } catch (NullPointerException e) {
@@ -245,7 +253,7 @@ public class PacketManager {
             }
         });
 
-        packets.put("AD", (client, packet) -> {
+        addPacket("AD", (client, packet) -> {
             if (client.getAccount().getAnswer().equals(packet.substring(2))) {
                 client.getAccount().getPlayer(Integer.parseInt(packet.substring(0, 1))).delete();
                 return;
@@ -253,7 +261,7 @@ public class PacketManager {
             client.send("ADE");
         });
 
-        packets.put("AA", (client, packet) -> {
+        addPacket("AA", (client, packet) -> {
             if (client.getAccount().getPlayers().size() >= 5) {
                 client.send("AAEf");
                 return;
@@ -273,39 +281,39 @@ public class PacketManager {
         });
 
         /** Without argument **/
+        addPacket("Ai", (client, packet) -> {
+            client.send(client.getAccount().getPlayersCachePacket());
+        });
 
-        packets.put("Ai", (client, packet) -> client.send(client.getAccount().getPlayersPacket()));
-
-        packets.put("AL", (client, packet) -> {
-            if (packet.isEmpty()) return;
+        addPacket("AL", (client, packet) -> {
             client.send(client.getAccount().getPlayersPacket());
         });
 
-        packets.put("AV", (client, packet) -> client.send("AV0"));
+        addPacket("AV", (client, packet) -> client.send("AV0"));
 
-        packets.put("Af", (client, packet) -> client.send("Af1|1|1|1|1"));
+        addPacket("Af", (client, packet) -> client.send("Af1|1|1|1|1"));
 
-        packets.put("AP", (client, packet) -> {
+        addPacket("AP", (client, packet) -> {
             String pseudo = dictionary[(int) (Math.random() * dictionary.length - 1)] + dictionary[(int) (Math.random() * dictionary.length - 1)];
             while (pseudo.length() < 5)
                 pseudo = dictionary[(int) (Math.random() * dictionary.length - 1)] + dictionary[(int) (Math.random() * dictionary.length - 1)];
             client.send("AP" + pseudo);
         });
 
-        packets.put("BD", (client, packet) -> {
+        addPacket("BD", (client, packet) -> {
             client.send("BD" + calendar.get(Calendar.YEAR) + "|" + calendar.get(Calendar.MONTH) + "|" + calendar.get(Calendar.DAY_OF_MONTH));
             client.send("BT" + (new Date().getTime() + 3600000));
         });
 
-        packets.put("GI", (client, packet) -> {
+        addPacket("GI", (client, packet) -> {
             client.send(client.getCurrentPlayer().getMap().getGMs());
             client.getCurrentPlayer().getMap().sendGdf(client.getCurrentPlayer());
             client.send("GDK");
         });
 
-        packets.put("WV", (client, packet) -> client.send("WV"));
+        addPacket("WV", (client, packet) -> client.send("WV"));
 
-        packets.put("PR", (client, packet) -> {
+        addPacket("PR", (client, packet) -> {
             if (client.getCurrentPlayer().getAskedCreature() == 0)
                 return;
             client.send("BN");
@@ -316,7 +324,7 @@ public class PacketManager {
             client.getCurrentPlayer().setAskedCreature(0);
         });
 
-        packets.put("PA", (client, packet) -> {
+        addPacket("PA", (client, packet) -> {
             if (client.getCurrentPlayer().getAskedCreature() == 0)
                 return;
             client.send("BN");
@@ -332,6 +340,7 @@ public class PacketManager {
         });
 
         this.packets = Collections.unmodifiableMap(packets);
+        log.info("{} packets loaded", this.packets.size());
     }
 
 }

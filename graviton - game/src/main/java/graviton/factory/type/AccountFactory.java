@@ -1,4 +1,4 @@
-package graviton.factory;
+package graviton.factory.type;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -6,7 +6,9 @@ import com.google.inject.name.Named;
 import graviton.api.Factory;
 import graviton.database.Database;
 import graviton.enums.DataType;
+import graviton.factory.FactoryManager;
 import graviton.game.client.Account;
+import graviton.game.trunk.Trunk;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.Record;
 import org.jooq.UpdateSetFirstStep;
@@ -15,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static graviton.database.utils.login.Tables.ACCOUNTS;
+import static graviton.database.utils.game.Tables.BANKS;
 
 /**
  * Created by Botan on 25/12/2015.
@@ -29,8 +32,9 @@ public class AccountFactory extends Factory<Account> {
     PlayerFactory playerFactory;
 
     @Inject
-    public AccountFactory(@Named("database.login") Database database) {
+    public AccountFactory(@Named("database.login") Database database, FactoryManager factoryManager) {
         super(database);
+        factoryManager.addFactory(this);
         this.accounts = new ConcurrentHashMap<>();
     }
 
@@ -44,13 +48,39 @@ public class AccountFactory extends Factory<Account> {
         return record == null ? null : new Account(record, playerFactory, this, injector);
     }
 
+    public Trunk loadBank(int account) {
+        Trunk bank;
+
+        Record record = database.getRecord(BANKS, BANKS.ACCOUNT.equal(account));
+        if (record != null)
+            bank = new Trunk(record.getValue(BANKS.DATA), injector);
+        else
+            bank = new Trunk("", injector);
+
+        return bank;
+    }
+
+    private void saveBank(Account account) {
+        UpdateSetFirstStep firstStep = database.getDSLContext().update(BANKS);
+
+        if (firstStep.set(BANKS.DATA, account.getBank().getKamas() + ":" + account.getBank().parseToDatabase()).where(BANKS.ACCOUNT.equal(account.getId())).execute() == 0)
+            database.getDSLContext().insertInto(BANKS, BANKS.ACCOUNT, BANKS.DATA).values(account.getId(), account.getBank().getKamas() + ":" + account.getBank().parseToDatabase()).execute();
+
+    }
+
     public void update(Account account) {
         UpdateSetFirstStep firstStep = database.getDSLContext().update(ACCOUNTS);
-        firstStep.set(ACCOUNTS.FRIENDS, account.parseList(true));
-        firstStep.set(ACCOUNTS.ENEMIES, account.parseList(false));
+
+        if (!account.getFriends().isEmpty())
+            firstStep.set(ACCOUNTS.FRIENDS, account.parseList(true));
+        if (!account.getEnemies().isEmpty())
+            firstStep.set(ACCOUNTS.ENEMIES, account.parseList(false));
+        if (!account.getBank().isEmpty())
+            saveBank(account);
+
         firstStep.set(ACCOUNTS.RANK, account.getRank().id);
         firstStep.set(ACCOUNTS.INFORMATIONS, account.getNewInformations());
-        firstStep.set(ACCOUNTS.BANK, account.getBank().getKamas() + ";" + account.getBank().parseToDatabase());
+
         firstStep.set(ACCOUNTS.MUTE, account.parseMute()).where(ACCOUNTS.ID.equal(account.getId())).execute();
     }
 
@@ -59,7 +89,6 @@ public class AccountFactory extends Factory<Account> {
         return this.accounts;
     }
 
-    @Override
     public Account get(Object object) {
         if (!this.accounts.containsKey(object))
             return load((int) object);

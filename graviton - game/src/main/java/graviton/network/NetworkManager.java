@@ -1,7 +1,6 @@
 package graviton.network;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import graviton.api.Manager;
 import graviton.api.NetworkService;
 import graviton.network.exchange.ExchangeNetwork;
@@ -13,7 +12,7 @@ import java.util.List;
 /**
  * Created by Botan on 16/06/2015.
  */
-@Singleton
+
 public class NetworkManager implements Manager {
 
     private final List<NetworkService> services;

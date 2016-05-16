@@ -36,9 +36,7 @@ public class GlobalManager {
     private List<Manageable> manageableList;
 
     public GlobalManager(Manageable firstManageable) {
-        this.manageableList = new ArrayList() {{
-            add(firstManageable);
-        }};
+        this.manageableList = new ArrayList() {{add(firstManageable);}};
         this.accounts = new HashMap();
         this.connectedClient = new HashMap();
     }

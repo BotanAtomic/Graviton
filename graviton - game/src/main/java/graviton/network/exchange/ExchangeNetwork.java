@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import graviton.api.InjectSetting;
 import graviton.api.NetworkService;
 import graviton.common.Scanner;
-import graviton.factory.AccountFactory;
+import graviton.factory.type.AccountFactory;
 import graviton.game.GameManager;
 import graviton.network.game.GameNetwork;
 import lombok.Getter;
@@ -65,6 +65,7 @@ public class ExchangeNetwork implements IoHandler, NetworkService {
     @Override
     public void start() {
         connector.connect(new InetSocketAddress(ip, port));
+        log.info("Successfully connected to the exchange server {{}/{}}",ip,port);
      }
 
     @Override

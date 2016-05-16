@@ -3,6 +3,7 @@ package graviton.game.maps.object;
 
 import lombok.Data;
 
+
 /**
  * Created by Botan on 10/10/2015.
  */

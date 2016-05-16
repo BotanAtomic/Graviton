@@ -14,4 +14,5 @@ Optional :
  - Scripts
 
 
-Helpful :
+Gameplay :
+ - add sell object to NPC 53 (Farles Inglasse)
