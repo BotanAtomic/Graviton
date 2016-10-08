@@ -1,8 +1,9 @@
 <p align="center"><IMG SRC="https://i.gyazo.com/760ac25569c32430a3d1817a77e0fd6e.png"></p>
 
-![Build Status](https://img.shields.io/badge/Login-100%20%-green.svg?style=flat)
-![Build Status](https://img.shields.io/badge/Game-30%20%-red.svg?style=flat)
-![Build Status](https://img.shields.io/badge/Total-65%20%-orange.svg?style=flat)
+![Build Status](https://img.shields.io/badge/Login-100-green.svg?style=plastic)
+![Build Status](https://img.shields.io/badge/Game-50-red.svg?style=plastic)
+![Build Status](https://img.shields.io/badge/Total-75-orange.svg?style=plastic)
+
 
 #What is it ?
 
