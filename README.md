@@ -1,3 +1,6 @@
+#STOPED PROJECT : look <a href = "http://github.com/BotanKurd/GDCore">here</a>
+
+
 <p align="center"><IMG SRC="https://i.gyazo.com/760ac25569c32430a3d1817a77e0fd6e.png"></p>
 
 ![Build Status](https://img.shields.io/badge/Login-100-green.svg?style=plastic)
